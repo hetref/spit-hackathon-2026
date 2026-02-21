@@ -2,6 +2,8 @@ import { readFile } from "fs/promises";
 import { join } from "path";
 import { NextResponse } from "next/server";
 import { uploadHtmlToS3 } from "@/lib/aws/s3-upload";
+import { auth } from "@/lib/auth";
+import { headers } from "next/headers";
 
 // Ensure Node.js runtime for file system access
 export const runtime = "nodejs";
@@ -12,8 +14,17 @@ export const runtime = "nodejs";
  */
 export async function POST(request) {
   try {
+    // Check authentication
+    const session = await auth.api.getSession({
+      headers: await headers()
+    })
+
+    if (!session?.user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
     // Static demo values (later these will come from database)
-    const userId = "124356";
+    const userId = session.user.id; // Use actual user ID
     const businessId = "999";
     const siteId = "1";
     const siteSlug = "demo-site";
