@@ -224,9 +224,9 @@ export default function FormCanvas() {
   };
 
   return (
-    <div className="flex-1 bg-[#fcfdfc] overflow-y-auto relative">
-      <div className="absolute inset-0 bg-[#fefefe] bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] [background-size:20px_20px] opacity-60 z-0 pointer-events-none" />
-      <div className="max-w-4xl mx-auto p-6 sm:p-10 relative z-10 my-4 sm:my-8">
+    <div data-lenis-prevent className="flex-1 h-full min-h-0 min-w-0 bg-[#fcfdfc] overflow-y-auto relative flex flex-col">
+      <div className="absolute inset-0 min-h-full bg-[#fefefe] bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] [background-size:20px_20px] opacity-60 -z-10" />
+      <div className="w-full max-w-4xl mx-auto p-6 sm:p-10 relative z-10 my-4 sm:my-8 flex-1">
         {/* Form Container */}
         <div className="bg-white rounded-[2rem] shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-gray-100 p-8 sm:p-14">
           {/* Form Title */}

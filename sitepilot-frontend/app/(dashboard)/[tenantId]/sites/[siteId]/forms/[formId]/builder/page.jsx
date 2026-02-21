@@ -162,7 +162,7 @@ export default function FormBuilderPage() {
       <FormBuilderToolbar onSave={handleSave} saving={saving} lastSaved={lastSaved} />
 
       {/* Main Content */}
-      <div className="flex-1 flex overflow-hidden">
+      <div className="flex-1 min-h-0 flex overflow-hidden">
         {/* Left Sidebar — Field Types */}
         <FormFieldsSidebar />
 

@@ -32,6 +32,7 @@ import useHistoryStore from "@/lib/stores/historyStore";
 import useBuilderStore, { clearSavedState } from "@/lib/stores/builderStore";
 import { clsx } from "clsx";
 import AvatarStack from "@/components/builder/AvatarStack";
+import AIPageGenerator from "@/lib/components/builder/AIPageGenerator";
 
 // ─── Publish Modal ────────────────────────────────────────────────────────────
 

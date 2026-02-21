@@ -15,7 +15,7 @@ export default function FormFieldsSidebar() {
   };
 
   return (
-    <div className="w-72 bg-white/80 backdrop-blur-md border-r border-gray-100 flex flex-col h-full z-10 shadow-sm relative shrink-0">
+    <div className="w-72 bg-white/80 backdrop-blur-md border-r border-gray-100 flex flex-col h-full min-h-0 z-10 shadow-sm relative shrink-0">
       {/* Header */}
       <div className="p-6 border-b border-gray-100">
         <h2 className="text-[10px] font-bold tracking-[0.2em] uppercase text-[#8bc4b1] mb-1">Components</h2>
@@ -23,7 +23,7 @@ export default function FormFieldsSidebar() {
       </div>
 
       {/* Field Types List */}
-      <div className="flex-1 overflow-y-auto p-6 space-y-4">
+      <div data-lenis-prevent className="flex-1 min-h-0 overflow-y-auto p-6 space-y-4">
         {Object.values(FIELD_TYPES).map((fieldType) => {
           const metadata = FIELD_TYPE_METADATA[fieldType];
           
