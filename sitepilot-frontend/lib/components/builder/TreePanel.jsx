@@ -111,12 +111,12 @@ function ContextMenu({ x, y, items, onClose }) {
   return (
     <div
       ref={ref}
-      className="fixed z-[9999] min-w-[160px] bg-slate-800 border border-slate-600 rounded-lg shadow-xl py-1 text-xs"
+      className="fixed z-[9999] min-w-[160px] bg-white border border-gray-100 rounded-2xl shadow-lg p-2 text-xs"
       style={{ top: y, left: x }}
     >
       {items.map((item, i) =>
         item.separator ? (
-          <div key={i} className="my-1 border-t border-slate-700" />
+          <div key={i} className="my-1.5 border-t border-gray-50" />
         ) : (
           <button
             key={i}
@@ -125,13 +125,13 @@ function ContextMenu({ x, y, items, onClose }) {
               onClose();
             }}
             className={clsx(
-              "w-full flex items-center gap-2 px-3 py-1.5 text-left transition-colors",
+              "w-full flex items-center gap-2 px-3 py-2 rounded-xl text-left transition-colors font-bold uppercase tracking-widest text-[10px]",
               item.danger
-                ? "text-red-400 hover:bg-red-500/20"
-                : "text-slate-300 hover:bg-slate-700",
+                ? "text-red-500 hover:bg-red-50"
+                : "text-gray-500 hover:bg-[#f2f4f2] hover:text-[#0b1411]",
             )}
           >
-            {item.icon && <item.icon size={13} />}
+            {item.icon && <item.icon size={14} />}
             {item.label}
           </button>
         ),
@@ -168,7 +168,7 @@ function InlineRename({ value, onConfirm, onCancel }) {
         }
         if (e.key === "Escape") onCancel();
       }}
-      className="bg-slate-700 border border-blue-500 text-slate-200 text-xs rounded px-1.5 py-0.5 w-full max-w-[140px] outline-none"
+      className="bg-white border border-[#8bc4b1] shadow-sm text-[#0b1411] text-[10px] font-bold uppercase tracking-widest rounded px-2 py-1 w-full max-w-[140px] outline-none"
     />
   );
 }
@@ -212,27 +212,27 @@ function ComponentNode({
       }}
       onContextMenu={(e) => onContextMenu(e, "component", component)}
       className={clsx(
-        "flex items-center gap-1.5 pl-12 pr-2 py-1.5 cursor-pointer group transition-colors text-xs select-none",
+        "flex items-center gap-2 pl-12 pr-4 py-2 cursor-pointer group transition-colors text-[10px] font-bold uppercase tracking-widest select-none",
         isSelected
-          ? "bg-blue-600/30 text-blue-300 border-l-2 border-blue-500"
-          : "text-slate-400 hover:bg-slate-700/50 hover:text-slate-300 border-l-2 border-transparent",
+          ? "bg-[#f2f4f2] text-[#1d2321] border-l-2 border-[#8bc4b1]"
+          : "text-gray-400 hover:bg-gray-50 hover:text-[#1d2321] border-l-2 border-transparent",
         component.hidden && "opacity-40",
         dragOverId === component.id &&
-          "bg-blue-600/10 border-l-2 border-blue-400",
+          "bg-[#d3ff4a]/10 border-l-2 border-[#d3ff4a]",
       )}
     >
       <GripVertical
-        size={10}
-        className="text-slate-600 opacity-0 group-hover:opacity-100 shrink-0 cursor-grab"
+        size={14}
+        className="text-gray-300 opacity-0 group-hover:opacity-100 shrink-0 cursor-grab hover:text-[#8bc4b1] transition-colors"
       />
       <Icon
-        size={13}
-        className={clsx(isSelected ? "text-blue-400" : "text-slate-500")}
+        size={14}
+        className={clsx(isSelected ? "text-[#8bc4b1]" : "text-gray-400")}
       />
-      <span className="truncate flex-1">{label}</span>
+      <span className="truncate flex-1 mt-0.5">{label}</span>
 
       {component.hidden && (
-        <EyeOff size={12} className="text-slate-600 shrink-0" />
+        <EyeOff size={14} className="text-gray-400 shrink-0" />
       )}
     </div>
   );
@@ -264,30 +264,30 @@ function ColumnNode({
           onDrop(e, containerId, columnIndex, column.components?.length || 0)
         }
         className={clsx(
-          "flex items-center gap-1.5 pl-7 pr-2 py-1.5 cursor-pointer group transition-colors text-xs select-none",
-          "text-slate-500 hover:bg-slate-700/30 hover:text-slate-400",
+          "flex items-center gap-2 pl-7 pr-4 py-2.5 cursor-pointer group transition-colors text-[10px] font-black uppercase tracking-widest select-none",
+          "text-gray-500 hover:bg-gray-50 hover:text-[#1d2321]",
           dragOverId === `col-${containerId}-${columnIndex}` &&
-            "bg-blue-600/10",
+            "bg-[#d3ff4a]/10",
         )}
         onClick={() => setExpanded(!expanded)}
       >
         {componentCount > 0 ? (
           expanded ? (
-            <ChevronDown size={12} className="text-slate-600 shrink-0" />
+            <ChevronDown size={14} className="text-gray-400 shrink-0" />
           ) : (
-            <ChevronRight size={12} className="text-slate-600 shrink-0" />
+            <ChevronRight size={14} className="text-gray-400 shrink-0" />
           )
         ) : (
-          <span className="w-3 shrink-0" />
+          <span className="w-3.5 shrink-0" />
         )}
-        <Columns size={12} className="text-slate-600 shrink-0" />
-        <span className="truncate flex-1">
+        <Columns size={14} className="text-[#8bc4b1] shrink-0" />
+        <span className="truncate flex-1 tracking-tight mt-0.5">
           Column {columnIndex + 1}{" "}
-          <span className="text-slate-600 text-[10px]">
+          <span className="text-gray-400 text-[8px] font-bold ml-1">
             ({column.width}/12)
           </span>
         </span>
-        <span className="text-[10px] text-slate-600 opacity-0 group-hover:opacity-100">
+        <span className="text-[10px] bg-gray-100 text-gray-500 rounded px-1.5 opacity-0 group-hover:opacity-100 tabular-nums">
           {componentCount}
         </span>
       </div>
@@ -344,7 +344,7 @@ function ContainerNode({
   return (
     <div
       className={clsx(
-        "border-b border-slate-700/50 last:border-0",
+        "border-b border-gray-100 last:border-0",
         container.hidden && "opacity-50",
       )}
     >
@@ -363,15 +363,15 @@ function ContainerNode({
         }}
         onContextMenu={(e) => onContextMenu(e, "container", container)}
         className={clsx(
-          "flex items-center gap-1.5 px-2 py-2 cursor-pointer group transition-colors text-xs select-none",
+          "flex items-center gap-2 px-4 py-3 cursor-pointer group transition-colors select-none",
           isSelected
-            ? "bg-blue-600/20 text-blue-300"
-            : "text-slate-300 hover:bg-slate-700/40 hover:text-slate-200",
+            ? "bg-[#f2f4f2] text-[#1d2321]"
+            : "text-gray-500 hover:bg-[#fcfdfc] hover:text-[#1d2321]",
         )}
       >
         <GripVertical
-          size={11}
-          className="text-slate-600 opacity-0 group-hover:opacity-100 shrink-0 cursor-grab"
+          size={14}
+          className="text-gray-300 opacity-0 group-hover:opacity-100 shrink-0 cursor-grab hover:text-[#8bc4b1] transition-colors"
         />
 
         <button
@@ -379,20 +379,21 @@ function ContainerNode({
             e.stopPropagation();
             setExpanded(!expanded);
           }}
-          className="shrink-0"
+          className="shrink-0 p-1 hover:bg-gray-100 rounded-md transition-colors"
         >
           {expanded ? (
-            <ChevronDown size={13} className="text-slate-500" />
+            <ChevronDown size={14} className="text-gray-500" />
           ) : (
-            <ChevronRight size={13} className="text-slate-500" />
+            <ChevronRight size={14} className="text-gray-500" />
           )}
         </button>
 
         <Box
-          size={13}
+          size={16}
           className={clsx(
-            isSelected ? "text-blue-400" : "text-slate-500",
+            isSelected ? "text-[#d3ff4a]" : "text-[#8bc4b1]",
             "shrink-0",
+            isSelected && "fill-[#1d2321] text-[#1d2321]"
           )}
         />
 
@@ -403,10 +404,10 @@ function ContainerNode({
             onCancel={onRenameCancel}
           />
         ) : (
-          <span className="truncate flex-1 font-medium">{displayName}</span>
+          <span className="truncate flex-1 font-black text-xs uppercase tracking-tight mt-0.5">{displayName}</span>
         )}
 
-        <span className="text-[10px] text-slate-600 shrink-0 tabular-nums">
+        <span className="text-[10px] font-bold text-gray-400 shrink-0 tabular-nums uppercase tracking-widest mt-0.5">
           {componentCount}w · {columnCount}c
         </span>
 
@@ -416,13 +417,13 @@ function ContainerNode({
             e.stopPropagation();
             useBuilderStore.getState().toggleContainerVisibility(container.id);
           }}
-          className="shrink-0 opacity-0 group-hover:opacity-100 p-0.5 hover:bg-slate-600 rounded transition-all"
+          className="shrink-0 opacity-0 group-hover:opacity-100 p-1.5 hover:bg-gray-100 rounded-lg transition-all"
           title={container.hidden ? "Show" : "Hide"}
         >
           {container.hidden ? (
-            <EyeOff size={12} className="text-slate-500" />
+            <EyeOff size={14} className="text-gray-400" />
           ) : (
-            <Eye size={12} className="text-slate-500 hover:text-slate-300" />
+            <Eye size={14} className="text-gray-400 hover:text-[#1d2321]" />
           )}
         </button>
       </div>
@@ -644,9 +645,9 @@ export default function TreePanel() {
     return (
       <div className="flex-1 flex items-center justify-center p-6 text-center">
         <div>
-          <Box size={32} className="text-slate-600 mx-auto mb-2" />
-          <p className="text-xs text-slate-500">No containers yet.</p>
-          <p className="text-[10px] text-slate-600 mt-1">
+          <Box size={32} className="text-gray-300 mx-auto mb-3 opacity-50" />
+          <p className="text-[10px] font-black uppercase tracking-widest text-gray-500">No containers</p>
+          <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400 mt-2 leading-relaxed">
             Add a container from the Elements tab.
           </p>
         </div>
@@ -655,14 +656,14 @@ export default function TreePanel() {
   }
 
   return (
-    <div className="flex-1 overflow-y-auto">
+    <div className="flex-1 overflow-y-auto bg-white/50">
       {/* Page label */}
-      <div className="px-3 py-2 border-b border-slate-700/50 flex items-center gap-2">
-        <FileText size={12} className="text-slate-500" />
-        <span className="text-[10px] font-semibold text-slate-500 uppercase tracking-widest">
+      <div className="px-6 py-4 border-b border-gray-100 flex items-center gap-3 bg-[#fcfdfc]">
+        <FileText size={16} className="text-[#8bc4b1]" />
+        <span className="text-[10px] font-black text-[#1d2321] uppercase tracking-[0.2em] mt-0.5">
           Page Structure
         </span>
-        <span className="ml-auto text-[10px] text-slate-600 tabular-nums">
+        <span className="ml-auto text-[9px] font-bold uppercase tracking-widest bg-gray-100 text-gray-500 rounded-full px-3 py-1 tabular-nums mt-0.5">
           {containers.length} containers
         </span>
       </div>

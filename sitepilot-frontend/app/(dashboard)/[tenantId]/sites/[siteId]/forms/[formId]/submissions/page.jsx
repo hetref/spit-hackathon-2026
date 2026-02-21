@@ -26,18 +26,38 @@ export default function FormSubmissionsPage() {
       const formRes = await fetch(`/api/sites/${siteId}/forms/${formId}`);
       if (!formRes.ok) throw new Error('Failed to fetch form');
       const formData = await formRes.json();
-      setForm(formData);
+      console.log('Form data received:', formData);
+      // API returns { form: {...} }, so extract the form object
+      setForm(formData.form || formData);
 
       // Fetch submissions
       const submissionsRes = await fetch(`/api/sites/${siteId}/forms/${formId}/submissions`);
       if (!submissionsRes.ok) throw new Error('Failed to fetch submissions');
       const submissionsData = await submissionsRes.json();
+      console.log('Submissions data received:', submissionsData);
       setSubmissions(submissionsData.submissions || []);
     } catch (err) {
+      console.error('Fetch error:', err);
       setError(err.message);
     } finally {
       setLoading(false);
     }
+  }
+
+  // Helper function to get field label from field ID
+  function getFieldLabel(fieldId) {
+    if (!form?.schema) {
+      console.log('No form schema available');
+      return fieldId;
+    }
+    
+    console.log('Looking for field:', fieldId);
+    console.log('Form schema:', form.schema);
+    
+    const field = form.schema.find(f => f.id === fieldId);
+    console.log('Found field:', field);
+    
+    return field?.label || fieldId;
   }
 
   async function handleDelete(submissionId) {
@@ -62,19 +82,20 @@ export default function FormSubmissionsPage() {
   function handleExportCSV() {
     if (!submissions.length) return;
 
-    // Get all unique field names
-    const fieldNames = new Set();
+    // Get all unique field IDs
+    const fieldIds = new Set();
     submissions.forEach(sub => {
-      Object.keys(sub.data).forEach(key => fieldNames.add(key));
+      Object.keys(sub.data).forEach(key => fieldIds.add(key));
     });
-    const fields = Array.from(fieldNames);
+    const fields = Array.from(fieldIds);
 
-    // Create CSV header
-    const header = ['Submission Date', ...fields].join(',');
+    // Create CSV header with field labels instead of IDs
+    const fieldLabels = fields.map(fieldId => getFieldLabel(fieldId));
+    const header = ['Submission Date', ...fieldLabels].join(',');
 
     // Create CSV rows
     const rows = submissions.map(sub => {
-      const date = new Date(sub.submittedAt).toLocaleString();
+      const date = new Date(sub.createdAt).toLocaleString();
       const values = fields.map(field => {
         const value = sub.data[field];
         // Handle arrays (checkboxes)
@@ -167,7 +188,13 @@ export default function FormSubmissionsPage() {
               <div className="flex items-start justify-between mb-4">
                 <div>
                   <p className="text-sm text-gray-500">
-                    {new Date(submission.submittedAt).toLocaleString()}
+                    Submitted: {new Date(submission.createdAt).toLocaleString('en-US', {
+                      year: 'numeric',
+                      month: 'short',
+                      day: 'numeric',
+                      hour: '2-digit',
+                      minute: '2-digit'
+                    })}
                   </p>
                 </div>
                 <button
@@ -180,9 +207,11 @@ export default function FormSubmissionsPage() {
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {Object.entries(submission.data).map(([key, value]) => (
-                  <div key={key}>
-                    <p className="text-sm font-medium text-gray-700 mb-1">{key}</p>
+                {Object.entries(submission.data).map(([fieldId, value]) => (
+                  <div key={fieldId}>
+                    <p className="text-sm font-medium text-gray-700 mb-1">
+                      {getFieldLabel(fieldId)}
+                    </p>
                     <p className="text-gray-900">
                       {Array.isArray(value) ? value.join(', ') : value || '—'}
                     </p>

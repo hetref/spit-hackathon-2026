@@ -898,8 +898,9 @@ export async function convertPageToHtml(
         styling: form.styling || {},
       });
       
-      // Pass the API base URL (use environment variable or default)
-      const apiBaseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://sitepilot-frontend.vercel.app';
+      // Pass the API base URL (use NEXT_PUBLIC_API_URL for form submissions)
+      // This allows using ngrok for published sites while keeping localhost for dev
+      const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL || process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
       const formJS = generateFormJS({
         id: form.id,
       }, apiBaseUrl);

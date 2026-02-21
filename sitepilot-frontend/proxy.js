@@ -42,6 +42,7 @@ const publicPaths = [
 const publicApiPrefixes = [
     '/api/auth/',
     '/api/invitations/',
+    '/api/forms/', // Allow form submissions without auth
 ]
 
 // Routes that require a valid session
@@ -54,6 +55,19 @@ const protectedPathPrefixes = [
 
 export async function proxy(request) {
     const { pathname } = request.nextUrl
+
+    // Handle CORS preflight (OPTIONS) requests for development
+    if (request.method === 'OPTIONS') {
+        return new NextResponse(null, {
+            status: 200,
+            headers: {
+                'Access-Control-Allow-Origin': '*',
+                'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+                'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+                'Access-Control-Max-Age': '86400',
+            },
+        })
+    }
 
     // Fully public — no session check needed
     if (publicPaths.includes(pathname)) {
@@ -99,7 +113,15 @@ export async function proxy(request) {
         }
     }
 
-    return NextResponse.next()
+    // Add CORS headers to all responses in development
+    const response = NextResponse.next()
+    if (process.env.NODE_ENV === 'development') {
+        response.headers.set('Access-Control-Allow-Origin', '*')
+        response.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
+        response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization')
+    }
+    
+    return response
 }
 
 export const config = {
