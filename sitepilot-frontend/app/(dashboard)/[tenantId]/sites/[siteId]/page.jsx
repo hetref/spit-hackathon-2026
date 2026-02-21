@@ -325,6 +325,26 @@ export default function SiteDetailPage() {
     setTimeout(() => setCopied(false), 2000);
   };
 
+  // ── Domain management ─────────────────────────────────────────────────────
+  const handleAddDomain = () => {
+    if (domainInput.trim() && !domains.includes(domainInput.trim())) {
+      setDomains([...domains, domainInput.trim()]);
+      setDomainInput('');
+      setShowAddDomain(false);
+    }
+  };
+
+  const handleRemoveDomain = (domain) => {
+    setDomains(domains.filter(d => d !== domain));
+  };
+
+  // Initialize domains from site data
+  useEffect(() => {
+    if (site?.domain) {
+      setDomains([site.domain]);
+    }
+  }, [site]);
+
   // ─── Render: Loading ──────────────────────────────────────────────────────
   if (isPending || loading) {
     return (
