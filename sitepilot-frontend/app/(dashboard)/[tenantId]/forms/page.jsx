@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { useSession } from '@/lib/auth-client'
+import { hasPermission } from '@/lib/permissions'
 
 export default function FormsListPage() {
   const params = useParams()
@@ -13,6 +14,11 @@ export default function FormsListPage() {
   const [formName, setFormName] = useState('')
   const [formDescription, setFormDescription] = useState('')
   const [creating, setCreating] = useState(false)
+  const [userRole, setUserRole] = useState(null)
+
+  const canCreate = hasPermission(userRole, 'forms:create')
+  const canEdit = hasPermission(userRole, 'forms:edit')
+  const canDelete = hasPermission(userRole, 'forms:delete')
 
   useEffect(() => {
     if (!isPending && !session) {
@@ -23,8 +29,21 @@ export default function FormsListPage() {
   useEffect(() => {
     if (session && params.tenantId) {
       fetchForms()
+      fetchUserRole()
     }
   }, [session, params.tenantId])
+
+  const fetchUserRole = async () => {
+    try {
+      const res = await fetch(`/api/tenants/${params.tenantId}`)
+      if (res.ok) {
+        const data = await res.json()
+        setUserRole(data.userRole)
+      }
+    } catch (err) {
+      console.error('Error fetching role:', err)
+    }
+  }
 
   const fetchForms = async () => {
     try {
@@ -100,12 +119,14 @@ export default function FormsListPage() {
               <p className="text-sm text-gray-500">Create and manage your forms</p>
             </div>
             <div className="flex gap-2">
-              <button
-                onClick={() => setShowCreateForm(true)}
-                className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-              >
-                + Create Form
-              </button>
+              {canCreate && (
+                <button
+                  onClick={() => setShowCreateForm(true)}
+                  className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+                >
+                  + Create Form
+                </button>
+              )}
               <button
                 onClick={() => router.push(`/${params.tenantId}`)}
                 className="px-4 py-2 text-gray-700 hover:text-gray-900"
@@ -181,13 +202,15 @@ export default function FormsListPage() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
             </svg>
             <h3 className="text-lg font-medium text-gray-900">No forms yet</h3>
-            <p className="text-gray-500 mt-2">Get started by creating your first form</p>
-            <button
-              onClick={() => setShowCreateForm(true)}
-              className="mt-4 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-            >
-              + Create Form
-            </button>
+            <p className="text-gray-500 mt-2">{canCreate ? 'Get started by creating your first form' : 'No forms have been created yet'}</p>
+            {canCreate && (
+              <button
+                onClick={() => setShowCreateForm(true)}
+                className="mt-4 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+              >
+                + Create Form
+              </button>
+            )}
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -209,18 +232,29 @@ export default function FormsListPage() {
                   </div>
 
                   <div className="flex gap-2">
-                    <button
-                      onClick={() => router.push(`/${params.tenantId}/forms/${form.id}/builder`)}
-                      className="flex-1 px-3 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-                    >
-                      Edit
-                    </button>
-                    <button
-                      onClick={() => handleDeleteForm(form.id)}
-                      className="px-3 py-2 bg-red-600 text-white rounded hover:bg-red-700"
-                    >
-                      Delete
-                    </button>
+                    {canEdit ? (
+                      <button
+                        onClick={() => router.push(`/${params.tenantId}/forms/${form.id}/builder`)}
+                        className="flex-1 px-3 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+                      >
+                        Edit
+                      </button>
+                    ) : (
+                      <button
+                        onClick={() => router.push(`/${params.tenantId}/forms/${form.id}`)}
+                        className="flex-1 px-3 py-2 bg-gray-100 text-gray-700 rounded hover:bg-gray-200"
+                      >
+                        View
+                      </button>
+                    )}
+                    {canDelete && (
+                      <button
+                        onClick={() => handleDeleteForm(form.id)}
+                        className="px-3 py-2 bg-red-600 text-white rounded hover:bg-red-700"
+                      >
+                        Delete
+                      </button>
+                    )}
                   </div>
                 </div>
               </div>

@@ -266,6 +266,7 @@ model Deployment {
 enum Role {
   OWNER
   EDITOR
+  VIEWER
 }
 
 enum PlanType {
