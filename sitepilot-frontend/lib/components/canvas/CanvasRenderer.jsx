@@ -7,7 +7,7 @@
  * Handles selection, hover states, drop zones, and flex layout.
  */
 
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import { componentRegistry } from "../registry";
 import useBuilderStore from "@/lib/stores/builderStore";
 import { clsx } from "clsx";
@@ -56,8 +56,10 @@ function SelectionHandles() {
 // ── Root Renderer ──────────────────────────────────────────────────────────
 
 export default function CanvasRenderer({ page, onDrop, onDragOver }) {
-  const { selectedNodeId, hoveredNodeId, setSelectedNode, setHoveredNode } =
+  const { selectedNodeId, hoveredNodeId, setSelectedNode, setHoveredNode, reorderContainers } =
     useBuilderStore();
+  const [dragOverIndex, setDragOverIndex] = useState(null);
+  const dragRef = useRef(null);
 
   if (!page || !page.layout) {
     return (
@@ -68,33 +70,112 @@ export default function CanvasRenderer({ page, onDrop, onDragOver }) {
     );
   }
 
+  const handleContainerDragStart = (e, containerId, containerIndex) => {
+    e.stopPropagation();
+    dragRef.current = { type: "container", containerId, containerIndex };
+    e.dataTransfer.effectAllowed = "move";
+    e.dataTransfer.setData("text/plain", containerId);
+  };
+
+  const handleContainerDragEnd = () => {
+    setDragOverIndex(null);
+    dragRef.current = null;
+  };
+
+  const handleDropZoneDragOver = (e, index) => {
+    e.preventDefault();
+    e.stopPropagation();
+    e.dataTransfer.dropEffect = "move";
+    setDragOverIndex(index);
+  };
+
+  const handleDropZoneDrop = (e, targetIndex) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragOverIndex(null);
+
+    const drag = dragRef.current;
+    if (!drag || drag.type !== "container") return;
+
+    const fromIndex = drag.containerIndex;
+    if (fromIndex !== targetIndex && fromIndex !== targetIndex - 1) {
+      // Adjust target index if dragging down
+      const adjustedTarget = fromIndex < targetIndex ? targetIndex - 1 : targetIndex;
+      reorderContainers(fromIndex, adjustedTarget);
+    }
+
+    dragRef.current = null;
+  };
+
   return (
     <div
       className="w-full min-h-full bg-white"
       onClick={() => setSelectedNode(null)}
     >
       {page.layout.map(
-        (container) =>
+        (container, index) =>
           !container.hidden && (
-            <ContainerBlock
-              key={container.id}
-              container={container}
-              isSelected={selectedNodeId === container.id}
-              isHovered={hoveredNodeId === container.id}
-              onClick={(e) => {
-                e.stopPropagation();
-                setSelectedNode(container.id);
-              }}
-              onMouseEnter={(e) => {
-                e.stopPropagation();
-                setHoveredNode(container.id);
-              }}
-              onMouseLeave={() => setHoveredNode(null)}
-              onDrop={onDrop}
-              onDragOver={onDragOver}
-            />
+            <React.Fragment key={container.id}>
+              {/* Drop zone before each container */}
+              <div
+                onDragOver={(e) => handleDropZoneDragOver(e, index)}
+                onDrop={(e) => handleDropZoneDrop(e, index)}
+                onDragLeave={() => setDragOverIndex(null)}
+                className={clsx(
+                  "transition-all duration-200 mx-4",
+                  dragOverIndex === index
+                    ? "h-12 bg-violet-100 border-2 border-dashed border-violet-400 rounded-lg flex items-center justify-center"
+                    : "h-1 hover:h-6 hover:bg-violet-50/50 rounded",
+                )}
+              >
+                {dragOverIndex === index && (
+                  <span className="text-xs font-medium text-violet-600">
+                    Drop container here
+                  </span>
+                )}
+              </div>
+
+              <ContainerBlock
+                container={container}
+                containerIndex={index}
+                isSelected={selectedNodeId === container.id}
+                isHovered={hoveredNodeId === container.id}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setSelectedNode(container.id);
+                }}
+                onMouseEnter={(e) => {
+                  e.stopPropagation();
+                  setHoveredNode(container.id);
+                }}
+                onMouseLeave={() => setHoveredNode(null)}
+                onDrop={onDrop}
+                onDragOver={onDragOver}
+                onContainerDragStart={handleContainerDragStart}
+                onContainerDragEnd={handleContainerDragEnd}
+              />
+            </React.Fragment>
           ),
       )}
+
+      {/* Drop zone after last container */}
+      <div
+        onDragOver={(e) => handleDropZoneDragOver(e, page.layout.length)}
+        onDrop={(e) => handleDropZoneDrop(e, page.layout.length)}
+        onDragLeave={() => setDragOverIndex(null)}
+        className={clsx(
+          "transition-all duration-200 mx-4",
+          dragOverIndex === page.layout.length
+            ? "h-12 bg-violet-100 border-2 border-dashed border-violet-400 rounded-lg flex items-center justify-center"
+            : "h-1 hover:h-6 hover:bg-violet-50/50 rounded",
+        )}
+      >
+        {dragOverIndex === page.layout.length && (
+          <span className="text-xs font-medium text-violet-600">
+            Drop container here
+          </span>
+        )}
+      </div>
     </div>
   );
 }
@@ -105,6 +186,7 @@ export default function CanvasRenderer({ page, onDrop, onDragOver }) {
 
 function ContainerBlock({
   container,
+  containerIndex,
   isSelected,
   isHovered,
   onClick,
@@ -112,7 +194,10 @@ function ContainerBlock({
   onMouseLeave,
   onDrop,
   onDragOver,
+  onContainerDragStart,
+  onContainerDragEnd,
 }) {
+  const [isDragging, setIsDragging] = useState(false);
   const settings = container.settings || {};
   const styles = container.styles || {};
   const isHorizontal = settings.direction !== "vertical";
@@ -120,13 +205,29 @@ function ContainerBlock({
   const maxWidth = settings.maxWidth || 1280;
   const gap = settings.gap ?? 16;
 
+  const handleDragStart = (e) => {
+    e.stopPropagation();
+    setIsDragging(true);
+    onContainerDragStart(e, container.id, containerIndex);
+  };
+
+  const handleDragEnd = (e) => {
+    e.stopPropagation();
+    setIsDragging(false);
+    onContainerDragEnd();
+  };
+
   return (
     <div
+      draggable
+      onDragStart={handleDragStart}
+      onDragEnd={handleDragEnd}
       onClick={onClick}
       onMouseEnter={onMouseEnter}
       onMouseLeave={onMouseLeave}
       className={clsx(
         "relative transition-all duration-200 group/container",
+        isDragging && "opacity-30",
         isSelected &&
           "ring-2 ring-violet-500 shadow-[0_0_0_1px_rgba(139,92,246,0.3)]",
         isHovered && !isSelected && "ring-1 ring-violet-300",
@@ -142,6 +243,29 @@ function ContainerBlock({
         marginBottom: `${styles.marginBottom ?? 0}px`,
       }}
     >
+      {/* Drag Handle for Container */}
+      <div className="absolute -left-10 top-4 opacity-0 group-hover/container:opacity-100 transition-opacity cursor-move z-10">
+        <div className="bg-violet-500 text-white p-1.5 rounded shadow-lg">
+          <svg
+            width="20"
+            height="20"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <circle cx="9" cy="5" r="1" />
+            <circle cx="9" cy="12" r="1" />
+            <circle cx="9" cy="19" r="1" />
+            <circle cx="15" cy="5" r="1" />
+            <circle cx="15" cy="12" r="1" />
+            <circle cx="15" cy="19" r="1" />
+          </svg>
+        </div>
+      </div>
+
       {/* Selection handles */}
       {isSelected && <SelectionHandles />}
 
@@ -299,6 +423,7 @@ function Column({
 function ComponentRenderer({ component }) {
   const { selectedNodeId, hoveredNodeId, setSelectedNode, setHoveredNode } =
     useBuilderStore();
+  const [isDragging, setIsDragging] = useState(false);
 
   const Component = componentRegistry[component.type];
 
@@ -314,10 +439,27 @@ function ComponentRenderer({ component }) {
   const isSelected = selectedNodeId === component.id;
   const isHovered = hoveredNodeId === component.id;
 
+  const handleDragStart = (e) => {
+    e.stopPropagation();
+    setIsDragging(true);
+    e.dataTransfer.effectAllowed = "move";
+    e.dataTransfer.setData("componentId", component.id);
+    e.dataTransfer.setData("isExisting", "true");
+  };
+
+  const handleDragEnd = (e) => {
+    e.stopPropagation();
+    setIsDragging(false);
+  };
+
   return (
     <div
+      draggable
+      onDragStart={handleDragStart}
+      onDragEnd={handleDragEnd}
       className={clsx(
-        "relative transition-all duration-200",
+        "group relative transition-all duration-200",
+        isDragging && "opacity-50",
         isSelected &&
           "ring-2 ring-blue-500 shadow-[0_0_0_1px_rgba(59,130,246,0.3)] rounded-sm",
         isHovered && !isSelected && "ring-1 ring-blue-300 rounded-sm",
@@ -328,6 +470,29 @@ function ComponentRenderer({ component }) {
       }}
       onMouseLeave={() => setHoveredNode(null)}
     >
+      {/* Drag Handle - appears on hover */}
+      <div className="absolute -left-8 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity cursor-move z-10">
+        <div className="bg-blue-500 text-white p-1 rounded shadow-lg">
+          <svg
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <circle cx="9" cy="5" r="1" />
+            <circle cx="9" cy="12" r="1" />
+            <circle cx="9" cy="19" r="1" />
+            <circle cx="15" cy="5" r="1" />
+            <circle cx="15" cy="12" r="1" />
+            <circle cx="15" cy="19" r="1" />
+          </svg>
+        </div>
+      </div>
+
       {/* Selection handles */}
       {isSelected && <SelectionHandles />}
 

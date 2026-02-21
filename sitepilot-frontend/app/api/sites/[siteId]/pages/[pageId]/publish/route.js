@@ -50,29 +50,35 @@ export async function POST(request, { params }) {
       .replace(/[^a-z0-9-]+/g, "-")
       .replace(/(^-|-$)/g, "");
 
-    // Determine filename: "/" → index.html, others → slug.html
+    // Determine filenames: "/" → index.*, others → slug.*
     const isHomePage = page.slug === "/";
-    const filename = isHomePage 
-      ? "index.html" 
-      : `${page.slug.replace(/^\//, "").replace(/\//g, "-")}.html`;
+    const baseFilename = isHomePage 
+      ? "index" 
+      : page.slug.replace(/^\//, "").replace(/\//g, "-");
+
+    const htmlFilename = `${baseFilename}.html`;
+    const cssFilename = `${baseFilename}.css`;
+    const jsFilename = `${baseFilename}.js`;
 
     const siteDir = join(process.cwd(), "public", "published", siteSlug);
-    const htmlPath = join(siteDir, filename);
+    const htmlPath = join(siteDir, htmlFilename);
+    const cssPath = join(siteDir, cssFilename);
+    const jsPath = join(siteDir, jsFilename);
 
-    // Convert page to HTML (all assets in same directory)
+    // Convert page to HTML with page-specific asset links
     const { html, css, js } = convertPageToHtml(site.theme, page, site.name, {
-      stylesHref: "styles.css",
-      scriptSrc: "script.js",
+      stylesHref: cssFilename,
+      scriptSrc: jsFilename,
     });
 
     // Ensure directory exists
     await mkdir(siteDir, { recursive: true });
 
-    // Write files — all in site root directory
+    // Write files — each page gets its own HTML, CSS, and JS
     await Promise.all([
       writeFile(htmlPath, html, "utf-8"),
-      writeFile(join(siteDir, "styles.css"), css, "utf-8"),
-      writeFile(join(siteDir, "script.js"), js, "utf-8"),
+      writeFile(cssPath, css, "utf-8"),
+      writeFile(jsPath, js, "utf-8"),
     ]);
 
     // Mark page as published in DB
@@ -81,7 +87,7 @@ export async function POST(request, { params }) {
       data: { isPublished: true, publishedAt: new Date() },
     });
 
-    const previewUrl = `/published/${siteSlug}/${filename}`;
+    const previewUrl = `/published/${siteSlug}/${htmlFilename}`;
 
     return NextResponse.json({
       success: true,
