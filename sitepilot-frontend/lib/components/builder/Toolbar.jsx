@@ -6,6 +6,7 @@
  * Dark-themed professional toolbar with undo/redo, device preview, save, publish.
  */
 
+import { useState } from "react";
 import {
   Undo2,
   Redo2,
@@ -17,6 +18,7 @@ import {
   RotateCcw,
   Layers,
   Zap,
+  Loader2,
 } from "lucide-react";
 import useUIStore from "@/lib/stores/uiStore";
 import useHistoryStore from "@/lib/stores/historyStore";
@@ -28,6 +30,7 @@ export default function Toolbar() {
   const { devicePreview, setDevicePreview } = useUIStore();
   const { canUndo, canRedo, undo, redo } = useHistoryStore();
   const { getLayoutJSON, updateLayoutJSON } = useBuilderStore();
+  const [isPublishing, setIsPublishing] = useState(false);
 
   const handleUndo = () => {
     if (canUndo) {
@@ -59,11 +62,29 @@ export default function Toolbar() {
 
   const handlePublish = async () => {
     const layoutJSON = getLayoutJSON();
+    setIsPublishing(true);
     try {
-      const result = await siteAPI.publishSite(layoutJSON);
-      alert(result.message);
+      const response = await fetch("/api/publish", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ layoutJSON }),
+      });
+      const result = await response.json();
+      if (result.success) {
+        const open = confirm(
+          `${result.message}\n\nOpen the published site in a new tab?`,
+        );
+        if (open) {
+          window.open(result.previewUrl, "_blank");
+        }
+      } else {
+        alert(`Publish failed: ${result.error}`);
+      }
     } catch (error) {
-      alert("Failed to publish");
+      console.error("Publish error:", error);
+      alert("Failed to publish — check the console for details.");
+    } finally {
+      setIsPublishing(false);
     }
   };
 
@@ -158,10 +179,23 @@ export default function Toolbar() {
 
         <button
           onClick={handlePublish}
-          className="flex items-center gap-1.5 px-4 py-1.5 bg-gradient-to-r from-blue-600 to-violet-600 text-white text-xs font-medium rounded-md hover:from-blue-500 hover:to-violet-500 transition-all shadow-md shadow-blue-500/20"
+          disabled={isPublishing}
+          className={clsx(
+            "flex items-center gap-1.5 px-4 py-1.5 bg-gradient-to-r from-blue-600 to-violet-600 text-white text-xs font-medium rounded-md hover:from-blue-500 hover:to-violet-500 transition-all shadow-md shadow-blue-500/20",
+            isPublishing && "opacity-70 cursor-wait",
+          )}
         >
-          <Eye size={14} />
-          Publish
+          {isPublishing ? (
+            <>
+              <Loader2 size={14} className="animate-spin" />
+              Publishing…
+            </>
+          ) : (
+            <>
+              <Eye size={14} />
+              Publish
+            </>
+          )}
         </button>
       </div>
     </div>
