@@ -131,7 +131,7 @@ export default function DashboardPage() {
               {ownedTenants.map((tenant) => (
                 <div
                   key={tenant.id}
-                  onClick={() => router.push(`/tenants/${tenant.id}`)}
+                  onClick={() => router.push(`/${tenant.id}`)}
                   className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow cursor-pointer"
                 >
                   <div className="flex items-start justify-between">

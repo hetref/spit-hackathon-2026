@@ -112,6 +112,29 @@ export default function PagesManagementPage() {
     }
   }
 
+  const handleSetAsHome = async (pageId) => {
+    if (!confirm('Set this page as the home page? The current home page will be moved to a different URL.')) return
+
+    try {
+      const response = await fetch(`/api/sites/${params.siteId}/pages/${pageId}/set-home`, {
+        method: 'POST'
+      })
+
+      const result = await response.json()
+      
+      if (response.ok) {
+        alert(result.message)
+        // Refresh the page list
+        fetchData()
+      } else {
+        alert(result.error || 'Failed to set as home page')
+      }
+    } catch (error) {
+      console.error('Error setting home page:', error)
+      alert('Failed to set as home page')
+    }
+  }
+
   if (isPending || loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
@@ -192,12 +215,26 @@ export default function PagesManagementPage() {
                     <div className="flex items-center gap-2">
                       {page.isPublished && (
                         <button
-                          onClick={() => window.open(`/published/${site.slug}${page.slug === '/' ? '/index.html' : page.slug + '.html'}`, '_blank')}
+                          onClick={() => window.open(`/published/${site.slug}/${page.slug === '/' ? 'index.html' : page.slug.replace(/^\//, '') + '.html'}`, '_blank')}
                           className="p-2 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded"
                           title="View Published"
                         >
                           <Globe size={18} />
                         </button>
+                      )}
+                      {page.slug !== '/' && (
+                        <button
+                          onClick={() => handleSetAsHome(page.id)}
+                          className="px-3 py-1 text-xs font-medium text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded border border-blue-200"
+                          title="Set as Home Page"
+                        >
+                          Set as Home
+                        </button>
+                      )}
+                      {page.slug === '/' && (
+                        <span className="px-3 py-1 text-xs font-medium text-green-600 bg-green-50 rounded border border-green-200">
+                          Home Page
+                        </span>
                       )}
                       <button
                         onClick={() => router.push(`/${params.tenantId}/sites/${params.siteId}/pages/${page.id}/builder`)}

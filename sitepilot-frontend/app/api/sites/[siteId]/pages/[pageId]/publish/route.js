@@ -50,30 +50,27 @@ export async function POST(request, { params }) {
       .replace(/[^a-z0-9-]+/g, "-")
       .replace(/(^-|-$)/g, "");
 
-    // Normalise page slug: "/" → root index.html at site dir
-    const pageSlug = page.slug === "/" ? null : page.slug.replace(/^\//, "");
+    // Determine filename: "/" → index.html, others → slug.html
+    const isHomePage = page.slug === "/";
+    const filename = isHomePage 
+      ? "index.html" 
+      : `${page.slug.replace(/^\//, "").replace(/\//g, "-")}.html`;
 
     const siteDir = join(process.cwd(), "public", "published", siteSlug);
-    const pageDir = pageSlug ? join(siteDir, pageSlug) : siteDir;
+    const htmlPath = join(siteDir, filename);
 
-    // Compute relative path from page HTML back to shared assets
-    const assetDepth = pageSlug ? "../" : "";
-    const stylesHref = `${assetDepth}styles.css`;
-    const scriptSrc = `${assetDepth}script.js`;
-
-    // Convert page to HTML
+    // Convert page to HTML (all assets in same directory)
     const { html, css, js } = convertPageToHtml(site.theme, page, site.name, {
-      stylesHref,
-      scriptSrc,
+      stylesHref: "styles.css",
+      scriptSrc: "script.js",
     });
 
-    // Ensure directories exist
-    await mkdir(pageDir, { recursive: true });
+    // Ensure directory exists
     await mkdir(siteDir, { recursive: true });
 
-    // Write files — shared assets at site root, HTML in page dir
+    // Write files — all in site root directory
     await Promise.all([
-      writeFile(join(pageDir, "index.html"), html, "utf-8"),
+      writeFile(htmlPath, html, "utf-8"),
       writeFile(join(siteDir, "styles.css"), css, "utf-8"),
       writeFile(join(siteDir, "script.js"), js, "utf-8"),
     ]);
@@ -84,9 +81,7 @@ export async function POST(request, { params }) {
       data: { isPublished: true, publishedAt: new Date() },
     });
 
-    const previewUrl = pageSlug
-      ? `/published/${siteSlug}/${pageSlug}/index.html`
-      : `/published/${siteSlug}/index.html`;
+    const previewUrl = `/published/${siteSlug}/${filename}`;
 
     return NextResponse.json({
       success: true,
