@@ -93,7 +93,7 @@ export async function createCloudFrontTenant({ tenantName, siteId, domains, user
         console.log(`[3/3] 🔑 Mapping domain to template in KVS...`);
         console.log(`   Mapping: ${domain} → ${COMING_SOON_PREFIX}`);
 
-        const kvsResult = await updateKVS(domain, COMING_SOON_PREFIX);
+        const kvsResult = await updateKVS(tenantName, COMING_SOON_PREFIX);
 
         if (!kvsResult.updated && !kvsResult.skipped) {
             throw new Error("Failed to map domain in Key-Value Store");
@@ -161,12 +161,16 @@ async function createDistributionTenant({
     console.log(`[CloudFront] Calling CreateDistributionTenant for: ${tenantName}`);
 
     try {
-        const command = new CreateDistributionTenantCommand({
-            TenantName: tenantName,
+        const payload = {
+            Name: tenantName,
             DistributionId: distributionId,
             ConnectionGroupId: connectionGroupId,
-            Domains: domains,
-        });
+            Domains: domains.map(d => ({ Domain: d })),
+        };
+
+        console.log(`[CloudFront] Payload:`, JSON.stringify(payload, null, 2));
+
+        const command = new CreateDistributionTenantCommand(payload);
 
         const response = await cloudfront.send(command);
         const tenant = response.DistributionTenant;
@@ -180,6 +184,7 @@ async function createDistributionTenant({
     } catch (error) {
         // Idempotency: Handle case where tenant already exists
         if (error.name === 'DistributionTenantAlreadyExists' ||
+            error.name === 'EntityAlreadyExists' ||
             error.message.includes('already exists') ||
             error.name === 'ResourceAlreadyExistsException') {
 
