@@ -120,7 +120,7 @@ model Tenant {
   sites       Site[]
   tenantUsers TenantUser[]
   invitations Invitation[]
-  forms       Form[]           // Temporary for migration
+  forms       Form[] // Temporary for migration
   owner       User         @relation("TenantOwner", fields: [ownerId], references: [id], onDelete: Cascade)
   media       Media[]
 
@@ -168,60 +168,115 @@ model Invitation {
 }
 
 model Site {
-  id             String        @id @default(uuid())
-  name           String
-  slug           String        @unique // Globally unique for <slug>.sitepilot.devally.in
-  description    String?
-  domain         String?       @unique // Custom domain (optional)
-  favicon        String?
+  id          String  @id @default(uuid())
+  name        String
+  slug        String  @unique // Globally unique for <slug>.sitepilot.devally.in
+  description String?
+  domain      String? @unique // Custom domain (optional)
+  favicon     String?
 
   // CloudFront Tenant Metadata
-  cfTenantId          String?       @unique // Logical ID or association record
-  cfTenantArn         String?       // Reference to associated CF resources
-  cfConnectionGroupId String?       // Associated connection group ID
-  cfStatus            String        @default("PROVISIONING") // PROVISIONING, LIVE, ERROR
+  cfTenantId          String? @unique // Logical ID or association record
+  cfTenantArn         String? // Reference to associated CF resources
+  cfConnectionGroupId String? // Associated connection group ID
+  cfStatus            String  @default("PROVISIONING") // PROVISIONING, LIVE, ERROR
 
   // Shared theme applied to all pages
-  theme          Json          @default("{}")
+  theme Json @default("{}")
 
   // Global settings (scripts, analytics, etc.)
-  globalSettings Json          @default("{}")
+  globalSettings Json @default("{}")
 
-  tenantId       String
-  createdAt      DateTime      @default(now())
-  updatedAt      DateTime      @updatedAt
+  tenantId  String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  pages          Page[]
-  versions       SiteVersion[]
+  pages           Page[]
+  versions        SiteVersion[]
   contentVersions ContentVersion[]
-  deployments    Deployment[]
-  forms          Form[]        // Site-specific forms
-  tenant         Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  deployments     Deployment[]
+  forms           Form[] // Site-specific forms
+  tenant          Tenant           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  customDomains   CustomDomain[]
 
   @@index([tenantId])
   @@index([slug])
   @@map("sites")
 }
 
+model CustomDomain {
+  id     String             @id @default(uuid())
+  domain String             @unique
+  status CustomDomainStatus @default(PENDING)
+
+  // DNS Verification
+  verificationToken  String    @unique @default(uuid())
+  verificationRecord String? // TXT record value
+  verifiedAt         DateTime?
+
+  // SSL Certificate (ACM)
+  certificateArn        String?   @unique
+  certificateStatus     String? // PENDING_VALIDATION, ISSUED, FAILED
+  certificateValidation Json? // ACM DNS validation records
+  certificateIssuedAt   DateTime?
+
+  // CloudFront Attachment
+  attachedToCF Boolean   @default(false)
+  attachedAt   DateTime?
+
+  // Final DNS Configuration
+  cnameTarget   String? // CloudFront endpoint to CNAME to
+  cnameVerified Boolean @default(false)
+
+  // Activation
+  activatedAt   DateTime?
+  lastCheckedAt DateTime?
+
+  // Site relation
+  siteId String
+  site   Site   @relation(fields: [siteId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([siteId])
+  @@index([status])
+  @@index([domain])
+  @@map("custom_domains")
+}
+
+enum CustomDomainStatus {
+  PENDING // Domain added, awaiting verification
+  VERIFYING // Checking DNS TXT record
+  VERIFIED // Ownership verified
+  SSL_PENDING // ACM certificate requested
+  SSL_VALIDATING // Waiting for ACM DNS validation
+  SSL_ISSUED // Certificate issued
+  ATTACHING // Attaching to CloudFront
+  DNS_PENDING // Waiting for final CNAME
+  ACTIVE // Fully active and serving
+  FAILED // Verification or setup failed
+}
+
 model Page {
-  id          String    @id @default(uuid())
-  name        String
-  slug        String    @default("/")
+  id   String @id @default(uuid())
+  name String
+  slug String @default("/")
 
   // Per-page SEO metadata
-  seo         Json      @default("{}")
+  seo Json @default("{}")
 
   // Builder layout — the containers array for this page only
-  layout      Json      @default("[]")
+  layout Json @default("[]")
 
   sortOrder   Int       @default(0)
   isPublished Boolean   @default(false)
   publishedAt DateTime?
 
-  siteId      String
-  site        Site      @relation(fields: [siteId], references: [id], onDelete: Cascade)
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  siteId    String
+  site      Site     @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@unique([siteId, slug])
   @@index([siteId])
@@ -251,37 +306,37 @@ model SiteVersion {
 }
 
 model ContentVersion {
-  id            String        @id @default(uuid())
-  versionNumber Int           @default(1)
-  pages         Json          // Array of { slug, layout, seo, name }
-  theme         Json          @default("{}")
-  globalSettings Json         @default("{}")
-  siteId        String
-  createdAt     DateTime      @default(now())
-  
-  site          Site          @relation(fields: [siteId], references: [id], onDelete: Cascade)
-  deployments   Deployment[]
+  id             String   @id @default(uuid())
+  versionNumber  Int      @default(1)
+  pages          Json // Array of { slug, layout, seo, name }
+  theme          Json     @default("{}")
+  globalSettings Json     @default("{}")
+  siteId         String
+  createdAt      DateTime @default(now())
+
+  site        Site         @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  deployments Deployment[]
 
   @@index([siteId])
   @@map("content_versions")
 }
 
 model Deployment {
-  id               String          @id @default(uuid())
-  deploymentId     String          @unique // UUID used in S3 path
-  deploymentName   String?         // User-provided friendly name
-  s3Key            String          // Full S3 key prefix: userId/businessId/siteId/deployments/{deploymentId}
-  isActive         Boolean         @default(false) // Is this the current live deployment?
-  kvsUpdated       Boolean         @default(false) // Was CloudFront KVS updated for this deployment?
-  
+  id             String  @id @default(uuid())
+  deploymentId   String  @unique // UUID used in S3 path
+  deploymentName String? // User-provided friendly name
+  s3Key          String // Full S3 key prefix: userId/businessId/siteId/deployments/{deploymentId}
+  isActive       Boolean @default(false) // Is this the current live deployment?
+  kvsUpdated     Boolean @default(false) // Was CloudFront KVS updated for this deployment?
+
   siteId           String
   contentVersionId String?
-  
-  createdAt        DateTime        @default(now())
-  updatedAt        DateTime        @updatedAt
-  
-  site             Site            @relation(fields: [siteId], references: [id], onDelete: Cascade)
-  contentVersion   ContentVersion? @relation(fields: [contentVersionId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  site           Site            @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  contentVersion ContentVersion? @relation(fields: [contentVersionId], references: [id])
 
   @@index([siteId])
   @@index([isActive])
@@ -315,28 +370,28 @@ enum InvitationStatus {
 }
 
 model Form {
-  id          String           @id @default(uuid())
+  id          String  @id @default(uuid())
   name        String
   slug        String
   description String?
-  
+
   // Form configuration (fields, validation, etc.)
-  schema      Json             @default("[]")
-  
+  schema Json @default("[]")
+
   // Form settings (submit action, email notifications, etc.)
-  settings    Json             @default("{}")
-  
-  isPublished Boolean          @default(false)
+  settings Json @default("{}")
+
+  isPublished Boolean   @default(false)
   publishedAt DateTime?
-  
+
   // Foreign keys - NOW BELONGS TO SITE
-  siteId      String?
-  site        Site?            @relation(fields: [siteId], references: [id], onDelete: Cascade)
-  
+  siteId String?
+  site   Site?   @relation(fields: [siteId], references: [id], onDelete: Cascade)
+
   // Temporary for migration - will be removed
-  tenantId    String?
-  tenant      Tenant?          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  
+  tenantId String?
+  tenant   Tenant? @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
   createdAt   DateTime         @default(now())
   updatedAt   DateTime         @updatedAt
   versions    FormVersion[]
@@ -349,21 +404,21 @@ model Form {
 }
 
 model FormSubmission {
-  id        String   @id @default(uuid())
-  
+  id String @id @default(uuid())
+
   // Submitted data (JSON)
-  data      Json
-  
+  data Json
+
   // Metadata
   ipAddress String?
   userAgent String?
-  
+
   // Foreign keys
-  formId    String
-  form      Form     @relation(fields: [formId], references: [id], onDelete: Cascade)
-  
+  formId String
+  form   Form   @relation(fields: [formId], references: [id], onDelete: Cascade)
+
   createdAt DateTime @default(now())
-  
+
   @@index([formId])
   @@index([createdAt])
   @@map("form_submissions")
@@ -373,18 +428,18 @@ model FormVersion {
   id            String        @id @default(uuid())
   versionNumber Int           @default(1)
   status        VersionStatus @default(DRAFT)
-  
+
   // Snapshot of form schema at this version
-  schema        Json          @default("[]")
-  settings      Json          @default("{}")
-  
-  name          String?
-  description   String?
-  publishedAt   DateTime?
-  formId        String
-  createdAt     DateTime      @default(now())
-  updatedAt     DateTime      @updatedAt
-  form          Form          @relation(fields: [formId], references: [id], onDelete: Cascade)
+  schema   Json @default("[]")
+  settings Json @default("{}")
+
+  name        String?
+  description String?
+  publishedAt DateTime?
+  formId      String
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  form        Form      @relation(fields: [formId], references: [id], onDelete: Cascade)
 
   @@unique([formId, versionNumber])
   @@index([formId])
@@ -394,13 +449,13 @@ model FormVersion {
 }
 
 model Media {
-  id        String   @id @default(uuid())
-  url       String
-  name      String
+  id   String @id @default(uuid())
+  url  String
+  name String
 
   // Foreign keys
-  tenantId  String
-  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  tenantId String
+  tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -408,4 +463,3 @@ model Media {
   @@index([tenantId])
   @@map("media")
 }
-
