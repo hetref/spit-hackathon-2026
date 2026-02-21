@@ -1,44 +1,49 @@
 /**
- * useAutosave – debounced persistence of Liveblocks storage → Prisma
+ * useAutosave – debounced persistence of builder layout → Prisma (Page model)
  *
- * Watches Liveblocks storage for changes, debounces by 5 s,
- * and PATCHes the SiteVersion.builderData in the database.
+ * Watches the Zustand builderStore for layoutJSON changes that originate from
+ * any user (local or synced from another user via useBuilderSync).
+ * After a debounce period (default 5 s), PUTs the current page layout to the
+ * database via  PUT /api/sites/[siteId]/pages/[pageId].
+ *
+ * Also fires one final save on unmount (page navigation / tab close).
  */
 
 'use client'
 
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { useStorage } from '@/lib/liveblocks-client'
+import useBuilderStore from '@/lib/stores/builderStore'
 
 /**
- * @param {Object} options
- * @param {string} options.siteVersionId - SiteVersion ID to save to
- * @param {number} [options.debounceMs=5000] - Debounce interval in ms
+ * @param {Object}  options
+ * @param {string}  options.siteId     - Site ID
+ * @param {string}  options.pageId     - Page ID
+ * @param {number}  [options.debounceMs=5000] - Debounce interval in ms
  */
-export function useAutosave({ siteVersionId, debounceMs = 5000 }) {
-  const builderState = useStorage((root) => root.builderState)
+export function useAutosave({ siteId, pageId, debounceMs = 5000 }) {
   const timerRef = useRef(null)
   const lastSavedRef = useRef(null)
   const [saving, setSaving] = useState(false)
   const [lastSaved, setLastSaved] = useState(null)
   const [error, setError] = useState(null)
 
+  // ── Save the current page layout to the database ────────────────────────
   const saveToDatabase = useCallback(
-    async (data) => {
-      if (!siteVersionId || !data) return
+    async (layout) => {
+      if (!siteId || !pageId || !layout) return
 
-      // Skip if data hasn't changed
-      const serialized = JSON.stringify(data)
+      // Skip if data hasn't changed since last save
+      const serialized = JSON.stringify(layout)
       if (serialized === lastSavedRef.current) return
 
       setSaving(true)
       setError(null)
 
       try {
-        const res = await fetch(`/api/site-versions/${siteVersionId}`, {
-          method: 'PATCH',
+        const res = await fetch(`/api/sites/${siteId}/pages/${pageId}`, {
+          method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ builderData: data }),
+          body: JSON.stringify({ layout }),
         })
 
         if (!res.ok) {
@@ -47,6 +52,7 @@ export function useAutosave({ siteVersionId, debounceMs = 5000 }) {
 
         lastSavedRef.current = serialized
         setLastSaved(new Date())
+        console.log('[autosave] Saved successfully')
       } catch (err) {
         console.error('[autosave] Failed to save:', err)
         setError(err.message)
@@ -54,37 +60,44 @@ export function useAutosave({ siteVersionId, debounceMs = 5000 }) {
         setSaving(false)
       }
     },
-    [siteVersionId]
+    [siteId, pageId],
   )
 
-  // Debounced watcher
+  // ── Subscribe to Zustand store and debounce saves ───────────────────────
   useEffect(() => {
-    if (!builderState) return
+    if (!siteId || !pageId) return
 
-    if (timerRef.current) {
-      clearTimeout(timerRef.current)
-    }
+    const unsubscribe = useBuilderStore.subscribe((state, prevState) => {
+      // Only react when layoutJSON reference actually changes
+      if (state.layoutJSON === prevState.layoutJSON) return
 
-    timerRef.current = setTimeout(() => {
-      saveToDatabase(builderState)
-    }, debounceMs)
+      // Extract the current page's layout array
+      const page = state.layoutJSON?.pages?.find((p) => p.id === state.currentPageId)
+      if (!page) return
+
+      if (timerRef.current) clearTimeout(timerRef.current)
+
+      timerRef.current = setTimeout(() => {
+        saveToDatabase(page.layout)
+      }, debounceMs)
+    })
 
     return () => {
-      if (timerRef.current) {
-        clearTimeout(timerRef.current)
-      }
+      unsubscribe()
+      if (timerRef.current) clearTimeout(timerRef.current)
     }
-  }, [builderState, debounceMs, saveToDatabase])
+  }, [siteId, pageId, debounceMs, saveToDatabase])
 
-  // Flush on unmount
+  // ── Flush on unmount (page navigation) ──────────────────────────────────
   useEffect(() => {
     return () => {
-      if (timerRef.current) {
-        clearTimeout(timerRef.current)
-      }
-      // Fire one final save
-      if (builderState) {
-        saveToDatabase(builderState)
+      if (timerRef.current) clearTimeout(timerRef.current)
+
+      // Final save with the latest data
+      const state = useBuilderStore.getState()
+      const page = state.layoutJSON?.pages?.find((p) => p.id === state.currentPageId)
+      if (page) {
+        saveToDatabase(page.layout)
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
