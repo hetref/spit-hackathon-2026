@@ -9,6 +9,7 @@ import CanvasArea from "@/lib/components/builder/CanvasArea";
 import CollaborativeCanvas from "@/components/builder/CollaborativeCanvas";
 import useBuilderStore from "@/lib/stores/builderStore";
 import useHistoryStore from "@/lib/stores/historyStore";
+import { useAutosave } from "@/lib/hooks/useAutosave";
 import { useSession } from "@/lib/auth-client";
 import { getCursorColor } from "@/liveblocks.config";
 
@@ -21,6 +22,9 @@ export default function PageBuilderPage() {
   const { initialize: initializeHistory } = useHistoryStore();
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState(null);
+
+  // ── Autosave: watches Zustand layoutJSON changes, debounced 5 s ──────────
+  const { saving, lastSaved, error: saveError } = useAutosave({ siteId, pageId });
 
   useEffect(() => {
     const loadPage = async () => {
@@ -111,7 +115,7 @@ export default function PageBuilderPage() {
       userColor={userColor}
     >
       <div className="h-screen flex flex-col bg-white">
-        <Toolbar />
+        <Toolbar saving={saving} lastSaved={lastSaved} saveError={saveError} />
         <div className="flex-1 flex overflow-hidden">
           <LeftSidebar />
           <CanvasArea />
