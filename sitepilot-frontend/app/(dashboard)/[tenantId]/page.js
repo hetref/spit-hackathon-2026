@@ -2,6 +2,8 @@
 import { useEffect, useState } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import { useSession } from '@/lib/auth-client'
+import RoleGate from '@/components/RoleGate'
+import { ROLE_COLORS, ROLE_LABELS } from '@/lib/permissions'
 
 export default function TenantDashboardPage() {
   const router = useRouter()
@@ -128,7 +130,7 @@ export default function TenantDashboardPage() {
   }
 
   const copyInvitationLink = async (token) => {
-    const invitationUrl = `${window.location.origin}/invitations/${token}`
+    const invitationUrl = `${window.location.origin}/api/invitations/${token}/accept`
     try {
       await navigator.clipboard.writeText(invitationUrl)
       setCopiedId(token)
@@ -211,12 +213,14 @@ export default function TenantDashboardPage() {
                 View All →
               </button>
             </div>
-            <p className="text-gray-600 text-sm mb-4">Create and manage your websites</p>
+            <p className="text-gray-600 text-sm mb-4">
+              {userRole === 'VIEWER' ? 'View your websites' : 'Create and manage your websites'}
+            </p>
             <button
               onClick={() => router.push(`/${params.tenantId}/sites`)}
               className="w-full px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
             >
-              Manage Sites
+              {userRole === 'VIEWER' ? 'View Sites' : 'Manage Sites'}
             </button>
           </div>
 
@@ -230,12 +234,14 @@ export default function TenantDashboardPage() {
                 View All →
               </button>
             </div>
-            <p className="text-gray-600 text-sm mb-4">Build custom forms with our form builder</p>
+            <p className="text-gray-600 text-sm mb-4">
+              {userRole === 'VIEWER' ? 'View forms' : 'Build custom forms with our form builder'}
+            </p>
             <button
               onClick={() => router.push(`/${params.tenantId}/forms`)}
               className="w-full px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
             >
-              Manage Forms
+              {userRole === 'VIEWER' ? 'View Forms' : 'Manage Forms'}
             </button>
           </div>
         </div>
@@ -244,14 +250,14 @@ export default function TenantDashboardPage() {
         <div className="bg-white rounded-lg shadow mb-8">
           <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
             <h2 className="text-lg font-semibold text-gray-900">Team Members</h2>
-            {userRole === 'OWNER' && (
+            <RoleGate role={userRole} permission="members:invite">
               <button
                 onClick={() => setShowAddMember(true)}
                 className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
               >
                 + Invite Member
               </button>
-            )}
+            </RoleGate>
           </div>
 
           {/* Success Message */}
@@ -285,6 +291,7 @@ export default function TenantDashboardPage() {
                     className="px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
                   >
                     <option value="EDITOR">Editor</option>
+                    <option value="VIEWER">Viewer</option>
                     <option value="OWNER">Owner</option>
                   </select>
                   <div className="flex gap-2">
@@ -337,20 +344,19 @@ export default function TenantDashboardPage() {
                   </div>
                 </div>
                 <div className="flex items-center gap-4">
-                  <span className={`px-3 py-1 rounded-full text-xs font-semibold ${member.role === 'OWNER'
-                      ? 'bg-purple-100 text-purple-800'
-                      : 'bg-blue-100 text-blue-800'
-                    }`}>
-                    {member.role}
+                  <span className={`px-3 py-1 rounded-full text-xs font-semibold ${ROLE_COLORS[member.role] || 'bg-gray-100 text-gray-700'}`}>
+                    {ROLE_LABELS[member.role] || member.role}
                   </span>
-                  {userRole === 'OWNER' && member.userId !== tenant.ownerId && (
-                    <button
-                      onClick={() => handleRemoveMember(member.userId)}
-                      className="text-red-600 hover:text-red-800 text-sm"
-                    >
-                      Remove
-                    </button>
-                  )}
+                  <RoleGate role={userRole} permission="members:remove">
+                    {member.userId !== tenant.ownerId && (
+                      <button
+                        onClick={() => handleRemoveMember(member.userId)}
+                        className="text-red-600 hover:text-red-800 text-sm"
+                      >
+                        Remove
+                      </button>
+                    )}
+                  </RoleGate>
                 </div>
               </div>
             ))}
@@ -358,7 +364,8 @@ export default function TenantDashboardPage() {
         </div>
 
         {/* Pending Invitations */}
-        {invitations.length > 0 && (
+        <RoleGate role={userRole} permission="members:invite">
+          {invitations.length > 0 && (
           <div className="bg-white rounded-lg shadow">
             <div className="px-6 py-4 border-b border-gray-200">
               <h2 className="text-lg font-semibold text-gray-900">Pending Invitations</h2>
@@ -391,6 +398,7 @@ export default function TenantDashboardPage() {
             </div>
           </div>
         )}
+        </RoleGate>
       </div>
     </div>
   )

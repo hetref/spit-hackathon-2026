@@ -243,6 +243,7 @@ model SiteVersion {
 enum Role {
   OWNER
   EDITOR
+  VIEWER
 }
 
 enum PlanType {

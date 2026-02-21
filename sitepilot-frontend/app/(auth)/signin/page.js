@@ -51,7 +51,7 @@ export default function SignInPage() {
           </h2>
           <p className="mt-2 text-center text-sm text-gray-600">
             Don't have an account?{' '}
-            <a href="/auth/signup" className="font-medium text-blue-600 hover:text-blue-500">
+            <a href={redirectUrl ? `/signup?redirect=${encodeURIComponent(redirectUrl)}` : '/signup'} className="font-medium text-blue-600 hover:text-blue-500">
               Sign up
             </a>
           </p>

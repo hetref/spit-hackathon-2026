@@ -7,12 +7,14 @@ import {
   Globe,
   Plus,
   Pencil,
+  Eye,
   Trash2,
   ExternalLink,
   Loader2,
   X,
   AlertCircle,
 } from "lucide-react";
+import { hasPermission } from "@/lib/permissions";
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
@@ -181,9 +183,11 @@ function CreateSiteModal({ tenantId, onClose, onCreated }) {
 
 // ─── Site Card ───────────────────────────────────────────────────────────────
 
-function SiteCard({ site, tenantId, onDelete, router }) {
+function SiteCard({ site, tenantId, onDelete, router, userRole }) {
   const publishedCount = site.pages?.filter((p) => p.isPublished).length ?? 0;
   const totalPages = site._count?.pages ?? site.pages?.length ?? 0;
+  const canEdit = hasPermission(userRole, 'sites:edit');
+  const canDelete = hasPermission(userRole, 'sites:delete');
 
   const openBuilder = () => {
     const firstPage = site.pages?.[0];
@@ -243,13 +247,23 @@ function SiteCard({ site, tenantId, onDelete, router }) {
 
         {/* Actions */}
         <div className="flex items-center gap-2 mt-4">
-          <button
-            onClick={openBuilder}
-            className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 transition-colors"
-          >
-            <Pencil size={14} />
-            Edit in builder
-          </button>
+          {canEdit ? (
+            <button
+              onClick={openBuilder}
+              className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 transition-colors"
+            >
+              <Pencil size={14} />
+              Edit in builder
+            </button>
+          ) : (
+            <button
+              onClick={() => router.push(`/${tenantId}/sites/${site.id}`)}
+              className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 bg-gray-100 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-200 transition-colors"
+            >
+              <Eye size={14} />
+              View site
+            </button>
+          )}
           {site.domain && (
             <a
               href={`https://${site.domain}`}
@@ -261,13 +275,15 @@ function SiteCard({ site, tenantId, onDelete, router }) {
               <ExternalLink size={15} />
             </a>
           )}
-          <button
-            onClick={() => onDelete(site)}
-            className="p-2 border border-gray-200 text-gray-400 rounded-lg hover:bg-red-50 hover:border-red-200 hover:text-red-500 transition-colors"
-            title="Delete site"
-          >
-            <Trash2 size={15} />
-          </button>
+          {canDelete && (
+            <button
+              onClick={() => onDelete(site)}
+              className="p-2 border border-gray-200 text-gray-400 rounded-lg hover:bg-red-50 hover:border-red-200 hover:text-red-500 transition-colors"
+              title="Delete site"
+            >
+              <Trash2 size={15} />
+            </button>
+          )}
         </div>
       </div>
     </div>
@@ -288,14 +304,32 @@ export default function SitesPage() {
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState("");
+  const [userRole, setUserRole] = useState(null);
+
+  const canCreate = hasPermission(userRole, 'sites:create');
 
   useEffect(() => {
     if (!isPending && !session) router.push("/auth/signin");
   }, [session, isPending, router]);
 
   useEffect(() => {
-    if (session && tenantId) fetchSites();
+    if (session && tenantId) {
+      fetchSites();
+      fetchUserRole();
+    }
   }, [session, tenantId]);
+
+  const fetchUserRole = async () => {
+    try {
+      const res = await fetch(`/api/tenants/${tenantId}`);
+      if (res.ok) {
+        const data = await res.json();
+        setUserRole(data.userRole);
+      }
+    } catch (err) {
+      console.error('Error fetching role:', err);
+    }
+  };
 
   const fetchSites = async () => {
     setLoading(true);
@@ -355,13 +389,15 @@ export default function SitesPage() {
               workspace
             </p>
           </div>
-          <button
-            onClick={() => setShowCreate(true)}
-            className="flex items-center gap-2 px-4 py-2.5 bg-indigo-600 text-white text-sm font-medium rounded-xl hover:bg-indigo-700 transition-colors shadow-sm shadow-indigo-200"
-          >
-            <Plus size={16} />
-            New site
-          </button>
+          {canCreate && (
+            <button
+              onClick={() => setShowCreate(true)}
+              className="flex items-center gap-2 px-4 py-2.5 bg-indigo-600 text-white text-sm font-medium rounded-xl hover:bg-indigo-700 transition-colors shadow-sm shadow-indigo-200"
+            >
+              <Plus size={16} />
+              New site
+            </button>
+          )}
         </div>
 
         {error && (
@@ -379,15 +415,17 @@ export default function SitesPage() {
               No sites yet
             </h3>
             <p className="text-sm text-gray-400 mb-6">
-              Create your first site to get started.
+              {canCreate ? 'Create your first site to get started.' : 'No sites have been created yet.'}
             </p>
-            <button
-              onClick={() => setShowCreate(true)}
-              className="inline-flex items-center gap-2 px-5 py-2.5 bg-indigo-600 text-white text-sm font-medium rounded-xl hover:bg-indigo-700 transition-colors"
-            >
-              <Plus size={15} />
-              Create site
-            </button>
+            {canCreate && (
+              <button
+                onClick={() => setShowCreate(true)}
+                className="inline-flex items-center gap-2 px-5 py-2.5 bg-indigo-600 text-white text-sm font-medium rounded-xl hover:bg-indigo-700 transition-colors"
+              >
+                <Plus size={15} />
+                Create site
+              </button>
+            )}
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
@@ -398,6 +436,7 @@ export default function SitesPage() {
                 tenantId={tenantId}
                 onDelete={setDeleteTarget}
                 router={router}
+                userRole={userRole}
               />
             ))}
           </div>
