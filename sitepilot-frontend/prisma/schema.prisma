@@ -115,6 +115,7 @@ model Tenant {
   tokenUsage  Int          @default(0)
   tokenLimit  Int          @default(10000)
   ownerId     String
+  brandKit    Json?        @default("{}")
   createdAt   DateTime     @default(now())
   updatedAt   DateTime     @updatedAt
   sites       Site[]

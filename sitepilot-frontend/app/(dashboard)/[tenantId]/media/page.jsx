@@ -21,15 +21,35 @@ export default function MediaLibraryPage() {
   const [searchQuery, setSearchQuery] = useState('')
   const [isUploading, setIsUploading] = useState(false)
   const [previewImage, setPreviewImage] = useState(null)
+  const [loading, setLoading] = useState(true)
   const fileInputRef = useRef(null)
 
-  // Initialize and persist mock storage
+  // Fetch media from API
   useEffect(() => {
-    const localMedia = localStorage.getItem(`sitepilot_media_${params.tenantId}`)
-    if (localMedia) {
-      setImages(JSON.parse(localMedia))
-    }
+    fetchMedia()
   }, [params.tenantId])
+
+  async function fetchMedia() {
+    try {
+      setLoading(true)
+      const res = await fetch(`/api/tenants/${params.tenantId}/media`)
+      if (!res.ok) throw new Error('Failed to fetch media')
+      
+      const data = await res.json()
+      if (data.success && data.media) {
+        setImages(data.media.map(m => ({
+          id: m.id,
+          url: m.url,
+          name: m.name,
+          date: new Date(m.createdAt).toLocaleDateString()
+        })))
+      }
+    } catch (error) {
+      console.error('Error fetching media:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
 
   const handleFileUpload = async (e) => {
     const file = e.target.files[0]
@@ -40,24 +60,17 @@ export default function MediaLibraryPage() {
     formData.append('file', file)
 
     try {
-      const res = await fetch('/api/upload', {
+      const res = await fetch(`/api/tenants/${params.tenantId}/media`, {
         method: 'POST',
         body: formData,
       })
 
       const data = await res.json()
       
-      if (data.success && data.url) {
-        const newImage = {
-          id: Date.now().toString(),
-          url: data.url,
-          name: data.fileName || file.name,
-          date: new Date().toLocaleDateString()
-        }
-        
-        const nextState = [newImage, ...images]
-        setImages(nextState)
-        localStorage.setItem(`sitepilot_media_${params.tenantId}`, JSON.stringify(nextState))
+      if (data.success) {
+        // Refresh media list
+        await fetchMedia()
+        alert('File uploaded successfully!')
       } else {
         alert(data.error || 'Upload failed')
       }
@@ -74,12 +87,24 @@ export default function MediaLibraryPage() {
 
   const triggerUpload = () => fileInputRef.current?.click()
 
-  const handleDelete = (id, e) => {
+  const handleDelete = async (id, e) => {
     e.stopPropagation()
     if (confirm('Are you sure you want to delete this media asset?')) {
-      const nextState = images.filter(img => img.id !== id)
-      setImages(nextState)
-      localStorage.setItem(`sitepilot_media_${params.tenantId}`, JSON.stringify(nextState))
+      try {
+        const res = await fetch(`/api/tenants/${params.tenantId}/media/${id}`, {
+          method: 'DELETE',
+        })
+
+        if (!res.ok) {
+          throw new Error('Failed to delete media')
+        }
+
+        // Refresh media list
+        await fetchMedia()
+      } catch (error) {
+        console.error('Error deleting media:', error)
+        alert('Failed to delete media')
+      }
     }
   }
 
@@ -159,7 +184,12 @@ export default function MediaLibraryPage() {
         </div>
 
         {/* Media Grid / Empty State */}
-        {filteredImages.length === 0 ? (
+        {loading ? (
+          <div className="py-32 text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-4 border-gray-100 border-t-[#0b1411] mx-auto mb-4" />
+            <p className="text-sm font-bold text-gray-500 uppercase tracking-widest">Loading media...</p>
+          </div>
+        ) : filteredImages.length === 0 ? (
           <div className="py-32 text-center border border-gray-200 rounded-[2.5rem] bg-[#fcfdfc] border-dashed px-6 flex flex-col items-center">
              <div className="h-24 w-24 rounded-[2.5rem] bg-gray-50 border border-gray-100 flex items-center justify-center mb-8 shadow-inner">
                <FolderOpen size={40} className="text-gray-300" />

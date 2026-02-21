@@ -164,9 +164,12 @@ export async function POST(request, { params }) {
 
         return NextResponse.json({
             success: true,
+            url: presignedUrl, // Presigned URL for immediate display
+            s3Key: s3Key, // S3 key for permanent storage
             media: {
                 ...mediaRecord,
-                url: presignedUrl
+                url: presignedUrl,
+                s3Key: s3Key
             }
         });
 

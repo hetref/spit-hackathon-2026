@@ -14,7 +14,8 @@ import {
     ChevronDown,
     Menu,
     X,
-    Image as ImageIcon
+    Image as ImageIcon,
+    Palette
 } from "lucide-react"
 
 import {
@@ -76,6 +77,7 @@ export default function TenantLayout({ children }) {
         { label: 'Overview', icon: LayoutDashboard, href: `/${tenantId}` },
         { label: 'Sites', icon: Globe, href: `/${tenantId}/sites` },
         ...(sitesId ? [{ label: 'Forms', icon: LayoutTemplate, href: `/${tenantId}/sites/${sitesId}/forms` }] : []),
+        { label: 'Branding', icon: Palette, href: `/${tenantId}/branding` },
         { label: 'Media', icon: ImageIcon, href: `/${tenantId}/media` },
         { label: 'Members', icon: Users, href: `/${tenantId}/members` },
         { label: 'Settings', icon: Settings, href: `/${tenantId}/settings` },
