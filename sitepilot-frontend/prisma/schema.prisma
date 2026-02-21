@@ -192,6 +192,7 @@ model Site {
 
   pages          Page[]
   versions       SiteVersion[]
+  contentVersions ContentVersion[]
   deployments    Deployment[]
   forms          Form[]        // Site-specific forms
   tenant         Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
@@ -248,17 +249,38 @@ model SiteVersion {
   @@map("site_versions")
 }
 
+model ContentVersion {
+  id            String        @id @default(uuid())
+  versionNumber Int           @default(1)
+  pages         Json          // Array of { slug, layout, seo, name }
+  theme         Json          @default("{}")
+  globalSettings Json         @default("{}")
+  siteId        String
+  createdAt     DateTime      @default(now())
+  
+  site          Site          @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  deployments   Deployment[]
+
+  @@index([siteId])
+  @@map("content_versions")
+}
+
 model Deployment {
-  id             String   @id @default(uuid())
-  deploymentId   String   @unique // UUID used in S3 path
-  deploymentName String?  // User-provided friendly name
-  s3Key          String   // Full S3 key prefix: userId/businessId/siteId/deployments/{deploymentId}
-  isActive       Boolean  @default(false) // Is this the current live deployment?
-  kvsUpdated     Boolean  @default(false) // Was CloudFront KVS updated for this deployment?
-  siteId         String
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
-  site           Site     @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  id               String          @id @default(uuid())
+  deploymentId     String          @unique // UUID used in S3 path
+  deploymentName   String?         // User-provided friendly name
+  s3Key            String          // Full S3 key prefix: userId/businessId/siteId/deployments/{deploymentId}
+  isActive         Boolean         @default(false) // Is this the current live deployment?
+  kvsUpdated       Boolean         @default(false) // Was CloudFront KVS updated for this deployment?
+  
+  siteId           String
+  contentVersionId String?
+  
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+  
+  site             Site            @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  contentVersion   ContentVersion? @relation(fields: [contentVersionId], references: [id])
 
   @@index([siteId])
   @@index([isActive])

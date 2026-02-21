@@ -91,9 +91,7 @@ async function uploadFile(key, body, contentType) {
  * @param {string} params.businessId
  * @param {string} params.siteId
  * @param {string} params.deploymentId  - UUID for this deployment
- * @param {string} params.html          - index.html content
- * @param {string} params.css           - styles.css content
- * @param {string} params.js            - script.js content
+ * @param {Array} params.files          - Array of { path, content, contentType }
  * @returns {{ s3Prefix: string, keys: string[] }}
  */
 export async function uploadDeploymentToS3({
@@ -101,22 +99,19 @@ export async function uploadDeploymentToS3({
     businessId,
     siteId,
     deploymentId,
-    html,
-    css,
-    js,
+    files,
 }) {
-    if (!userId || !businessId || !siteId || !deploymentId) {
+    if (!userId || !businessId || !siteId || !deploymentId || !files) {
         throw new Error("Missing required upload parameters");
     }
 
     const prefix = buildDeploymentPrefix(userId, businessId, siteId, deploymentId);
 
     // Upload all files concurrently
-    const uploads = await Promise.all([
-        uploadFile(`${prefix}/index.html`, html, "text/html; charset=utf-8"),
-        uploadFile(`${prefix}/styles.css`, css, "text/css; charset=utf-8"),
-        uploadFile(`${prefix}/script.js`, js, "application/javascript; charset=utf-8"),
-    ]);
+    const uploadPromises = files.map(f =>
+        uploadFile(`${prefix}/${f.path}`, f.content, f.contentType)
+    );
+    const uploads = await Promise.all(uploadPromises);
 
     return {
         s3Prefix: prefix,
@@ -206,5 +201,51 @@ export async function verifyDeploymentExists(s3Prefix) {
         return true;
     } catch {
         return false;
+    }
+}
+
+// ─── Delete deployment from S3 ────────────────────────────────────────────────
+
+import { ListObjectsV2Command, DeleteObjectsCommand } from "@aws-sdk/client-s3";
+
+/**
+ * Delete all files for a deployment from S3.
+ * Used when rolling back from a deployment to completely remove it.
+ *
+ * @param {string} s3Prefix
+ */
+export async function deleteDeploymentFromS3(s3Prefix) {
+    if (!BUCKET) throw new Error("AWS_S3_BUCKET env var is not set");
+    if (!s3Prefix || s3Prefix.length < 10) throw new Error("Invalid S3 prefix for deletion");
+
+    try {
+        // List all objects under the prefix
+        const listCmd = new ListObjectsV2Command({
+            Bucket: BUCKET,
+            Prefix: s3Prefix + "/",
+        });
+        const listedObjects = await s3.send(listCmd);
+
+        if (!listedObjects.Contents || listedObjects.Contents.length === 0) {
+            return;
+        }
+
+        // Delete them
+        const deleteParams = {
+            Bucket: BUCKET,
+            Delete: { Objects: [] },
+        };
+
+        listedObjects.Contents.forEach(({ Key }) => {
+            deleteParams.Delete.Objects.push({ Key });
+        });
+
+        const deleteCmd = new DeleteObjectsCommand(deleteParams);
+        await s3.send(deleteCmd);
+
+        // If list was truncated, we would need to recurse, but deployments are small here.
+    } catch (error) {
+        console.error("[S3] Failed to delete deployment:", error);
+        throw error;
     }
 }

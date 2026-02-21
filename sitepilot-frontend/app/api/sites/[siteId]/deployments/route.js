@@ -36,9 +36,20 @@ export async function GET(request, { params }) {
         const deployments = await prisma.deployment.findMany({
             where: { siteId },
             orderBy: { createdAt: "desc" },
+            include: { contentVersion: true },
         });
 
-        return NextResponse.json({ deployments, total: deployments.length });
+        const formattedDeployments = deployments.map(dep => ({
+            id: dep.id,
+            deploymentId: dep.deploymentId,
+            deploymentName: dep.deploymentName,
+            createdAt: dep.createdAt,
+            isLive: dep.isActive,
+            contentVersionId: dep.contentVersionId,
+            versionNumber: dep.contentVersion?.versionNumber,
+        }));
+
+        return NextResponse.json({ deployments: formattedDeployments, total: deployments.length });
     } catch (error) {
         console.error("GET /api/sites/[siteId]/deployments error:", error);
         return NextResponse.json(

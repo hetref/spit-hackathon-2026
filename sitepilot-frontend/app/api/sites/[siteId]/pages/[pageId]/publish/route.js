@@ -44,58 +44,18 @@ export async function POST(request, { params }) {
       return NextResponse.json({ error: "Page not found" }, { status: 404 });
     }
 
-    // Determine output paths
-    const siteSlug = site.slug
-      .toLowerCase()
-      .replace(/[^a-z0-9-]+/g, "-")
-      .replace(/(^-|-$)/g, "");
-
-    // Determine filenames: "/" → index.*, others → slug.*
-    const isHomePage = page.slug === "/";
-    const baseFilename = isHomePage 
-      ? "index" 
-      : page.slug.replace(/^\//, "").replace(/\//g, "-");
-
-    const htmlFilename = `${baseFilename}.html`;
-    const cssFilename = `${baseFilename}.css`;
-    const jsFilename = `${baseFilename}.js`;
-
-    const siteDir = join(process.cwd(), "public", "published", siteSlug);
-    const htmlPath = join(siteDir, htmlFilename);
-    const cssPath = join(siteDir, cssFilename);
-    const jsPath = join(siteDir, jsFilename);
-
-    // Convert page to HTML with page-specific asset links (async now)
-    const { html, css, js } = await convertPageToHtml(site.theme, page, site.name, {
-      stylesHref: cssFilename,
-      scriptSrc: jsFilename,
-    });
-
-    // Ensure directory exists
-    await mkdir(siteDir, { recursive: true });
-
-    // Write files — each page gets its own HTML, CSS, and JS
-    await Promise.all([
-      writeFile(htmlPath, html, "utf-8"),
-      writeFile(cssPath, css, "utf-8"),
-      writeFile(jsPath, js, "utf-8"),
-    ]);
-
     // Mark page as published in DB
     await prisma.page.update({
       where: { id: pageId },
       data: { isPublished: true, publishedAt: new Date() },
     });
 
-    const previewUrl = `/published/${siteSlug}/${htmlFilename}`;
-
     return NextResponse.json({
       success: true,
-      message: "Page published successfully!",
-      previewUrl,
+      message: "Page published successfully! It will be included in the next site deployment.",
     });
   } catch (error) {
-    console.error("Publish error:", error);
+    console.error("Page publish error:", error);
     return NextResponse.json(
       { success: false, error: error.message || "Failed to publish page." },
       { status: 500 },
