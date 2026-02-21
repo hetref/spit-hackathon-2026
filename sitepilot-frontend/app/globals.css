@@ -251,3 +251,37 @@
 .animate-pulse-slow {
   animation: pulse-slow 4s ease-in-out infinite;
 }
+
+/* Ensure canvas always renders with dark text */
+.builder-canvas * {
+  color: inherit;
+}
+
+/* ── Builder-wide polish ─────────────────────────────────────────────── */
+
+/* Smooth transitions for all interactive canvas elements */
+.builder-canvas [class*="ring-"],
+.builder-canvas [class*="outline-"] {
+  transition: box-shadow 150ms ease, outline 150ms ease;
+}
+
+/* Custom scrollbar for sidebars */
+.builder-sidebar::-webkit-scrollbar {
+  width: 5px;
+}
+.builder-sidebar::-webkit-scrollbar-track {
+  background: transparent;
+}
+.builder-sidebar::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.4);
+  border-radius: 9999px;
+}
+.builder-sidebar::-webkit-scrollbar-thumb:hover {
+  background: rgba(148, 163, 184, 0.7);
+}
+
+/* Canvas dot-grid background */
+.canvas-grid {
+  background-image: radial-gradient(circle, #e2e8f0 0.8px, transparent 0.8px);
+  background-size: 20px 20px;
+}

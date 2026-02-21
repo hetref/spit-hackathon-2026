@@ -1,0 +1,229 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id               String       @id
+  email            String       @unique
+  emailVerified    Boolean
+  name             String?
+  image            String?
+  createdAt        DateTime
+  updatedAt        DateTime
+  twoFactorEnabled Boolean?
+  accounts         Account[]
+  passkeys         Passkey[]
+  sessions         Session[]
+  tenantUsers      TenantUser[]
+  ownedTenants     Tenant[]     @relation("TenantOwner")
+  twoFactors       TwoFactor[]
+
+  @@index([email])
+  @@map("user")
+}
+
+model Session {
+  id        String   @id
+  expiresAt DateTime
+  token     String   @unique
+  ipAddress String?
+  userAgent String?
+  userId    String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("session")
+}
+
+model Account {
+  id                   String    @id
+  accountId            String
+  providerId           String
+  userId               String
+  accessToken          String?
+  refreshToken         String?
+  idToken              String?
+  expiresAt            DateTime?
+  password             String?
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+  accessTokenExpiresAt DateTime?
+  scope                String?
+  user                 User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("account")
+}
+
+model Verification {
+  id         String   @id
+  identifier String
+  value      String
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@map("verification")
+}
+
+model TwoFactor {
+  id          String   @id
+  secret      String
+  backupCodes String
+  userId      String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("twoFactor")
+}
+
+model Passkey {
+  id                   String   @id
+  name                 String?
+  publicKey            String
+  userId               String
+  webauthnUserID       String
+  counter              Int
+  deviceType           String
+  backedUp             Boolean
+  transports           String?
+  credentialDeviceType String?
+  credentialBackedUp   Boolean?
+  createdAt            DateTime @default(now())
+  user                 User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("passkey")
+}
+
+model Tenant {
+  id          String       @id @default(uuid())
+  name        String
+  slug        String       @unique
+  description String?
+  logo        String?
+  plan        PlanType     @default(FREE)
+  tokenUsage  Int          @default(0)
+  tokenLimit  Int          @default(10000)
+  ownerId     String
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  sites       Site[]
+  tenantUsers TenantUser[]
+  invitations Invitation[]
+  owner       User         @relation("TenantOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+
+  @@index([slug])
+  @@index([ownerId])
+  @@map("tenants")
+}
+
+model TenantUser {
+  id        String   @id @default(uuid())
+  role      Role     @default(EDITOR)
+  userId    String
+  tenantId  String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, tenantId])
+  @@index([userId])
+  @@index([tenantId])
+  @@index([role])
+  @@map("tenant_users")
+}
+
+model Invitation {
+  id        String           @id @default(uuid())
+  email     String
+  role      Role             @default(EDITOR)
+  status    InvitationStatus @default(PENDING)
+  token     String           @unique @default(uuid())
+  tenantId  String
+  invitedBy String
+  expiresAt DateTime
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
+  tenant    Tenant           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@unique([email, tenantId])
+  @@index([tenantId])
+  @@index([email])
+  @@index([token])
+  @@index([status])
+  @@map("invitations")
+}
+
+model Site {
+  id          String        @id @default(uuid())
+  name        String
+  slug        String
+  description String?
+  domain      String?       @unique
+  favicon     String?
+  tenantId    String
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  versions    SiteVersion[]
+  tenant      Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, slug])
+  @@index([tenantId])
+  @@index([slug])
+  @@map("sites")
+}
+
+model SiteVersion {
+  id            String        @id @default(uuid())
+  versionNumber Int           @default(1)
+  status        VersionStatus @default(DRAFT)
+  builderData   Json
+  name          String?
+  description   String?
+  publishedAt   DateTime?
+  siteId        String
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  site          Site          @relation(fields: [siteId], references: [id], onDelete: Cascade)
+
+  @@unique([siteId, versionNumber])
+  @@index([siteId])
+  @@index([status])
+  @@index([publishedAt])
+  @@map("site_versions")
+}
+
+enum Role {
+  OWNER
+  EDITOR
+}
+
+enum PlanType {
+  FREE
+  STARTER
+  PRO
+  ENTERPRISE
+}
+
+enum VersionStatus {
+  DRAFT
+  PUBLISHED
+}
+
+enum InvitationStatus {
+  PENDING
+  ACCEPTED
+  EXPIRED
+  CANCELLED
+}
