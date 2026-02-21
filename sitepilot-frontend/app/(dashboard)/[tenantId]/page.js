@@ -181,6 +181,47 @@ export default function TenantDashboardPage() {
           </div>
         </div>
 
+        {/* Quick Actions */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+          <div className="bg-white rounded-lg shadow p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-gray-900">Sites</h3>
+              <button
+                onClick={() => router.push(`/${params.tenantId}/sites`)}
+                className="text-blue-600 hover:text-blue-700 text-sm font-medium"
+              >
+                View All →
+              </button>
+            </div>
+            <p className="text-gray-600 text-sm mb-4">Create and manage your websites</p>
+            <button
+              onClick={() => router.push(`/${params.tenantId}/sites`)}
+              className="w-full px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+            >
+              Manage Sites
+            </button>
+          </div>
+
+          <div className="bg-white rounded-lg shadow p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-gray-900">Forms</h3>
+              <button
+                onClick={() => router.push(`/${params.tenantId}/forms`)}
+                className="text-blue-600 hover:text-blue-700 text-sm font-medium"
+              >
+                View All →
+              </button>
+            </div>
+            <p className="text-gray-600 text-sm mb-4">Build custom forms with our form builder</p>
+            <button
+              onClick={() => router.push(`/${params.tenantId}/forms`)}
+              className="w-full px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
+            >
+              Manage Forms
+            </button>
+          </div>
+        </div>
+
         {/* Members Section */}
         <div className="bg-white rounded-lg shadow mb-8">
           <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
@@ -278,11 +319,10 @@ export default function TenantDashboardPage() {
                   </div>
                 </div>
                 <div className="flex items-center gap-4">
-                  <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
-                    member.role === 'OWNER' 
-                      ? 'bg-purple-100 text-purple-800' 
+                  <span className={`px-3 py-1 rounded-full text-xs font-semibold ${member.role === 'OWNER'
+                      ? 'bg-purple-100 text-purple-800'
                       : 'bg-blue-100 text-blue-800'
-                  }`}>
+                    }`}>
                     {member.role}
                   </span>
                   {userRole === 'OWNER' && member.userId !== tenant.ownerId && (

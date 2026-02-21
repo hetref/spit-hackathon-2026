@@ -118,6 +118,7 @@ model Tenant {
   createdAt   DateTime     @default(now())
   updatedAt   DateTime     @updatedAt
   sites       Site[]
+  forms       Form[]
   tenantUsers TenantUser[]
   invitations Invitation[]
   owner       User         @relation("TenantOwner", fields: [ownerId], references: [id], onDelete: Cascade)
@@ -261,4 +262,41 @@ enum InvitationStatus {
   ACCEPTED
   EXPIRED
   CANCELLED
+}
+
+model Form {
+  id          String        @id @default(uuid())
+  name        String
+  slug        String
+  description String?
+  tenantId    String
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  versions    FormVersion[]
+  tenant      Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, slug])
+  @@index([tenantId])
+  @@index([slug])
+  @@map("forms")
+}
+
+model FormVersion {
+  id            String        @id @default(uuid())
+  versionNumber Int           @default(1)
+  status        VersionStatus @default(DRAFT)
+  builderData   Json
+  name          String?
+  description   String?
+  publishedAt   DateTime?
+  formId        String
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  form          Form          @relation(fields: [formId], references: [id], onDelete: Cascade)
+
+  @@unique([formId, versionNumber])
+  @@index([formId])
+  @@index([status])
+  @@index([publishedAt])
+  @@map("form_versions")
 }

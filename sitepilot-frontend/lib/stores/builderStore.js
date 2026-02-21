@@ -476,9 +476,26 @@ const useBuilderStore = create((set, get) => ({
 
   getLayoutJSON: () => get().layoutJSON,
 
-  updateLayoutJSON: (layoutJSON) => {
-    set({ layoutJSON });
-    saveToLocalStorage(layoutJSON);
+  updateLayoutJSON: (layoutJSON, persist = true) => {
+    if (!layoutJSON) {
+      // Clearing state (e.g., on unmount)
+      set({ layoutJSON: null, currentPageId: null, selectedNodeId: null, hoveredNodeId: null });
+      return;
+    }
+    const currentPageId = get().currentPageId;
+    // If pages exists and currentPageId is null or not found in pages, reset it
+    const pages = layoutJSON?.pages;
+    let newCurrentPageId = currentPageId;
+    if (pages && pages.length > 0) {
+      const pageExists = pages.find((p) => p.id === currentPageId);
+      if (!pageExists) {
+        newCurrentPageId = pages[0].id;
+      }
+    }
+    set({ layoutJSON, currentPageId: newCurrentPageId, selectedNodeId: null, hoveredNodeId: null });
+    if (persist) {
+      saveToLocalStorage(layoutJSON);
+    }
   },
 
   // ============================================================================
