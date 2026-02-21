@@ -11,8 +11,10 @@ import useBuilderStore from "@/lib/stores/builderStore";
 import useHistoryStore from "@/lib/stores/historyStore";
 import { Trash2, Copy, Plus, Minus, Settings2, Paintbrush } from "lucide-react";
 import { clsx } from "clsx";
+import FormSelector from "./FormSelector";
 
 export default function RightSidebar() {
+  const store = useBuilderStore();
   const {
     layoutJSON,
     selectedNodeId,
@@ -29,7 +31,14 @@ export default function RightSidebar() {
     removeColumnFromContainer,
     updateColumnWidth,
     getLayoutJSON,
-  } = useBuilderStore();
+  } = store;
+  
+  const siteId = store.siteId;
+  
+  // Debug logging
+  console.log('RightSidebar - siteId:', siteId);
+  console.log('RightSidebar - store keys:', Object.keys(store));
+  
   const { pushState } = useHistoryStore();
   const [activeTab, setActiveTab] = useState("properties");
 
@@ -178,6 +187,7 @@ export default function RightSidebar() {
           <PropertiesEditor
             component={selectedNode}
             onUpdate={handleUpdateProps}
+            siteId={siteId}
           />
         )}
 
@@ -342,7 +352,7 @@ function ContainerPropertiesEditor({
 // PROPERTIES EDITOR
 // ============================================================================
 
-function PropertiesEditor({ component, onUpdate }) {
+function PropertiesEditor({ component, onUpdate, siteId }) {
   const handleChange = (key, value) => {
     onUpdate({ [key]: value });
   };
@@ -888,6 +898,40 @@ function PropertiesEditor({ component, onUpdate }) {
             value={props.htmlFor || ""}
             onChange={(value) => handleChange("htmlFor", value)}
           />
+        </>
+      )}
+
+      {/* FormEmbed Component */}
+      {component.type === "FormEmbed" && (
+        <>
+          {siteId ? (
+            <FormSelector
+              value={props.formId}
+              siteId={siteId}
+              onChange={(formId, formName) => {
+                handleChange("formId", formId);
+                handleChange("formName", formName);
+              }}
+            />
+          ) : (
+            <div className="text-sm text-gray-500 p-3 bg-gray-50 rounded border border-gray-200">
+              Loading site information...
+            </div>
+          )}
+          <div className="flex items-center gap-2 mt-4">
+            <input
+              type="checkbox"
+              checked={props.showTitle !== false}
+              onChange={(e) => handleChange("showTitle", e.target.checked)}
+              className="rounded"
+            />
+            <label className="text-sm text-gray-700">Show form title</label>
+          </div>
+          {props.formId && (
+            <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded text-sm text-blue-800">
+              Form will be rendered when the page is published.
+            </div>
+          )}
         </>
       )}
 

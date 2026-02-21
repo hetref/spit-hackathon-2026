@@ -72,7 +72,8 @@ const elementLibrary = {
     { type: "Gallery", icon: Grid3x3, label: "Gallery" },
   ],
   "Form Elements": [
-    { type: "Form", icon: Square, label: "Form" },
+    { type: "FormEmbed", icon: FileText, label: "Form" },
+    { type: "Form", icon: Square, label: "Form Container" },
     { type: "Input", icon: FormInput, label: "Input" },
     { type: "Textarea", icon: AlignLeft, label: "Textarea" },
     { type: "Select", icon: Square, label: "Select" },

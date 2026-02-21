@@ -36,6 +36,7 @@ import Select from "./Select";
 import Label from "./Label";
 import Checkbox from "./Checkbox";
 import Radio from "./Radio";
+import FormEmbed from "./FormEmbed";
 
 export const componentRegistry = {
   // Hero & Features
@@ -71,6 +72,7 @@ export const componentRegistry = {
   Label,
   Checkbox,
   Radio,
+  FormEmbed,
 };
 
 /**
@@ -227,5 +229,10 @@ export const defaultComponentProps = {
     name: "radio-group",
     label: "Choose one",
     required: false,
+  },
+  FormEmbed: {
+    formId: null,
+    formName: "Select a form",
+    showTitle: true,
   },
 };

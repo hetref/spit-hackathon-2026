@@ -1,183 +1,146 @@
 /**
  * FORM BUILDER STORE
- *
- * Form-specific builder store for creating forms with form elements only
- * Simplified structure: Container → Form Elements
+ * Manages form builder state (separate from site builder)
  */
 
-import { create } from "zustand";
-import { nanoid } from "nanoid";
-import { produce } from "immer";
-
-// Form-only components
-const FORM_COMPONENTS = [
-  "Heading",
-  "Text",
-  "Input",
-  "Textarea",
-  "Select",
-  "Button",
-  "Label",
-  "Checkbox",
-  "Radio",
-  "Divider",
-];
+import { create } from 'zustand';
+import { createDefaultForm, createField } from '@/lib/form-schema';
 
 const useFormBuilderStore = create((set, get) => ({
-  // STATE
-  formJSON: null,
-  selectedNodeId: null,
-  hoveredNodeId: null,
+  // Form data
+  formData: createDefaultForm(),
+  
+  // Selected field for editing
+  selectedFieldId: null,
+  
+  // UI state
   isDirty: false,
-
-  // INITIALIZATION
-  initializeFormBuilder: (formJSON) => {
-    const defaultJSON = formJSON || {
-      id: nanoid(),
-      name: "New Form",
-      elements: [],
-      settings: {
-        method: "POST",
-        action: "",
-        successMessage: "Thank you! Your form has been submitted.",
-      },
-      styles: {
-        backgroundColor: "#ffffff",
-        maxWidth: 800,
-        padding: 32,
-      },
-    };
+  
+  // Initialize form
+  initializeForm: (formData) => {
     set({
-      formJSON: defaultJSON,
-      selectedNodeId: null,
-      hoveredNodeId: null,
-      isDirty: false,
+      formData: formData || createDefaultForm(),
+      selectedFieldId: null,
+      isDirty: false
     });
   },
-
-  // SELECTION
-  setSelectedNode: (nodeId) => set({ selectedNodeId: nodeId }),
-  setHoveredNode: (nodeId) => set({ hoveredNodeId: nodeId }),
-  clearSelection: () => set({ selectedNodeId: null }),
-
-  // FORM ELEMENT OPERATIONS
-  addElement: (componentType, props = {}) => {
-    if (!FORM_COMPONENTS.includes(componentType)) {
-      console.warn(`${componentType} is not a form component`);
-      return;
-    }
-
-    set(
-      produce((state) => {
-        state.formJSON.elements.push({
-          id: nanoid(),
-          type: componentType,
-          props,
-          styles: {},
-        });
-        state.isDirty = true;
-      })
-    );
+  
+  // Update form name
+  updateFormName: (name) => {
+    set((state) => ({
+      formData: { ...state.formData, name },
+      isDirty: true
+    }));
   },
-
-  deleteElement: (elementId) => {
-    set(
-      produce((state) => {
-        state.formJSON.elements = state.formJSON.elements.filter(
-          (el) => el.id !== elementId
-        );
-        if (state.selectedNodeId === elementId) state.selectedNodeId = null;
-        state.isDirty = true;
-      })
-    );
+  
+  // Add field to form
+  addField: (fieldType) => {
+    const newField = createField(fieldType);
+    set((state) => {
+      const fields = [...state.formData.fields];
+      newField.order = fields.length;
+      fields.push(newField);
+      
+      return {
+        formData: { ...state.formData, fields },
+        selectedFieldId: newField.id,
+        isDirty: true
+      };
+    });
   },
-
-  updateElementProps: (elementId, props) => {
-    set(
-      produce((state) => {
-        const element = state.formJSON.elements.find((el) => el.id === elementId);
-        if (element) {
-          element.props = { ...element.props, ...props };
-          state.isDirty = true;
-        }
-      })
-    );
+  
+  // Remove field
+  removeField: (fieldId) => {
+    set((state) => {
+      const fields = state.formData.fields
+        .filter(f => f.id !== fieldId)
+        .map((f, index) => ({ ...f, order: index }));
+      
+      return {
+        formData: { ...state.formData, fields },
+        selectedFieldId: state.selectedFieldId === fieldId ? null : state.selectedFieldId,
+        isDirty: true
+      };
+    });
   },
-
-  updateElementStyles: (elementId, styles) => {
-    set(
-      produce((state) => {
-        const element = state.formJSON.elements.find((el) => el.id === elementId);
-        if (element) {
-          element.styles = { ...element.styles, ...styles };
-          state.isDirty = true;
-        }
-      })
-    );
+  
+  // Update field
+  updateField: (fieldId, updates) => {
+    set((state) => {
+      const fields = state.formData.fields.map(f =>
+        f.id === fieldId ? { ...f, ...updates } : f
+      );
+      
+      return {
+        formData: { ...state.formData, fields },
+        isDirty: true
+      };
+    });
   },
-
-  duplicateElement: (elementId) => {
-    set(
-      produce((state) => {
-        const idx = state.formJSON.elements.findIndex((el) => el.id === elementId);
-        if (idx !== -1) {
-          const dup = {
-            ...JSON.parse(JSON.stringify(state.formJSON.elements[idx])),
-            id: nanoid(),
-          };
-          state.formJSON.elements.splice(idx + 1, 0, dup);
-          state.isDirty = true;
-        }
-      })
-    );
+  
+  // Reorder fields
+  reorderFields: (startIndex, endIndex) => {
+    set((state) => {
+      const fields = [...state.formData.fields];
+      const [removed] = fields.splice(startIndex, 1);
+      fields.splice(endIndex, 0, removed);
+      
+      // Update order property
+      const reorderedFields = fields.map((f, index) => ({ ...f, order: index }));
+      
+      return {
+        formData: { ...state.formData, fields: reorderedFields },
+        isDirty: true
+      };
+    });
   },
-
-  reorderElements: (startIndex, endIndex) => {
-    set(
-      produce((state) => {
-        const [removed] = state.formJSON.elements.splice(startIndex, 1);
-        state.formJSON.elements.splice(endIndex, 0, removed);
-        state.isDirty = true;
-      })
-    );
+  
+  // Select field for editing
+  selectField: (fieldId) => {
+    set({ selectedFieldId: fieldId });
   },
-
-  // FORM SETTINGS
-  updateFormSettings: (settings) => {
-    set(
-      produce((state) => {
-        state.formJSON.settings = { ...state.formJSON.settings, ...settings };
-        state.isDirty = true;
-      })
-    );
+  
+  // Update form settings
+  updateSettings: (settings) => {
+    set((state) => ({
+      formData: {
+        ...state.formData,
+        settings: { ...state.formData.settings, ...settings }
+      },
+      isDirty: true
+    }));
   },
-
-  updateFormStyles: (styles) => {
-    set(
-      produce((state) => {
-        state.formJSON.styles = { ...state.formJSON.styles, ...styles };
-        state.isDirty = true;
-      })
-    );
+  
+  // Update form styling
+  updateStyling: (styling) => {
+    set((state) => ({
+      formData: {
+        ...state.formData,
+        styling: { ...state.formData.styling, ...styling }
+      },
+      isDirty: true
+    }));
   },
-
-  // HELPERS
-  getSelectedNode: () => {
-    const { formJSON, selectedNodeId } = get();
-    if (!selectedNodeId || !formJSON) return null;
-    return formJSON.elements.find((el) => el.id === selectedNodeId);
+  
+  // Get selected field
+  getSelectedField: () => {
+    const state = get();
+    return state.formData.fields.find(f => f.id === state.selectedFieldId);
   },
-
-  getFormJSON: () => get().formJSON,
-
-  updateFormJSON: (formJSON) => {
-    set({ formJSON, isDirty: true });
+  
+  // Mark as saved
+  markAsSaved: () => {
+    set({ isDirty: false });
   },
-
-  resetDirty: () => set({ isDirty: false }),
-
-  // Get all form components
-  getFormComponents: () => FORM_COMPONENTS,
+  
+  // Reset store
+  reset: () => {
+    set({
+      formData: createDefaultForm(),
+      selectedFieldId: null,
+      isDirty: false
+    });
+  }
 }));
 
 export default useFormBuilderStore;
