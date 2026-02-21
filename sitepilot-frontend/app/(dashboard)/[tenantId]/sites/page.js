@@ -14,6 +14,7 @@ import {
   X,
   AlertCircle,
   CheckCircle2,
+  ArrowLeft,
 } from "lucide-react";
 import { hasPermission } from "@/lib/permissions";
 
@@ -409,9 +410,9 @@ export default function SitesPage() {
                 <Plus size={16} className="mr-2" />
                 New Site
               </button>
+            )}
           </div>
         </div>
-          )}
       </div>
 
       <div className="max-w-7xl mx-auto px-6 sm:px-10 lg:px-12 py-8 sm:py-12">
