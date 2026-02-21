@@ -330,10 +330,10 @@ export default function SiteDetailPage() {
           <div className="flex items-center justify-between gap-4">
             <div className="flex items-center gap-3 min-w-0">
               <button
-                onClick={() => router.push(`/${params.tenantId}/sites`)}
-                className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors shrink-0"
+                onClick={() => router.push(`/${params.tenantId}/sites/${params.siteId}/pages`)}
+                className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
               >
-                <ChevronLeft size={18} />
+                Manage Pages
               </button>
               <div className="min-w-0">
                 <h1 className="text-xl font-bold text-gray-900 truncate">{site.name}</h1>

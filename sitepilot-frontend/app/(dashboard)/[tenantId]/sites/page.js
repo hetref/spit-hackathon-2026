@@ -191,7 +191,7 @@ function SiteCard({ site, tenantId, onDelete, router, userRole }) {
 
   const openBuilder = () => {
     const firstPage = site.pages?.[0];
-    router.push(`/${tenantId}/sites/${site.id}/builder`);
+    router.push(`/${tenantId}/sites/${site.id}/pages`);
   };
 
   return (

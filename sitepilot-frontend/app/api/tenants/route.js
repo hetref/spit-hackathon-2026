@@ -88,8 +88,7 @@ export async function GET(request) {
             _count: {
               select: {
                 tenantUsers: true,
-                sites: true,
-                forms: true
+                sites: true
               }
             }
           }
