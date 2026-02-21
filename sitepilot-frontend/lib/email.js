@@ -1,16 +1,83 @@
 import nodemailer from 'nodemailer'
 
-const transporter = nodemailer.createTransport({
-  service: 'gmail',
-  auth: {
-    user: process.env.GMAIL_ADDRESS,
-    pass: process.env.GMAIL_APP_PASSWORD,
-  },
-})
+let _transporter = null
+
+function getTransporter() {
+  if (_transporter) return _transporter
+
+  const user = process.env.GMAIL_ADDRESS || process.env.EMAIL_USER
+  const pass = process.env.GMAIL_APP_PASSWORD || process.env.EMAIL_PASSWORD
+
+  if (!user || !pass) {
+    console.warn('Email credentials not configured. Email sending will be skipped.')
+    return null
+  }
+
+  _transporter = nodemailer.createTransport({
+    service: 'gmail',
+    auth: { user, pass },
+  })
+
+  return _transporter
+}
+
+function getFromAddress() {
+  return process.env.GMAIL_ADDRESS || process.env.EMAIL_USER
+}
+
+export async function sendInvitationEmail({ to, tenantName, role, invitationUrl }) {
+  const transporter = getTransporter()
+  if (!transporter) return false
+
+  const mailOptions = {
+    from: getFromAddress(),
+    to,
+    subject: `Invitation to join ${tenantName} on DevAlly`,
+    html: `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <style>
+            body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+            .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+            .button { display: inline-block; padding: 12px 24px; background-color: #3b82f6; color: #ffffff; text-decoration: none; border-radius: 5px; margin: 20px 0; }
+            .footer { margin-top: 30px; padding-top: 20px; border-top: 1px solid #eee; font-size: 12px; color: #666; }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <h2>You've been invited to join ${tenantName}</h2>
+            <p>You have been invited to join the workspace <strong>${tenantName}</strong> as a <strong>${role}</strong>.</p>
+            <p>Click the button below to accept the invitation:</p>
+            <a href="${invitationUrl}" class="button">Accept Invitation</a>
+            <p>Or copy and paste this link in your browser:</p>
+            <p style="word-break: break-all;">${invitationUrl}</p>
+            <div class="footer">
+              <p>This invitation will expire in 7 days.</p>
+              <p>If you don't want to join this workspace, you can safely ignore this email.</p>
+            </div>
+          </div>
+        </body>
+      </html>
+    `,
+  }
+
+  try {
+    await transporter.sendMail(mailOptions)
+    console.log(`Invitation email sent to ${to}`)
+    return true
+  } catch (error) {
+    console.error('Error sending invitation email:', error)
+    return false
+  }
+}
 
 export async function sendVerificationEmail({ to, verificationUrl }) {
+  const transporter = getTransporter()
+  if (!transporter) throw new Error('Email not configured')
+
   const mailOptions = {
-    from: process.env.GMAIL_ADDRESS,
+    from: getFromAddress(),
     to,
     subject: 'Verify Your Email Address',
     html: `
@@ -73,8 +140,11 @@ export async function sendVerificationEmail({ to, verificationUrl }) {
 }
 
 export async function sendWelcomeEmail({ to, name }) {
+  const transporter = getTransporter()
+  if (!transporter) return
+
   const mailOptions = {
-    from: process.env.GMAIL_ADDRESS,
+    from: getFromAddress(),
     to,
     subject: 'Welcome to DevAlly!',
     html: `
@@ -124,8 +194,11 @@ export async function sendWelcomeEmail({ to, name }) {
 }
 
 export async function sendResetPasswordEmail({ to, resetPasswordUrl }) {
+  const transporter = getTransporter()
+  if (!transporter) throw new Error('Email not configured')
+
   const mailOptions = {
-    from: process.env.GMAIL_ADDRESS,
+    from: getFromAddress(),
     to,
     subject: 'Reset Your Password',
     html: `
@@ -188,8 +261,11 @@ export async function sendResetPasswordEmail({ to, resetPasswordUrl }) {
 }
 
 export async function sendDeleteAccountVerificationEmail({ user, url }) {
+  const transporter = getTransporter()
+  if (!transporter) throw new Error('Email not configured')
+
   const mailOptions = {
-    from: process.env.GMAIL_ADDRESS,
+    from: getFromAddress(),
     to: user.email,
     subject: 'Confirm Account Deletion',
     html: `
