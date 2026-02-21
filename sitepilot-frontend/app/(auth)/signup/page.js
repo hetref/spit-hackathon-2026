@@ -1,10 +1,12 @@
 'use client'
 import { signUp } from '@/lib/auth-client'
 import { useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 
 export default function SignUpPage() {
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const redirectUrl = searchParams.get('redirect')
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -23,7 +25,7 @@ export default function SignUpPage() {
       // Email verification is automatically sent by Better Auth
       // User will receive verification email
       alert('Account created! Check your email to verify your address.')
-      router.push('/auth/signin')
+      router.push(redirectUrl || '/dashboard')
     } catch (err) {
       console.error('Sign up error:', err)
       setError(err.message || 'Sign up failed. Please try again.')

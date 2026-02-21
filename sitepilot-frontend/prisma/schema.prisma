@@ -109,6 +109,7 @@ model Tenant {
   id          String       @id @default(uuid())
   name        String
   slug        String       @unique
+  description String?
   logo        String?
   plan        PlanType     @default(FREE)
   tokenUsage  Int          @default(0)
@@ -118,6 +119,7 @@ model Tenant {
   updatedAt   DateTime     @updatedAt
   sites       Site[]
   tenantUsers TenantUser[]
+  invitations Invitation[]
   owner       User         @relation("TenantOwner", fields: [ownerId], references: [id], onDelete: Cascade)
 
   @@index([slug])
@@ -140,6 +142,27 @@ model TenantUser {
   @@index([tenantId])
   @@index([role])
   @@map("tenant_users")
+}
+
+model Invitation {
+  id        String           @id @default(uuid())
+  email     String
+  role      Role             @default(EDITOR)
+  status    InvitationStatus @default(PENDING)
+  token     String           @unique @default(uuid())
+  tenantId  String
+  invitedBy String
+  expiresAt DateTime
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
+  tenant    Tenant           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@unique([email, tenantId])
+  @@index([tenantId])
+  @@index([email])
+  @@index([token])
+  @@index([status])
+  @@map("invitations")
 }
 
 model Site {
@@ -196,4 +219,11 @@ enum PlanType {
 enum VersionStatus {
   DRAFT
   PUBLISHED
+}
+
+enum InvitationStatus {
+  PENDING
+  ACCEPTED
+  EXPIRED
+  CANCELLED
 }

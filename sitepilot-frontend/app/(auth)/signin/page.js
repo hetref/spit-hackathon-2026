@@ -1,10 +1,12 @@
 'use client'
 import { signIn } from '@/lib/auth-client'
-import { useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useState, useEffect } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 
 export default function SignInPage() {
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const redirectUrl = searchParams.get('redirect')
   const [formData, setFormData] = useState({
     email: '',
     password: ''
@@ -19,7 +21,7 @@ export default function SignInPage() {
 
     try {
       await signIn.email(formData)
-      router.push('/dashboard')
+      router.push(redirectUrl || '/dashboard')
     } catch (err) {
       console.error('Sign in error:', err)
       setError(err.message || 'Invalid email or password.')
@@ -32,7 +34,7 @@ export default function SignInPage() {
     try {
       await signIn.social({
         provider: 'google',
-        callbackURL: '/dashboard'
+        callbackURL: redirectUrl || '/dashboard'
       })
     } catch (err) {
       console.error('Google sign in error:', err)
