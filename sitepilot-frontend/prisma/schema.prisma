@@ -232,6 +232,7 @@ model SiteVersion {
   versionNumber Int           @default(1)
   status        VersionStatus @default(DRAFT)
   builderData   Json
+  liveRoomId    String?       @unique
   name          String?
   description   String?
   publishedAt   DateTime?

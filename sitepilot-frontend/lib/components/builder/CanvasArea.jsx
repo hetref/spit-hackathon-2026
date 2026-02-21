@@ -3,16 +3,24 @@
 /**
  * CANVAS AREA
  *
- * Main editing canvas with device preview and drop zones
+ * Main editing canvas with device preview, drop zones,
+ * collaborative cursor tracking, and block locking.
+ *
+ * Cursors are tracked ONLY inside this area (not toolbar / sidebars).
  */
 
-import { useState } from "react";
+import { useState, useRef, useCallback, useMemo } from "react";
 import CanvasRenderer from "../canvas/CanvasRenderer";
+import CursorLayer from "@/components/builder/CursorLayer";
 import useBuilderStore from "@/lib/stores/builderStore";
 import useUIStore from "@/lib/stores/uiStore";
 import useHistoryStore from "@/lib/stores/historyStore";
 import { defaultComponentProps } from "../registry";
 import { clsx } from "clsx";
+import {
+  useUpdateMyPresence,
+  useOthers,
+} from "@/lib/liveblocks-client";
 
 export default function CanvasArea() {
   const {
@@ -21,9 +29,71 @@ export default function CanvasArea() {
     addComponent,
     addContainer,
     getLayoutJSON,
+    selectedNodeId,
+    setSelectedNode,
   } = useBuilderStore();
   const { devicePreview } = useUIStore();
   const { pushState } = useHistoryStore();
+  const canvasRef = useRef(null);
+
+  // ── Liveblocks presence for cursor tracking ─────────────────────────────
+  const updatePresence = useUpdateMyPresence();
+  const others = useOthers();
+
+  // Track cursor position relative to the canvas container
+  const handlePointerMove = useCallback(
+    (e) => {
+      if (!canvasRef.current) return;
+      const rect = canvasRef.current.getBoundingClientRect();
+      updatePresence({
+        cursor: {
+          x: e.clientX - rect.left + canvasRef.current.scrollLeft,
+          y: e.clientY - rect.top + canvasRef.current.scrollTop,
+        },
+      });
+    },
+    [updatePresence]
+  );
+
+  const handlePointerLeave = useCallback(() => {
+    updatePresence({ cursor: null });
+  }, [updatePresence]);
+
+  // ── Broadcast which node the local user has selected / is editing ───────
+  const handleNodeSelect = useCallback(
+    (nodeId) => {
+      setSelectedNode(nodeId);
+      updatePresence({
+        selectedBlockId: nodeId,
+        lockedBlockId: nodeId,
+      });
+    },
+    [setSelectedNode, updatePresence]
+  );
+
+  const handleCanvasBackgroundClick = useCallback(() => {
+    setSelectedNode(null);
+    updatePresence({
+      selectedBlockId: null,
+      lockedBlockId: null,
+    });
+  }, [setSelectedNode, updatePresence]);
+
+  // ── Collect locked node IDs from other users ────────────────────────────
+  const lockedByOthers = useMemo(() => {
+    const map = {};
+    for (const other of others) {
+      const lockedId = other.presence?.lockedBlockId;
+      if (lockedId) {
+        map[lockedId] = {
+          connectionId: other.connectionId,
+          username: other.presence?.username || other.info?.name || "Anonymous",
+          color: other.presence?.color || other.info?.color || "#999",
+        };
+      }
+    }
+    return map;
+  }, [others]);
 
   // Get current page from layoutJSON and currentPageId
   const currentPage = layoutJSON?.pages?.find((p) => p.id === currentPageId);
@@ -81,7 +151,15 @@ export default function CanvasArea() {
   }
 
   return (
-    <div className="flex-1 bg-[#F1F5F9] canvas-grid overflow-auto">
+    <div
+      ref={canvasRef}
+      className="flex-1 bg-[#F1F5F9] canvas-grid overflow-auto relative"
+      onPointerMove={handlePointerMove}
+      onPointerLeave={handlePointerLeave}
+    >
+      {/* Remote cursors — scoped to canvas area only */}
+      <CursorLayer />
+
       <div className="min-h-full flex items-start justify-center p-6 pl-20">
         <div
           className="bg-white shadow-xl rounded-lg transition-all duration-300 overflow-hidden"
@@ -94,6 +172,9 @@ export default function CanvasArea() {
             page={currentPage}
             onDrop={handleDrop}
             onDragOver={handleDragOver}
+            lockedByOthers={lockedByOthers}
+            onNodeSelect={handleNodeSelect}
+            onCanvasBackgroundClick={handleCanvasBackgroundClick}
           />
         </div>
       </div>
@@ -105,10 +186,17 @@ export default function CanvasArea() {
 // CANVAS WITH DROP ZONES
 // ============================================================================
 
-function CanvasWithDropZones({ page, onDrop, onDragOver }) {
+function CanvasWithDropZones({ page, onDrop, onDragOver, lockedByOthers, onNodeSelect, onCanvasBackgroundClick }) {
   return (
     <div className="relative">
-      <CanvasRenderer page={page} onDrop={onDrop} onDragOver={onDragOver} />
+      <CanvasRenderer
+        page={page}
+        onDrop={onDrop}
+        onDragOver={onDragOver}
+        lockedByOthers={lockedByOthers}
+        onNodeSelect={onNodeSelect}
+        onCanvasBackgroundClick={onCanvasBackgroundClick}
+      />
     </div>
   );
 }

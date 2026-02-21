@@ -139,20 +139,26 @@ export async function POST(request) {
     });
 
     // ── 3. PROVISION CLOUDFRONT TENANT ──────────────────────────────────────
-    // This updates KVS to point <slug>.sitepilot.devally.in -> site-basics/...
+    // This creates a real tenant and updates KVS to point <slug>.sitepilot.devally.in
     try {
       const provisioning = await provisionSiteTenant(result.site.slug);
 
-      // Update site with provisioning result
-      await prisma.site.update({
-        where: { id: result.site.id },
-        data: {
-          cfStatus: provisioning.status,
-          cfTenantId: provisioning.cfTenantId,
-          cfTenantArn: provisioning.cfTenantArn,
-          cfConnectionGroupId: provisioning.cfConnectionGroupId,
-        },
-      });
+      if (provisioning.success) {
+        // Update site with provisioning result
+        await prisma.site.update({
+          where: { id: result.site.id },
+          data: {
+            cfStatus: provisioning.status || "LIVE",
+            cfTenantId: provisioning.tenantId,
+            cfTenantArn: provisioning.tenantArn,
+            cfConnectionGroupId: provisioning.connectionGroupId,
+            // Ensure the domain is also stored in the site record
+            domain: provisioning.domain,
+          },
+        });
+      } else {
+        throw new Error(provisioning.error || "Provisioning failed");
+      }
     } catch (provisionError) {
       console.error("Post-creation provisioning failed:", provisionError);
       await prisma.site.update({
