@@ -33,14 +33,21 @@ export default function CanvasArea() {
     event.stopPropagation();
 
     const componentType = event.dataTransfer.getData("componentType");
-    if (!componentType) return;
-
-    const props = defaultComponentProps[componentType] || {};
+    const componentId = event.dataTransfer.getData("componentId");
+    const isExisting = event.dataTransfer.getData("isExisting") === "true";
 
     // Save state before modification
     pushState(getLayoutJSON());
 
-    addComponent(containerId, columnIndex, componentType, props);
+    if (isExisting && componentId) {
+      // Moving an existing component
+      const { moveComponent } = useBuilderStore.getState();
+      moveComponent(componentId, containerId, columnIndex);
+    } else if (componentType) {
+      // Adding a new component from sidebar
+      const props = defaultComponentProps[componentType] || {};
+      addComponent(containerId, columnIndex, componentType, props);
+    }
   };
 
   const handleDragOver = (event) => {
@@ -75,7 +82,7 @@ export default function CanvasArea() {
 
   return (
     <div className="flex-1 bg-[#F1F5F9] canvas-grid overflow-auto">
-      <div className="min-h-full flex items-start justify-center p-6">
+      <div className="min-h-full flex items-start justify-center p-6 pl-20">
         <div
           className="bg-white shadow-xl rounded-lg transition-all duration-300 overflow-hidden"
           style={{
