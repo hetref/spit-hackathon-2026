@@ -49,7 +49,7 @@ export default function NewTenantPage() {
         throw new Error(data.error || 'Failed to create tenant')
       }
 
-      router.push(`/tenants/${data.tenant.id}`)
+      router.push(`/${data.tenant.id}`)
     } catch (err) {
       setError(err.message)
     } finally {
@@ -123,36 +123,36 @@ export default function NewTenantPage() {
                 Lowercase letters, numbers, and hyphens only
               </p>
 
-            <div>
-              <label htmlFor="description" className="block text-sm font-medium text-gray-700">
-                Description (optional)
-              </label>
-              <textarea
-                id="description"
-                value={formData.description}
-                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                placeholder="Brief description of your workspace"
-                rows={3}
-                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-              />
-            </div>
+              <div>
+                <label htmlFor="description" className="block text-sm font-medium text-gray-700">
+                  Description (optional)
+                </label>
+                <textarea
+                  id="description"
+                  value={formData.description}
+                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                  placeholder="Brief description of your workspace"
+                  rows={3}
+                  className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                />
+              </div>
 
-            <div>
-              <label htmlFor="logo" className="block text-sm font-medium text-gray-700">
-                Logo URL (optional)
-              </label>
-              <input
-                type="url"
-                id="logo"
-                value={formData.logo}
-                onChange={(e) => setFormData({ ...formData, logo: e.target.value })}
-                placeholder="https://example.com/logo.png"
-                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-              />
-              <p className="mt-2 text-sm text-gray-500">
-                Provide a URL to your workspace logo image
-              </p>
-            </div>
+              <div>
+                <label htmlFor="logo" className="block text-sm font-medium text-gray-700">
+                  Logo URL (optional)
+                </label>
+                <input
+                  type="url"
+                  id="logo"
+                  value={formData.logo}
+                  onChange={(e) => setFormData({ ...formData, logo: e.target.value })}
+                  placeholder="https://example.com/logo.png"
+                  className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                />
+                <p className="mt-2 text-sm text-gray-500">
+                  Provide a URL to your workspace logo image
+                </p>
+              </div>
             </div>
 
             <div className="flex gap-4">

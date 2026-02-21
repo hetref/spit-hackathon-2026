@@ -83,7 +83,7 @@ export default function DashboardPage() {
         {/* Welcome Section */}
         <div className="bg-white shadow rounded-lg p-6 mb-6">
           <h2 className="text-xl font-semibold text-gray-900 mb-4">Welcome, {session.user.name || session.user.email}!</h2>
-          
+
           {!session.user.emailVerified && (
             <div className="bg-yellow-50 border border-yellow-200 rounded p-4 mb-4">
               <h3 className="font-semibold text-yellow-900">Email Not Verified</h3>
@@ -131,7 +131,7 @@ export default function DashboardPage() {
               {ownedTenants.map((tenant) => (
                 <div
                   key={tenant.id}
-                  onClick={() => router.push(`/tenants/${tenant.id}`)}
+                  onClick={() => router.push(`/${tenant.id}`)}
                   className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow cursor-pointer"
                 >
                   <div className="flex items-start justify-between">
@@ -171,7 +171,7 @@ export default function DashboardPage() {
               {sharedTenants.map((tenant) => (
                 <div
                   key={tenant.id}
-                  onClick={() => router.push(`/tenants/${tenant.id}`)}
+                  onClick={() => router.push(`/${tenant.id}`)}
                   className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow cursor-pointer"
                 >
                   <div className="flex items-start justify-between">
