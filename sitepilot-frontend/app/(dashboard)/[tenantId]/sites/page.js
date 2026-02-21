@@ -13,6 +13,7 @@ import {
   Loader2,
   X,
   AlertCircle,
+  CheckCircle2,
 } from "lucide-react";
 import { hasPermission } from "@/lib/permissions";
 
@@ -305,6 +306,7 @@ export default function SitesPage() {
   const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState("");
   const [userRole, setUserRole] = useState(null);
+  const [successToast, setSuccessToast] = useState(null); // Added state for toast
 
   const canCreate = hasPermission(userRole, 'sites:create');
 
@@ -348,8 +350,11 @@ export default function SitesPage() {
   const handleCreated = (newSite) => {
     setSites((prev) => [newSite, ...prev]);
     setShowCreate(false);
-    // Navigate straight into the builder for the new site
-    router.push(`/${tenantId}/sites/${newSite.id}/builder`);
+    setSuccessToast(newSite.name);
+    // Give the user a moment to see the success toast before redirecting
+    setTimeout(() => {
+      router.push(`/${tenantId}/sites/${newSite.id}/builder`);
+    }, 1500);
   };
 
   const handleDelete = async () => {
@@ -442,6 +447,25 @@ export default function SitesPage() {
           </div>
         )}
       </div>
+
+      {/* Toast Notification */}
+      {successToast && (
+        <div className="fixed bottom-6 right-6 z-50 flex items-center gap-3 px-5 py-4 bg-gray-900 text-white rounded-2xl shadow-2xl animate-in slide-in-from-bottom-5 duration-300">
+          <div className="p-1 bg-emerald-500 rounded-full">
+            <CheckCircle2 size={16} className="text-white" />
+          </div>
+          <div>
+            <p className="text-sm font-semibold">Site created successfully!</p>
+            <p className="text-xs text-gray-400 mt-0.5">Your CloudFront tenant is live.</p>
+          </div>
+          <button
+            onClick={() => setSuccessToast(null)}
+            className="ml-4 p-1 text-gray-500 hover:text-white transition-colors"
+          >
+            <X size={16} />
+          </button>
+        </div>
+      )}
 
       {/* Create modal */}
       {showCreate && (
