@@ -7,6 +7,7 @@ import {
   Globe,
   Plus,
   Pencil,
+  Eye,
   Trash2,
   ExternalLink,
   Loader2,
@@ -14,6 +15,7 @@ import {
   AlertCircle,
   ArrowLeft
 } from "lucide-react";
+import { hasPermission } from "@/lib/permissions";
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
@@ -184,9 +186,11 @@ function CreateSiteModal({ tenantId, onClose, onCreated }) {
 
 // ─── Site Card ───────────────────────────────────────────────────────────────
 
-function SiteCard({ site, tenantId, onDelete, router }) {
+function SiteCard({ site, tenantId, onDelete, router, userRole }) {
   const publishedCount = site.pages?.filter((p) => p.isPublished).length ?? 0;
   const totalPages = site._count?.pages ?? site.pages?.length ?? 0;
+  const canEdit = hasPermission(userRole, 'sites:edit');
+  const canDelete = hasPermission(userRole, 'sites:delete');
 
   const openBuilder = () => {
     router.push(`/${tenantId}/sites/${site.id}/pages`);
@@ -240,13 +244,23 @@ function SiteCard({ site, tenantId, onDelete, router }) {
 
       {/* Actions Footer */}
       <div className="px-6 py-4 bg-gray-50/50 flex items-center justify-between gap-3">
-        <button
-          onClick={openBuilder}
-          className="flex-1 inline-flex items-center justify-center gap-2 px-4 py-2 bg-white text-gray-900 text-sm font-medium border border-gray-300 rounded-xl hover:bg-gray-50 transition-colors focus:outline-none focus:ring-2 focus:ring-gray-200"
-        >
-          <Pencil size={15} className="text-gray-500" />
-          Edit Pages
-        </button>
+          {canEdit ? (
+          <button
+            onClick={openBuilder}
+            className="flex-1 inline-flex items-center justify-center gap-2 px-4 py-2 bg-white text-gray-900 text-sm font-medium border border-gray-300 rounded-xl hover:bg-gray-50 transition-colors focus:outline-none focus:ring-2 focus:ring-gray-200"
+          >
+            <Pencil size={15} className="text-gray-500" />
+            Edit Pages
+          </button>
+          ) : (
+            <button
+              onClick={() => router.push(`/${tenantId}/sites/${site.id}`)}
+              className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 bg-gray-100 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-200 transition-colors"
+            >
+              <Eye size={14} />
+              View site
+            </button>
+          )}
 
         <div className="flex items-center gap-2 shrink-0">
           {site.domain && (
@@ -260,13 +274,15 @@ function SiteCard({ site, tenantId, onDelete, router }) {
               <ExternalLink size={16} />
             </a>
           )}
-          <button
-            onClick={() => onDelete(site)}
-            className="p-2.5 border border-transparent text-gray-400 rounded-xl hover:bg-red-50 hover:text-red-600 hover:border-red-100 transition-colors focus:outline-none focus:ring-2 focus:ring-red-100"
-            title="Delete site"
-          >
-            <Trash2 size={16} />
-          </button>
+          {canDelete && (
+            <button
+              onClick={() => onDelete(site)}
+              className="p-2.5 border border-transparent text-gray-400 rounded-xl hover:bg-red-50 hover:text-red-600 hover:border-red-100 transition-colors focus:outline-none focus:ring-2 focus:ring-red-100"
+              title="Delete site"
+            >
+              <Trash2 size={16} />
+            </button>
+          )}
         </div>
       </div>
 
@@ -288,14 +304,32 @@ export default function SitesPage() {
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState("");
+  const [userRole, setUserRole] = useState(null);
+
+  const canCreate = hasPermission(userRole, 'sites:create');
 
   useEffect(() => {
     if (!isPending && !session) router.push("/auth/signin");
   }, [session, isPending, router]);
 
   useEffect(() => {
-    if (session && tenantId) fetchSites();
+    if (session && tenantId) {
+      fetchSites();
+      fetchUserRole();
+    }
   }, [session, tenantId]);
+
+  const fetchUserRole = async () => {
+    try {
+      const res = await fetch(`/api/tenants/${tenantId}`);
+      if (res.ok) {
+        const data = await res.json();
+        setUserRole(data.userRole);
+      }
+    } catch (err) {
+      console.error('Error fetching role:', err);
+    }
+  };
 
   const fetchSites = async () => {
     setLoading(true);
@@ -362,15 +396,17 @@ export default function SitesPage() {
                 <p className="text-sm sm:text-base text-gray-500 mt-0.5">Manage your workspace websites</p>
               </div>
             </div>
+            {canCreate && (
             <button
-              onClick={() => setShowCreate(true)}
-              className="inline-flex items-center justify-center px-6 py-2.5 bg-gray-900 text-white text-sm font-medium rounded-xl hover:bg-gray-800 transition-colors focus:outline-none focus:ring-2 focus:ring-gray-900 focus:ring-offset-2"
-            >
-              <Plus size={16} className="mr-2" />
-              New Site
-            </button>
+                onClick={() => setShowCreate(true)}
+                className="inline-flex items-center justify-center px-6 py-2.5 bg-gray-900 text-white text-sm font-medium rounded-xl hover:bg-gray-800 transition-colors focus:outline-none focus:ring-2 focus:ring-gray-900 focus:ring-offset-2"
+              >
+                <Plus size={16} className="mr-2" />
+                New Site
+              </button>
           </div>
         </div>
+          )}
       </div>
 
       <div className="max-w-7xl mx-auto px-6 sm:px-10 lg:px-12 py-8 sm:py-12">
@@ -391,15 +427,17 @@ export default function SitesPage() {
               No sites created yet
             </h3>
             <p className="text-base text-gray-500 max-w-sm mb-8">
-              Start building your digital presence by creating your first website in this workspace.
+              {canCreate ? 'Start building your digital presence by creating your first website in this workspace.' : 'No sites have been created yet.'}
             </p>
-            <button
-              onClick={() => setShowCreate(true)}
-              className="inline-flex items-center justify-center px-6 py-3 bg-white border border-gray-300 text-gray-900 text-sm font-medium rounded-xl hover:bg-gray-50 transition-colors focus:outline-none focus:ring-2 focus:ring-gray-200"
-            >
-              <Plus size={16} className="mr-2" />
-              Create your first site
-            </button>
+            {canCreate && (
+              <button
+                onClick={() => setShowCreate(true)}
+                className="inline-flex items-center justify-center px-6 py-3 bg-white border border-gray-300 text-gray-900 text-sm font-medium rounded-xl hover:bg-gray-50 transition-colors focus:outline-none focus:ring-2 focus:ring-gray-200"
+              >
+                <Plus size={16} className="mr-2" />
+                Create your first site
+              </button>
+            )}
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -410,6 +448,7 @@ export default function SitesPage() {
                 tenantId={tenantId}
                 onDelete={setDeleteTarget}
                 router={router}
+                userRole={userRole}
               />
             ))}
           </div>

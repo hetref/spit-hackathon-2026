@@ -169,10 +169,15 @@ model Invitation {
 model Site {
   id             String        @id @default(uuid())
   name           String
-  slug           String
+  slug           String        @unique // Globally unique for <slug>.sitepilot.devally.in
   description    String?
-  domain         String?       @unique
+  domain         String?       @unique // Custom domain (optional)
   favicon        String?
+
+  // CloudFront Tenant Metadata
+  cfTenantId     String?       @unique // Logical ID or association record
+  cfTenantArn    String?       // Reference to associated CF resources
+  cfStatus       String        @default("PROVISIONING") // PROVISIONING, LIVE, ERROR
 
   // Shared theme applied to all pages
   theme          Json          @default("{}")
@@ -186,9 +191,9 @@ model Site {
 
   pages          Page[]
   versions       SiteVersion[]
+  deployments    Deployment[]
   tenant         Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
-  @@unique([tenantId, slug])
   @@index([tenantId])
   @@index([slug])
   @@map("sites")
@@ -240,9 +245,28 @@ model SiteVersion {
   @@map("site_versions")
 }
 
+model Deployment {
+  id             String   @id @default(uuid())
+  deploymentId   String   @unique // UUID used in S3 path
+  deploymentName String?  // User-provided friendly name
+  s3Key          String   // Full S3 key prefix: userId/businessId/siteId/deployments/{deploymentId}
+  isActive       Boolean  @default(false) // Is this the current live deployment?
+  kvsUpdated     Boolean  @default(false) // Was CloudFront KVS updated for this deployment?
+  siteId         String
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  site           Site     @relation(fields: [siteId], references: [id], onDelete: Cascade)
+
+  @@index([siteId])
+  @@index([isActive])
+  @@index([deploymentId])
+  @@map("deployments")
+}
+
 enum Role {
   OWNER
   EDITOR
+  VIEWER
 }
 
 enum PlanType {

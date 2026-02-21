@@ -100,17 +100,20 @@ export async function POST(request, { params }) {
     })
 
     // Send invitation email
-    const invitationUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/invitations/${invitation.token}`
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
+    const acceptUrl = `${baseUrl}/api/invitations/${invitation.token}/accept`
+    const declineUrl = `${baseUrl}/api/invitations/${invitation.token}/decline`
     const emailSent = await sendInvitationEmail({
       to: email,
       tenantName: tenant.name,
       role,
-      invitationUrl,
+      acceptUrl,
+      declineUrl,
     })
 
     return NextResponse.json({ 
       message: emailSent ? 'Invitation sent successfully' : 'Invitation created (email not configured)',
-      invitationUrl: !emailSent ? invitationUrl : undefined,
+      invitationUrl: !emailSent ? acceptUrl : undefined,
       invitation: {
         id: invitation.id,
         email: invitation.email,

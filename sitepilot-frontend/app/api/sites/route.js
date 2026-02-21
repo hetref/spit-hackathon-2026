@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
+import { provisionSiteTenant } from "@/lib/aws/cf-tenants";
 
 // Helper — verify user is a member of the given tenant
 async function getTenantMembership(userId, tenantId) {
@@ -87,21 +88,23 @@ export async function POST(request) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    // Check slug uniqueness within the tenant
-    const existing = await prisma.site.findFirst({ where: { tenantId, slug } });
-    if (existing) {
+    // ── 1. GLOBAL SLUG UNIQUENESS CHECK ─────────────────────────────────────
+    const existingGlobal = await prisma.site.findUnique({
+      where: { slug: slug.toLowerCase() },
+    });
+    if (existingGlobal) {
       return NextResponse.json(
-        { error: "Slug already taken in this tenant" },
+        { error: "Site slug is already taken by another user. Please try a different one." },
         { status: 409 },
       );
     }
 
-    // Create site + default home page in a transaction
+    // ── 2. CREATE SITE RECORD ───────────────────────────────────────────────
     const result = await prisma.$transaction(async (tx) => {
       const site = await tx.site.create({
         data: {
           name,
-          slug,
+          slug: slug.toLowerCase(),
           description: description || null,
           favicon: favicon || null,
           theme: theme || {
@@ -112,6 +115,7 @@ export async function POST(request) {
           },
           globalSettings: {},
           tenantId,
+          cfStatus: "PROVISIONING",
         },
       });
 
@@ -134,6 +138,28 @@ export async function POST(request) {
       return { site, page };
     });
 
+    // ── 3. PROVISION CLOUDFRONT TENANT ──────────────────────────────────────
+    // This updates KVS to point <slug>.sitepilot.devally.in -> site-basics/...
+    try {
+      const provisioning = await provisionSiteTenant(result.site.slug);
+
+      // Update site with provisioning result
+      await prisma.site.update({
+        where: { id: result.site.id },
+        data: {
+          cfStatus: provisioning.status,
+          cfTenantId: `tenant-${result.site.id}`, // Logical ID
+          // Assuming domain format is slug.sitepilot.devally.in
+        },
+      });
+    } catch (provisionError) {
+      console.error("Post-creation provisioning failed:", provisionError);
+      await prisma.site.update({
+        where: { id: result.site.id },
+        data: { cfStatus: "ERROR" },
+      });
+    }
+
     return NextResponse.json(
       { site: result.site, page: result.page },
       { status: 201 },
@@ -146,3 +172,4 @@ export async function POST(request) {
     );
   }
 }
+
