@@ -2,6 +2,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useSession } from '@/lib/auth-client'
+import { ArrowLeft, Briefcase, Globe, Type, Image as ImageIcon, Loader2 } from 'lucide-react'
 
 export default function NewTenantPage() {
   const router = useRouter()
@@ -49,7 +50,7 @@ export default function NewTenantPage() {
         throw new Error(data.error || 'Failed to create tenant')
       }
 
-      router.push(`/tenants/${data.tenant.id}`)
+      router.push(`/${data.tenant.id}`)
     } catch (err) {
       setError(err.message)
     } finally {
@@ -59,8 +60,10 @@ export default function NewTenantPage() {
 
   if (isPending) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600" />
+      <div className="min-h-screen flex items-center justify-center bg-[#FDFDFD]">
+        <div className="flex flex-col items-center">
+          <Loader2 className="h-8 w-8 animate-spin text-gray-500 mb-4" />
+        </div>
       </div>
     )
   }
@@ -71,106 +74,159 @@ export default function NewTenantPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md mx-auto">
-        <div className="bg-white shadow rounded-lg p-8">
-          <h2 className="text-2xl font-bold text-gray-900 mb-6">
-            Create New Workspace
-          </h2>
+    <div className="min-h-screen bg-[#FDFDFD] font-sans text-gray-900 py-12 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-2xl mx-auto">
 
-          <form onSubmit={handleSubmit} className="space-y-6">
+        {/* Navigation / Back Button */}
+        <button
+          onClick={() => router.back()}
+          className="group inline-flex items-center text-sm font-medium text-gray-500 hover:text-gray-900 transition-colors mb-8"
+        >
+          <ArrowLeft className="h-4 w-4 mr-2 group-hover:-translate-x-1 transition-transform" />
+          Back to Dashboard
+        </button>
+
+        {/* Header */}
+        <div className="mb-10">
+          <h1 className="text-3xl font-bold tracking-tight text-gray-900">
+            Create Workspace
+          </h1>
+          <p className="mt-2 text-base text-gray-500">
+            A workspace is where you manage your team, sites, and billing.
+          </p>
+        </div>
+
+        {/* Form Card */}
+        <div className="bg-white border border-gray-200 rounded-2xl shadow-sm overflow-hidden">
+          <form onSubmit={handleSubmit} className="divide-y divide-gray-100">
+
+            {/* Error Message */}
             {error && (
-              <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded">
-                {error}
+              <div className="p-6 pb-0">
+                <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl flex items-start text-sm">
+                  <div className="w-1.5 h-1.5 rounded-full bg-red-500 mt-2 mr-3 flex-shrink-0" />
+                  <p className="font-medium">{error}</p>
+                </div>
               </div>
             )}
 
-            <div>
-              <label htmlFor="name" className="block text-sm font-medium text-gray-700">
-                Workspace Name
-              </label>
-              <input
-                type="text"
-                id="name"
-                required
-                value={formData.name}
-                onChange={handleNameChange}
-                placeholder="Acme Inc."
-                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-              />
-            </div>
+            {/* Content area */}
+            <div className="p-6 sm:p-8 space-y-8">
 
-            <div>
-              <label htmlFor="slug" className="block text-sm font-medium text-gray-700">
-                Workspace URL
-              </label>
-              <div className="mt-1 flex rounded-md shadow-sm">
-                <span className="inline-flex items-center px-3 rounded-l-md border border-r-0 border-gray-300 bg-gray-50 text-gray-500 text-sm">
-                  /
-                </span>
-                <input
-                  type="text"
-                  id="slug"
-                  required
-                  value={formData.slug}
-                  onChange={(e) => setFormData({ ...formData, slug: e.target.value })}
-                  placeholder="acme-inc"
-                  pattern="[a-z0-9-]+"
-                  className="flex-1 block w-full px-3 py-2 border border-gray-300 rounded-r-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                />
+              {/* Name Field */}
+              <div>
+                <label htmlFor="name" className="block text-sm font-medium text-gray-900 mb-2">
+                  Workspace Name
+                </label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
+                    <Briefcase className="h-5 w-5 text-gray-400" />
+                  </div>
+                  <input
+                    type="text"
+                    id="name"
+                    required
+                    value={formData.name}
+                    onChange={handleNameChange}
+                    placeholder="e.g. Acme Inc."
+                    className="block w-full pl-11 pr-4 py-3 bg-white border border-gray-300 rounded-xl text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-900/10 focus:border-gray-900 transition-colors text-base"
+                  />
+                </div>
               </div>
-              <p className="mt-2 text-sm text-gray-500">
-                Lowercase letters, numbers, and hyphens only
-              </p>
 
-            <div>
-              <label htmlFor="description" className="block text-sm font-medium text-gray-700">
-                Description (optional)
-              </label>
-              <textarea
-                id="description"
-                value={formData.description}
-                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                placeholder="Brief description of your workspace"
-                rows={3}
-                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-              />
+              {/* Slug Field */}
+              <div>
+                <label htmlFor="slug" className="block text-sm font-medium text-gray-900 mb-2">
+                  Workspace URL
+                </label>
+                <div className="flex rounded-xl shadow-sm border border-gray-300 overflow-hidden focus-within:ring-2 focus-within:ring-gray-900/10 focus-within:border-gray-900 focus-within:z-10 transition-colors">
+                  <span className="inline-flex items-center px-4 bg-gray-50 border-r border-gray-300 text-gray-500 text-base select-none">
+                    sitepilot.com/
+                  </span>
+                  <input
+                    type="text"
+                    id="slug"
+                    required
+                    value={formData.slug}
+                    onChange={(e) => setFormData({ ...formData, slug: e.target.value })}
+                    placeholder="acme-inc"
+                    pattern="[a-z0-9-]+"
+                    className="flex-1 block w-full px-4 py-3 bg-white text-gray-900 placeholder-gray-400 focus:outline-none text-base"
+                  />
+                </div>
+                <p className="mt-2.5 text-sm text-gray-500 flex items-center">
+                  <Globe className="h-4 w-4 mr-1.5" />
+                  Lowercase letters, numbers, and hyphens only.
+                </p>
+              </div>
+
+              {/* Description Field */}
+              <div>
+                <label htmlFor="description" className="block text-sm font-medium text-gray-900 mb-2">
+                  Description <span className="text-gray-400 font-normal">(optional)</span>
+                </label>
+                <div className="relative">
+                  <div className="absolute top-3.5 left-3.5 flex items-start pointer-events-none">
+                    <Type className="h-5 w-5 text-gray-400" />
+                  </div>
+                  <textarea
+                    id="description"
+                    value={formData.description}
+                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                    placeholder="Brief description of your collaborative workspace"
+                    rows={3}
+                    className="block w-full pl-11 pr-4 py-3 bg-white border border-gray-300 rounded-xl text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-900/10 focus:border-gray-900 transition-colors text-base resize-y"
+                  />
+                </div>
+              </div>
+
+              {/* Logo Field */}
+              <div>
+                <label htmlFor="logo" className="block text-sm font-medium text-gray-900 mb-2">
+                  Logo URL <span className="text-gray-400 font-normal">(optional)</span>
+                </label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
+                    <ImageIcon className="h-5 w-5 text-gray-400" />
+                  </div>
+                  <input
+                    type="url"
+                    id="logo"
+                    value={formData.logo}
+                    onChange={(e) => setFormData({ ...formData, logo: e.target.value })}
+                    placeholder="https://example.com/logo.png"
+                    className="block w-full pl-11 pr-4 py-3 bg-white border border-gray-300 rounded-xl text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-900/10 focus:border-gray-900 transition-colors text-base"
+                  />
+                </div>
+              </div>
+
             </div>
 
-            <div>
-              <label htmlFor="logo" className="block text-sm font-medium text-gray-700">
-                Logo URL (optional)
-              </label>
-              <input
-                type="url"
-                id="logo"
-                value={formData.logo}
-                onChange={(e) => setFormData({ ...formData, logo: e.target.value })}
-                placeholder="https://example.com/logo.png"
-                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-              />
-              <p className="mt-2 text-sm text-gray-500">
-                Provide a URL to your workspace logo image
-              </p>
-            </div>
-            </div>
-
-            <div className="flex gap-4">
+            {/* Footer / Actions */}
+            <div className="px-6 py-5 sm:px-8 bg-gray-50 flex items-center justify-end gap-3 rounded-b-2xl border-t border-gray-100">
               <button
                 type="button"
                 onClick={() => router.back()}
-                className="flex-1 px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
+                className="px-6 py-3 text-sm font-medium text-gray-600 bg-white border border-gray-300 rounded-xl hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-200 transition-colors"
               >
                 Cancel
               </button>
               <button
                 type="submit"
                 disabled={loading}
-                className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="inline-flex items-center justify-center px-6 py-3 text-sm font-medium text-white bg-gray-900 border border-transparent rounded-xl hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-900 disabled:opacity-50 disabled:cursor-not-allowed transition-colors min-w-[160px]"
               >
-                {loading ? 'Creating...' : 'Create Workspace'}
+                {loading ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Creating...
+                  </>
+                ) : (
+                  'Create Workspace'
+                )}
               </button>
             </div>
+
           </form>
         </div>
       </div>
