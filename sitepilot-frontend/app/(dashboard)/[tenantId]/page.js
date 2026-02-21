@@ -16,6 +16,7 @@ import {
   Loader2,
   LayoutTemplate
 } from 'lucide-react'
+import { hasPermission, ROLE_LABELS, ROLE_COLORS } from '@/lib/permissions'
 
 export default function TenantDashboardPage() {
   const router = useRouter()
@@ -238,12 +239,14 @@ export default function TenantDashboardPage() {
                   View All →
                 </button>
               </div>
-              <p className="text-gray-500 text-sm mb-6 flex-1">Create, launch, and manage your websites.</p>
+              <p className="text-gray-500 text-sm mb-6 flex-1">
+                {hasPermission(userRole, 'sites:create') ? 'Create, launch, and manage your websites.' : 'View your websites.'}
+              </p>
               <button
                 onClick={() => router.push(`/${params.tenantId}/sites`)}
                 className="w-full py-2.5 px-4 bg-gray-900 text-white text-sm font-medium rounded-xl hover:bg-gray-800 transition-colors focus:outline-none focus:ring-2 focus:ring-gray-900 focus:ring-offset-1"
               >
-                Manage Sites
+                {hasPermission(userRole, 'sites:create') ? 'Manage Sites' : 'View Sites'}
               </button>
             </div>
 
@@ -262,12 +265,14 @@ export default function TenantDashboardPage() {
                   View All →
                 </button>
               </div>
-              <p className="text-gray-500 text-sm mb-6 flex-1">Build custom forms with the drag-and-drop builder.</p>
+              <p className="text-gray-500 text-sm mb-6 flex-1">
+                {hasPermission(userRole, 'forms:create') ? 'Build custom forms with the drag-and-drop builder.' : 'View your forms.'}
+              </p>
               <button
                 onClick={() => router.push(`/${params.tenantId}/forms`)}
                 className="w-full py-2.5 px-4 bg-white border border-gray-200 text-gray-900 text-sm font-medium rounded-xl hover:bg-gray-50 transition-colors focus:outline-none focus:ring-2 focus:ring-gray-200 focus:ring-offset-1"
               >
-                Manage Forms
+                {hasPermission(userRole, 'forms:create') ? 'Manage Forms' : 'View Forms'}
               </button>
             </div>
           </div>
@@ -313,7 +318,7 @@ export default function TenantDashboardPage() {
         <div>
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
             <h2 className="text-lg font-semibold tracking-tight text-gray-900">Team Setting</h2>
-            {userRole === 'OWNER' && !showAddMember && (
+            {hasPermission(userRole, 'members:invite') && !showAddMember && (
               <button
                 onClick={() => setShowAddMember(true)}
                 className="inline-flex items-center justify-center px-4 py-2 text-sm font-medium text-gray-900 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors focus:outline-none focus:ring-2 focus:ring-gray-200"
@@ -380,6 +385,7 @@ export default function TenantDashboardPage() {
                         className="block w-full px-4 py-2.5 bg-white border border-gray-300 rounded-xl text-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-900/10 focus:border-gray-900 transition-colors text-sm appearance-none cursor-pointer"
                       >
                         <option value="EDITOR">Editor</option>
+                        <option value="VIEWER">Viewer</option>
                         <option value="OWNER">Owner</option>
                       </select>
                     </div>
@@ -425,11 +431,11 @@ export default function TenantDashboardPage() {
                   </div>
 
                   <div className="flex items-center gap-3 justify-between sm:justify-end">
-                    <span className="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-gray-100 text-gray-600 border border-gray-200">
-                      {member.role === 'OWNER' ? 'Owner' : 'Editor'}
+                    <span className={`inline-flex items-center px-2 py-1 rounded text-xs font-medium border border-gray-200 ${ROLE_COLORS[member.role] || 'bg-gray-100 text-gray-600'}`}>
+                      {ROLE_LABELS[member.role] || member.role}
                     </span>
 
-                    {userRole === 'OWNER' && member.userId !== tenant.ownerId && (
+                    {hasPermission(userRole, 'members:remove') && member.userId !== tenant.ownerId && (
                       <button
                         onClick={() => handleRemoveMember(member.userId)}
                         className="p-1.5 text-gray-400 hover:text-gray-900 rounded-md transition-colors"
@@ -446,7 +452,7 @@ export default function TenantDashboardPage() {
         </div>
 
         {/* Pending Invitations Section */}
-        {userRole === 'OWNER' && invitations.length > 0 && (
+        {hasPermission(userRole, 'members:invite') && invitations.length > 0 && (
           <div>
             <h2 className="text-lg font-semibold tracking-tight text-gray-900 mb-4">Pending Invitations</h2>
             <div className="bg-white border border-gray-200 rounded-2xl shadow-sm overflow-hidden">
