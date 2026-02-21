@@ -6,12 +6,16 @@ import Toolbar from "@/lib/components/builder/Toolbar";
 import LeftSidebar from "@/lib/components/builder/LeftSidebar";
 import RightSidebar from "@/lib/components/builder/RightSidebar";
 import CanvasArea from "@/lib/components/builder/CanvasArea";
+import CollaborativeCanvas from "@/components/builder/CollaborativeCanvas";
 import useBuilderStore from "@/lib/stores/builderStore";
 import useHistoryStore from "@/lib/stores/historyStore";
+import { useSession } from "@/lib/auth-client";
+import { getCursorColor } from "@/liveblocks.config";
 
 export default function PageBuilderPage() {
   const params = useParams();
-  const { siteId, pageId } = params;
+  const { tenantId, siteId, pageId } = params;
+  const { data: session } = useSession();
 
   const { initializeFromAPI } = useBuilderStore();
   const { initialize: initializeHistory } = useHistoryStore();
@@ -92,14 +96,39 @@ export default function PageBuilderPage() {
     );
   }
 
-  return (
-    <div className="h-screen flex flex-col bg-white">
-      <Toolbar />
-      <div className="flex-1 flex overflow-hidden">
-        <LeftSidebar />
-        <CanvasArea />
-        <RightSidebar />
-      </div>
-    </div>
+  // Derive user info for collaboration
+  const userName = session?.user?.name || session?.user?.email || "Anonymous";
+  const userColor = getCursorColor(
+    Math.abs(hashCode(session?.user?.id || "anon"))
   );
+
+  return (
+    <CollaborativeCanvas
+      tenantId={tenantId}
+      siteId={siteId}
+      pageId={pageId}
+      userName={userName}
+      userColor={userColor}
+    >
+      <div className="h-screen flex flex-col bg-white">
+        <Toolbar />
+        <div className="flex-1 flex overflow-hidden">
+          <LeftSidebar />
+          <CanvasArea />
+          <RightSidebar />
+        </div>
+      </div>
+    </CollaborativeCanvas>
+  );
+}
+
+/** Simple string hash for deterministic color assignment */
+function hashCode(str) {
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) {
+    const char = str.charCodeAt(i);
+    hash = (hash << 5) - hash + char;
+    hash |= 0;
+  }
+  return hash;
 }

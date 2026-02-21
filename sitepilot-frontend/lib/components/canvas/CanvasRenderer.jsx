@@ -55,7 +55,7 @@ function SelectionHandles() {
 
 // ── Root Renderer ──────────────────────────────────────────────────────────
 
-export default function CanvasRenderer({ page, onDrop, onDragOver }) {
+export default function CanvasRenderer({ page, onDrop, onDragOver, lockedByOthers = {}, onNodeSelect, onCanvasBackgroundClick }) {
   const { selectedNodeId, hoveredNodeId, setSelectedNode, setHoveredNode, reorderContainers } =
     useBuilderStore();
   const [dragOverIndex, setDragOverIndex] = useState(null);
@@ -110,7 +110,10 @@ export default function CanvasRenderer({ page, onDrop, onDragOver }) {
   return (
     <div
       className="w-full min-h-full bg-white"
-      onClick={() => setSelectedNode(null)}
+      onClick={() => {
+        setSelectedNode(null);
+        if (onCanvasBackgroundClick) onCanvasBackgroundClick();
+      }}
     >
       {page.layout.map(
         (container, index) =>
@@ -140,9 +143,12 @@ export default function CanvasRenderer({ page, onDrop, onDragOver }) {
                 containerIndex={index}
                 isSelected={selectedNodeId === container.id}
                 isHovered={hoveredNodeId === container.id}
+                lockedByOthers={lockedByOthers}
+                onNodeSelect={onNodeSelect}
                 onClick={(e) => {
                   e.stopPropagation();
-                  setSelectedNode(container.id);
+                  if (onNodeSelect) onNodeSelect(container.id);
+                  else setSelectedNode(container.id);
                 }}
                 onMouseEnter={(e) => {
                   e.stopPropagation();
@@ -189,6 +195,8 @@ function ContainerBlock({
   containerIndex,
   isSelected,
   isHovered,
+  lockedByOthers = {},
+  onNodeSelect,
   onClick,
   onMouseEnter,
   onMouseLeave,
@@ -198,6 +206,10 @@ function ContainerBlock({
   onContainerDragEnd,
 }) {
   const [isDragging, setIsDragging] = useState(false);
+
+  // Check if THIS container is locked by another user
+  const lockInfo = lockedByOthers[container.id];
+  const isLockedByOther = !!lockInfo;
   const settings = container.settings || {};
   const styles = container.styles || {};
   const isHorizontal = settings.direction !== "vertical";
@@ -206,6 +218,7 @@ function ContainerBlock({
   const gap = settings.gap ?? 16;
 
   const handleDragStart = (e) => {
+    if (isLockedByOther) { e.preventDefault(); return; }
     e.stopPropagation();
     setIsDragging(true);
     onContainerDragStart(e, container.id, containerIndex);
@@ -219,18 +232,19 @@ function ContainerBlock({
 
   return (
     <div
-      draggable
+      draggable={!isLockedByOther}
       onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
-      onClick={onClick}
-      onMouseEnter={onMouseEnter}
-      onMouseLeave={onMouseLeave}
+      onClick={isLockedByOther ? (e) => e.stopPropagation() : onClick}
+      onMouseEnter={isLockedByOther ? undefined : onMouseEnter}
+      onMouseLeave={isLockedByOther ? undefined : onMouseLeave}
       className={clsx(
         "relative transition-all duration-200 group/container",
         isDragging && "opacity-30",
-        isSelected &&
+        isLockedByOther && "cursor-not-allowed",
+        !isLockedByOther && isSelected &&
           "ring-2 ring-violet-500 shadow-[0_0_0_1px_rgba(139,92,246,0.3)]",
-        isHovered && !isSelected && "ring-1 ring-violet-300",
+        !isLockedByOther && isHovered && !isSelected && "ring-1 ring-violet-300",
       )}
       style={{
         backgroundColor: styles.backgroundColor,
@@ -243,7 +257,8 @@ function ContainerBlock({
         marginBottom: `${styles.marginBottom ?? 0}px`,
       }}
     >
-      {/* Drag Handle for Container */}
+      {/* Drag Handle for Container (hidden when locked by another user) */}
+      {!isLockedByOther && (
       <div className="absolute -left-10 top-4 opacity-0 group-hover/container:opacity-100 transition-opacity cursor-move z-10">
         <div className="bg-violet-500 text-white p-1.5 rounded shadow-lg">
           <svg
@@ -265,16 +280,41 @@ function ContainerBlock({
           </svg>
         </div>
       </div>
+      )}
 
       {/* Selection handles */}
-      {isSelected && <SelectionHandles />}
+      {isSelected && !isLockedByOther && <SelectionHandles />}
 
       {/* Label */}
-      {isSelected && (
+      {isSelected && !isLockedByOther && (
         <NodeLabel label="Container" color="violet" position="top-left" />
       )}
-      {isHovered && !isSelected && (
+      {isHovered && !isSelected && !isLockedByOther && (
         <NodeLabel label="Container" color="violet" position="top-left" />
+      )}
+
+      {/* Lock overlay — blocks all interaction when another user is editing */}
+      {isLockedByOther && (
+        <div
+          className="absolute inset-0 z-30 cursor-not-allowed"
+          style={{
+            border: `2px solid ${lockInfo.color}`,
+            borderRadius: 'inherit',
+            backgroundColor: `${lockInfo.color}08`,
+          }}
+          onClick={(e) => e.stopPropagation()}
+          onMouseDown={(e) => e.stopPropagation()}
+          onPointerDown={(e) => e.stopPropagation()}
+          onDragStart={(e) => e.preventDefault()}
+        >
+          <div
+            className="absolute -top-6 left-2 flex items-center gap-1.5 px-2 py-0.5 rounded text-[10px] font-semibold text-white shadow-sm whitespace-nowrap"
+            style={{ backgroundColor: lockInfo.color }}
+          >
+            <span className="inline-block w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
+            {lockInfo.username} is editing
+          </div>
+        </div>
       )}
 
       {/* Inner wrapper — handles content width + flex direction */}
@@ -289,6 +329,7 @@ function ContainerBlock({
           alignItems: isHorizontal
             ? settings.verticalAlign || "stretch"
             : undefined,
+          pointerEvents: isLockedByOther ? "none" : undefined,
         }}
       >
         {container.columns.map((column, columnIndex) => (
@@ -299,6 +340,9 @@ function ContainerBlock({
             containerId={container.id}
             isHorizontal={isHorizontal}
             isContainerSelected={isSelected}
+            isContainerLockedByOther={isLockedByOther}
+            lockedByOthers={lockedByOthers}
+            onNodeSelect={onNodeSelect}
             onDrop={onDrop}
             onDragOver={onDragOver}
           />
@@ -318,6 +362,9 @@ function Column({
   containerId,
   isHorizontal,
   isContainerSelected,
+  isContainerLockedByOther = false,
+  lockedByOthers = {},
+  onNodeSelect,
   onDrop,
   onDragOver,
 }) {
@@ -400,7 +447,13 @@ function Column({
           {column.components.map(
             (component) =>
               !component.hidden && (
-                <ComponentRenderer key={component.id} component={component} />
+                <ComponentRenderer
+                  key={component.id}
+                  component={component}
+                  isContainerLockedByOther={isContainerLockedByOther}
+                  lockedByOthers={lockedByOthers}
+                  onNodeSelect={onNodeSelect}
+                />
               ),
           )}
           {isDragOver && (
@@ -420,12 +473,16 @@ function Column({
 // COMPONENT RENDERER
 // ============================================================================
 
-function ComponentRenderer({ component }) {
+function ComponentRenderer({ component, isContainerLockedByOther = false, lockedByOthers = {}, onNodeSelect }) {
   const { selectedNodeId, hoveredNodeId, setSelectedNode, setHoveredNode } =
     useBuilderStore();
   const [isDragging, setIsDragging] = useState(false);
 
   const Component = componentRegistry[component.type];
+
+  // Check if this specific component is locked by another user
+  const lockInfo = lockedByOthers[component.id];
+  const isLockedByOther = isContainerLockedByOther || !!lockInfo;
 
   if (!Component) {
     return (
@@ -440,6 +497,7 @@ function ComponentRenderer({ component }) {
   const isHovered = hoveredNodeId === component.id;
 
   const handleDragStart = (e) => {
+    if (isLockedByOther) { e.preventDefault(); return; }
     e.stopPropagation();
     setIsDragging(true);
     e.dataTransfer.effectAllowed = "move";
@@ -452,65 +510,99 @@ function ComponentRenderer({ component }) {
     setIsDragging(false);
   };
 
+  // Determine which lock label to show (component-level takes priority)
+  const activeLock = lockInfo || (isContainerLockedByOther ? null : null);
+
   return (
     <div
-      draggable
+      draggable={!isLockedByOther}
       onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
       className={clsx(
         "group relative transition-all duration-200",
         isDragging && "opacity-50",
-        isSelected &&
+        isLockedByOther && "cursor-not-allowed",
+        !isLockedByOther && isSelected &&
           "ring-2 ring-blue-500 shadow-[0_0_0_1px_rgba(59,130,246,0.3)] rounded-sm",
-        isHovered && !isSelected && "ring-1 ring-blue-300 rounded-sm",
+        !isLockedByOther && isHovered && !isSelected && "ring-1 ring-blue-300 rounded-sm",
       )}
       onMouseEnter={(e) => {
         e.stopPropagation();
-        setHoveredNode(component.id);
+        if (!isLockedByOther) setHoveredNode(component.id);
       }}
       onMouseLeave={() => setHoveredNode(null)}
     >
-      {/* Drag Handle - appears on hover */}
-      <div className="absolute -left-8 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity cursor-move z-10">
-        <div className="bg-blue-500 text-white p-1 rounded shadow-lg">
-          <svg
-            width="16"
-            height="16"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
-            <circle cx="9" cy="5" r="1" />
-            <circle cx="9" cy="12" r="1" />
-            <circle cx="9" cy="19" r="1" />
-            <circle cx="15" cy="5" r="1" />
-            <circle cx="15" cy="12" r="1" />
-            <circle cx="15" cy="19" r="1" />
-          </svg>
+      {/* Lock overlay — blocks all click/drag on this component */}
+      {isLockedByOther && (
+        <div
+          className="absolute inset-0 z-30 cursor-not-allowed rounded-sm"
+          style={{
+            border: `2px solid ${(lockInfo || {}).color || '#f59e0b'}`,
+            backgroundColor: `${(lockInfo || {}).color || '#f59e0b'}08`,
+          }}
+          onClick={(e) => e.stopPropagation()}
+          onMouseDown={(e) => e.stopPropagation()}
+          onPointerDown={(e) => e.stopPropagation()}
+          onDragStart={(e) => e.preventDefault()}
+        >
+          {/* Show label only for direct component lock (not container inheritance) */}
+          {lockInfo && (
+            <div
+              className="absolute -top-5 right-1 flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-semibold text-white shadow-sm whitespace-nowrap"
+              style={{ backgroundColor: lockInfo.color }}
+            >
+              <span className="inline-block w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
+              {lockInfo.username}
+            </div>
+          )}
         </div>
-      </div>
+      )}
+
+      {/* Drag Handle - appears on hover (hidden when locked) */}
+      {!isLockedByOther && (
+        <div className="absolute -left-8 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity cursor-move z-10">
+          <div className="bg-blue-500 text-white p-1 rounded shadow-lg">
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <circle cx="9" cy="5" r="1" />
+              <circle cx="9" cy="12" r="1" />
+              <circle cx="9" cy="19" r="1" />
+              <circle cx="15" cy="5" r="1" />
+              <circle cx="15" cy="12" r="1" />
+              <circle cx="15" cy="19" r="1" />
+            </svg>
+          </div>
+        </div>
+      )}
 
       {/* Selection handles */}
-      {isSelected && <SelectionHandles />}
+      {isSelected && !isLockedByOther && <SelectionHandles />}
 
       {/* Label */}
-      {isSelected && (
+      {isSelected && !isLockedByOther && (
         <NodeLabel label={component.type} color="blue" position="top-right" />
       )}
-      {isHovered && !isSelected && (
+      {isHovered && !isSelected && !isLockedByOther && (
         <NodeLabel label={component.type} color="blue" position="top-right" />
       )}
 
       <Component
         props={component.props}
         styles={component.styles}
-        isSelected={isSelected}
+        isSelected={isSelected && !isLockedByOther}
         onClick={(e) => {
           e.stopPropagation();
-          setSelectedNode(component.id);
+          if (isLockedByOther) return;
+          if (onNodeSelect) onNodeSelect(component.id);
+          else setSelectedNode(component.id);
         }}
       />
     </div>

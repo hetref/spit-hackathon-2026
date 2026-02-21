@@ -108,7 +108,7 @@ export default function FormBuilderPage() {
     setIsLoading(true);
     try {
       const response = await fetch(
-        `/api/tenants/${params.tenantId}/forms/${params.formId}`
+        `/api/sites/${params.siteId}/forms/${params.formId}`
       );
 
       if (response.ok) {
@@ -143,7 +143,7 @@ export default function FormBuilderPage() {
     } finally {
       setIsLoading(false);
     }
-  }, [params.tenantId, params.formId, updateLayoutJSON, initializeHistory]);
+  }, [params.siteId, params.formId, updateLayoutJSON, initializeHistory]);
 
   useEffect(() => {
     if (session && params.formId) {
@@ -160,7 +160,7 @@ export default function FormBuilderPage() {
       const currentForm = formRef.current;
       const currentParams = paramsRef.current;
       const response = await fetch(
-        `/api/tenants/${currentParams.tenantId}/forms/${currentParams.formId}/versions`,
+        `/api/sites/${currentParams.siteId}/forms/${currentParams.formId}/versions`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -194,7 +194,7 @@ export default function FormBuilderPage() {
       const currentForm = formRef.current;
       const currentParams = paramsRef.current;
       const response = await fetch(
-        `/api/tenants/${currentParams.tenantId}/forms/${currentParams.formId}/versions`,
+        `/api/sites/${currentParams.siteId}/forms/${currentParams.formId}/versions`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },

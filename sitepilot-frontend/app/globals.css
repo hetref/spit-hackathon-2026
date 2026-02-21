@@ -196,6 +196,10 @@
   }
 }
 
+#liveblocks-badge {
+  display: none
+}
+
 /* Sidebar nav-item base (for GSAP selector targeting) */
 .nav-item {
   text-decoration: none;
