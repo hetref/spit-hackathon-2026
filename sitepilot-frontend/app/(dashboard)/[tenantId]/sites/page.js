@@ -356,7 +356,7 @@ export default function SitesPage() {
     setSuccessToast(newSite.name);
     // Give the user a moment to see the success toast before redirecting
     setTimeout(() => {
-      router.push(`/${tenantId}/sites/${newSite.id}/builder`);
+      router.push(`/${tenantId}/sites/${newSite.id}/pages`);
     }, 1500);
   };
 

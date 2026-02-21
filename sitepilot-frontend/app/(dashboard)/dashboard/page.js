@@ -28,11 +28,9 @@ import {
 } from "@/components/ui/dropdown-menu"
 
 const SIDEBAR_ITEMS = [
-  { label: 'Workspaces', icon: Briefcase, active: true },
-  { label: 'Domains', icon: Globe },
-  { label: 'Team', icon: Users },
-  { label: 'Billing', icon: CreditCard },
-  { label: 'Settings', icon: Settings },
+  { label: 'Workspaces', icon: Briefcase, active: true, href: '/dashboard' },
+  { label: 'Billing', icon: CreditCard, href: '/dashboard?tab=billing' },
+  { label: 'Settings', icon: Settings, href: '/dashboard?tab=settings' },
 ]
 
 export default function DashboardPage() {
@@ -148,9 +146,10 @@ export default function DashboardPage() {
             {SIDEBAR_ITEMS.map((item) => (
               <button
                 key={item.label}
+                onClick={() => router.push(item.href || '#')}
                 className={`w-full flex items-center py-4 px-5 text-sm font-bold rounded-2xl transition-all ${item.active
-                    ? 'bg-[#d3ff4a] text-[#0b1411] shadow-[0_0_20px_rgba(211,255,74,0.15)]'
-                    : 'text-gray-400 hover:bg-white/5 hover:text-white'
+                  ? 'bg-[#d3ff4a] text-[#0b1411] shadow-[0_0_20px_rgba(211,255,74,0.15)]'
+                  : 'text-gray-400 hover:bg-white/5 hover:text-white'
                   }`}
               >
                 <item.icon className={`h-5 w-5 mr-4 transition-colors ${item.active ? 'text-[#0b1411]' : 'text-gray-500 group-hover:text-white'}`} />
