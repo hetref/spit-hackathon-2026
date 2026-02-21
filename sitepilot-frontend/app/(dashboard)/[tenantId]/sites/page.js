@@ -87,48 +87,48 @@ function CreateSiteModal({ tenantId, onClose, onCreated }) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/40 backdrop-blur-sm">
-      <div className="bg-white rounded-2xl shadow-xl border border-gray-200 w-full max-w-md mx-4 overflow-hidden">
-        <div className="flex items-center justify-between px-6 py-5 border-b border-gray-100 bg-gray-50/50">
-          <h2 className="text-lg font-semibold text-gray-900 tracking-tight">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#0b1411]/40 backdrop-blur-md">
+      <div className="bg-[#fcfdfc] rounded-[2rem] shadow-2xl border border-gray-100 w-full max-w-md mx-4 overflow-hidden">
+        <div className="flex items-center justify-between px-8 py-6 border-b border-gray-100">
+          <h2 className="text-xl font-black uppercase tracking-tight text-[#1d2321]">
             Create New Site
           </h2>
           <button
             onClick={onClose}
-            className="p-2 text-gray-400 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
+            className="p-2 text-gray-400 hover:text-[#0b1411] hover:bg-gray-100 rounded-xl transition-colors"
           >
-            <X size={18} />
+            <X size={20} />
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="px-6 py-6 space-y-5">
+        <form onSubmit={handleSubmit} className="px-8 py-8 space-y-6">
           {error && (
             <div className="flex items-start gap-3 text-sm text-red-700 bg-red-50 border border-red-100 rounded-xl px-4 py-3">
               <AlertCircle size={16} className="mt-0.5 shrink-0 text-red-500" />
-              <span className="font-medium">{error}</span>
+              <span className="font-bold">{error}</span>
             </div>
           )}
 
           <div>
-            <label className="block text-sm font-medium text-gray-900 mb-2">
-              Site Name <span className="text-red-500">*</span>
+            <label className="block text-xs font-bold uppercase tracking-widest text-gray-500 mb-2">
+              Site Name <span className="text-[#8bc4b1]">*</span>
             </label>
             <input
               type="text"
               value={name}
               onChange={handleNameChange}
               placeholder="e.g. Acme Marketing"
-              className="w-full px-4 py-3 bg-white border border-gray-300 rounded-xl text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-900/10 focus:border-gray-900 transition-colors"
+              className="w-full px-5 py-4 bg-[#f2f4f2] border-none rounded-2xl text-sm font-medium text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#0b1411]/20 transition-all shadow-inner"
               required
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-900 mb-2">
-              URL Slug <span className="text-red-500">*</span>
+            <label className="block text-xs font-bold uppercase tracking-widest text-gray-500 mb-2">
+              URL Slug <span className="text-[#8bc4b1]">*</span>
             </label>
-            <div className="flex items-center border border-gray-300 rounded-xl focus-within:ring-2 focus-within:ring-gray-900/10 focus-within:border-gray-900 overflow-hidden transition-colors">
-              <span className="px-4 py-3 bg-gray-50 border-r border-gray-300 text-gray-500 text-sm select-none">
+            <div className="flex items-center bg-[#f2f4f2] rounded-2xl focus-within:ring-2 focus-within:ring-[#0b1411]/20 overflow-hidden transition-all shadow-inner">
+              <span className="pl-5 py-4 text-gray-400 text-sm font-bold select-none tracking-tight">
                 sitepilot.com/
               </span>
               <input
@@ -136,38 +136,38 @@ function CreateSiteModal({ tenantId, onClose, onCreated }) {
                 value={slug}
                 onChange={handleSlugChange}
                 placeholder="acme-marketing"
-                className="flex-1 px-4 py-3 bg-white text-sm text-gray-900 placeholder-gray-400 focus:outline-none"
+                className="flex-1 px-2 py-4 bg-transparent text-sm font-bold text-gray-900 placeholder-gray-400 focus:outline-none"
                 required
               />
             </div>
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-900 mb-2">
+            <label className="block text-xs font-bold uppercase tracking-widest text-gray-500 mb-2">
               Description{" "}
-              <span className="text-gray-400 font-normal">(optional)</span>
+              <span className="text-gray-400 font-normal normal-case tracking-normal">(optional)</span>
             </label>
             <textarea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               placeholder="A brief description of this site's purpose..."
               rows={2}
-              className="w-full px-4 py-3 bg-white border border-gray-300 rounded-xl text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-900/10 focus:border-gray-900 transition-colors resize-y"
+              className="w-full px-5 py-4 bg-[#f2f4f2] border-none rounded-2xl text-sm font-medium text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#0b1411]/20 transition-all shadow-inner resize-y"
             />
           </div>
 
-          <div className="flex items-center justify-end gap-3 pt-4 border-t border-gray-100 mt-6 -mx-6 px-6 sm:pb-0 pb-6">
+          <div className="flex items-center justify-end gap-3 pt-6 sm:pb-0 pb-6 mt-4">
             <button
               type="button"
               onClick={onClose}
-              className="px-5 py-2.5 bg-white border border-gray-300 text-gray-700 text-sm font-medium rounded-xl hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-200 transition-colors"
+              className="px-6 py-3.5 bg-transparent text-gray-500 text-sm font-bold rounded-full hover:bg-gray-100 focus:outline-none transition-colors"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={loading}
-              className="inline-flex items-center justify-center px-6 py-2.5 bg-gray-900 text-white text-sm font-medium border border-transparent rounded-xl hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-gray-900 focus:ring-offset-2 transition-colors min-w-[120px]"
+              className="inline-flex items-center justify-center px-8 py-3.5 bg-[#d3ff4a] text-[#0b1411] text-sm font-black uppercase tracking-wider rounded-full hover:bg-[#c0eb3f] hover:scale-105 active:scale-95 disabled:opacity-50 disabled:hover:scale-100 disabled:cursor-not-allowed focus:outline-none shadow-[0_0_20px_rgba(211,255,74,0.3)] transition-all min-w-[140px]"
             >
               {loading ? (
                 <>
@@ -198,20 +198,23 @@ function SiteCard({ site, tenantId, onDelete, router, userRole }) {
   };
 
   return (
-    <div className="group flex flex-col bg-white border border-gray-200 rounded-2xl hover:border-gray-300 hover:shadow-md transition-all duration-200 overflow-hidden">
+    <div className="group flex flex-col bg-white border border-gray-200 rounded-[2rem] hover:border-[#8bc4b1] hover:shadow-[0_20px_40px_-15px_rgba(0,0,0,0.1)] hover:-translate-y-1 transition-all duration-500 overflow-hidden relative">
+
+      {/* Subtle card background accent */}
+      <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-[#d3ff4a]/0 to-[#8bc4b1]/0 group-hover:from-[#d3ff4a]/10 group-hover:to-[#8bc4b1]/10 rounded-bl-[100px] transition-all duration-500 pointer-events-none" />
 
       {/* Header Info */}
-      <div className="p-6 pb-4 border-b border-gray-100 flex-1">
-        <div className="flex items-start justify-between gap-4 mb-3">
+      <div className="p-6 lg:p-8 flex-1 relative z-10">
+        <div className="flex items-start justify-between gap-4 mb-4">
           <div className="flex items-center gap-4 min-w-0">
-            <div className="h-12 w-12 rounded-xl border border-gray-200 bg-gray-50 flex items-center justify-center shrink-0">
-              <Globe className="h-6 w-6 text-gray-400 group-hover:text-gray-600 transition-colors" />
+            <div className="h-14 w-14 rounded-2xl bg-[#0b1411] text-[#d3ff4a] flex items-center justify-center shrink-0 font-black text-xl group-hover:bg-[#d3ff4a] group-hover:text-[#0b1411] shadow-lg shadow-black/5 transition-colors">
+              <Globe className="h-6 w-6" />
             </div>
             <div className="min-w-0">
-              <h3 className="text-lg font-bold text-gray-900 tracking-tight truncate group-hover:text-gray-900 transition-colors">
+              <h3 className="text-[1.35rem] font-black text-[#1d2321] leading-[1.2] tracking-tight truncate group-hover:text-[#8bc4b1] transition-colors">
                 {site.name}
               </h3>
-              <p className="text-sm text-gray-500 mt-0.5 truncate">
+              <p className="text-xs text-gray-500 font-bold uppercase tracking-widest mt-1 truncate">
                 /{site.slug}
               </p>
             </div>
@@ -219,47 +222,47 @@ function SiteCard({ site, tenantId, onDelete, router, userRole }) {
         </div>
 
         {site.description && (
-          <p className="text-sm text-gray-500 mt-4 line-clamp-2 leading-relaxed">
+          <p className="text-sm text-gray-500 font-medium mt-4 line-clamp-2 leading-relaxed">
             {site.description}
           </p>
         )}
 
-        <div className="flex items-center gap-3 mt-5">
+        <div className="flex items-center gap-3 mt-6">
           {publishedCount > 0 ? (
-            <span className="inline-flex items-center gap-1.5 text-xs font-medium text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-md px-2.5 py-1">
+            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 text-emerald-700 rounded-full text-[10px] font-black uppercase tracking-widest border border-emerald-100">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
               {publishedCount} Published
             </span>
           ) : (
-            <span className="inline-flex items-center gap-1.5 text-xs font-medium text-gray-600 bg-gray-100 border border-gray-200 rounded-md px-2.5 py-1">
+            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#f2f4f2] text-gray-600 rounded-full text-[10px] font-black uppercase tracking-widest border border-gray-100 group-hover:border-[#8bc4b1]/30 transition-colors">
               <span className="w-1.5 h-1.5 rounded-full bg-gray-400" />
               Draft
             </span>
           )}
-          <span className="text-xs text-gray-400 flex items-center gap-1.5">
+          <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest flex items-center gap-1.5">
             <span className="w-1 h-1 rounded-full bg-gray-300" />
-            Updated {formatDate(site.updatedAt)}
+            {formatDate(site.updatedAt)}
           </span>
         </div>
       </div>
 
       {/* Actions Footer */}
-      <div className="px-6 py-4 bg-gray-50/50 flex items-center justify-between gap-3">
+      <div className="px-6 lg:px-8 pb-6 pt-4 border-t border-gray-100/50 flex items-center justify-between gap-3 relative z-10">
         {canEdit ? (
           <button
             onClick={openBuilder}
-            className="flex-1 inline-flex items-center justify-center gap-2 px-4 py-2 bg-white text-gray-900 text-sm font-medium border border-gray-300 rounded-xl hover:bg-gray-50 transition-colors focus:outline-none focus:ring-2 focus:ring-gray-200"
+            className="flex-1 h-11 inline-flex items-center justify-center gap-2 px-6 bg-[#f2f4f2] text-[#0b1411] text-xs font-black uppercase tracking-widest rounded-full group-hover:bg-[#d3ff4a] shadow-sm hover:shadow-md hover:scale-[1.02] active:scale-95 transition-all focus:outline-none"
           >
-            <Pencil size={15} className="text-gray-500" />
-            Edit Pages
+            <Pencil size={15} className="text-[#0b1411]/50 group-hover:text-[#0b1411]/70" />
+            Build
           </button>
         ) : (
           <button
             onClick={() => router.push(`/${tenantId}/sites/${site.id}`)}
-            className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 bg-gray-100 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-200 transition-colors"
+            className="flex-1 h-11 flex items-center justify-center gap-1.5 px-6 bg-[#fcfdfc] border border-gray-200 text-gray-700 text-xs font-black uppercase tracking-widest rounded-full hover:bg-gray-50 hover:scale-[1.02] active:scale-95 transition-all"
           >
             <Eye size={14} />
-            View site
+            View
           </button>
         )}
 
@@ -269,7 +272,7 @@ function SiteCard({ site, tenantId, onDelete, router, userRole }) {
               href={`https://${site.domain}`}
               target="_blank"
               rel="noopener noreferrer"
-              className="p-2.5 bg-white border border-gray-300 text-gray-500 rounded-xl hover:bg-gray-50 hover:text-gray-900 transition-colors focus:outline-none focus:ring-2 focus:ring-gray-200"
+              className="h-11 w-11 flex items-center justify-center bg-[#fcfdfc] border border-gray-200 text-gray-500 rounded-full hover:bg-gray-50 hover:text-[#0b1411] transition-all hover:scale-105"
               title="Open live site"
             >
               <ExternalLink size={16} />
@@ -278,7 +281,7 @@ function SiteCard({ site, tenantId, onDelete, router, userRole }) {
           {canDelete && (
             <button
               onClick={() => onDelete(site)}
-              className="p-2.5 border border-transparent text-gray-400 rounded-xl hover:bg-red-50 hover:text-red-600 hover:border-red-100 transition-colors focus:outline-none focus:ring-2 focus:ring-red-100"
+              className="h-11 w-11 flex items-center justify-center border border-transparent text-gray-400 rounded-full hover:bg-red-50 hover:text-red-600 hover:border-red-100 transition-all hover:scale-105"
               title="Delete site"
             >
               <Trash2 size={16} />
@@ -376,38 +379,41 @@ export default function SitesPage() {
 
   if (isPending || loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#FDFDFD]">
-        <Loader2 size={32} className="animate-spin text-gray-400" />
+      <div className="min-h-screen flex items-center justify-center bg-[#fcfdfc]">
+        <div className="animate-spin rounded-full h-10 w-10 border-[4px] border-gray-100 border-t-[#0b1411]" />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[#FDFDFD] font-sans text-gray-900 pb-12">
+    <div className="min-h-screen bg-[#fcfdfc] font-sans text-gray-900 pb-20 relative">
 
-      {/* Header aligned with other dashboard views */}
-      <div className="bg-white border-b border-gray-200 sticky top-0 z-10">
-        <div className="max-w-7xl mx-auto px-6 sm:px-10 lg:px-12 py-5 sm:py-6">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <div className="flex items-center gap-4">
+      <div className="bg-white/80 backdrop-blur-md border-b border-gray-100 sticky top-0 z-20">
+        <div className="max-w-7xl mx-auto px-6 sm:px-10 lg:px-16 py-6">
+          <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-6">
+            <div className="flex items-start sm:items-center gap-6">
               <button
                 onClick={() => router.push(`/${tenantId}`)}
-                className="p-2 -ml-2 text-gray-400 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-gray-200"
+                className="mt-1 sm:mt-0 p-3 bg-white border border-gray-200 text-gray-400 hover:text-[#0b1411] hover:border-[#0b1411]/20 rounded-2xl transition-all shadow-sm hover:shadow-md focus:outline-none"
                 title="Back to Workspace"
               >
                 <ArrowLeft className="h-6 w-6" />
               </button>
               <div>
-                <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-gray-900">Sites</h1>
-                <p className="text-sm sm:text-base text-gray-500 mt-0.5">Manage your workspace websites</p>
+                <p className="text-[#8bc4b1] text-[10px] font-bold tracking-[0.2em] uppercase mb-3">
+                  WORKSPACE DIRECTORY
+                </p>
+                <h1 className="text-4xl sm:text-5xl font-black text-[#1d2321] uppercase tracking-tighter leading-[1]">
+                  Sites
+                </h1>
               </div>
             </div>
             {canCreate && (
               <button
                 onClick={() => setShowCreate(true)}
-                className="inline-flex items-center justify-center px-6 py-2.5 bg-gray-900 text-white text-sm font-medium rounded-xl hover:bg-gray-800 transition-colors focus:outline-none focus:ring-2 focus:ring-gray-900 focus:ring-offset-2"
+                className="w-full sm:w-auto bg-[#d3ff4a] text-[#0b1411] h-14 px-8 rounded-full font-bold flex items-center justify-center hover:bg-[#c0eb3f] transition-all active:scale-95 shadow-[0_0_20px_rgba(211,255,74,0.3)] hover:scale-105 duration-200"
               >
-                <Plus size={16} className="mr-2" />
+                <Plus className="h-5 w-5 mr-2" />
                 New Site
               </button>
             )}
@@ -415,7 +421,7 @@ export default function SitesPage() {
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-6 sm:px-10 lg:px-12 py-8 sm:py-12">
+      <div className="max-w-7xl mx-auto px-6 sm:px-10 lg:px-16 py-12">
         {error && (
           <div className="mb-8 flex items-start gap-3 text-sm text-red-700 bg-red-50 border border-red-100 rounded-xl px-5 py-4">
             <AlertCircle size={18} className="mt-0.5 shrink-0 text-red-500" />
@@ -425,23 +431,23 @@ export default function SitesPage() {
 
         {/* Sites grid */}
         {sites.length === 0 ? (
-          <div className="text-center py-32 bg-white rounded-3xl border border-dashed border-gray-300 flex flex-col items-center">
-            <div className="h-16 w-16 bg-gray-50 border border-gray-200 rounded-2xl flex items-center justify-center mb-6">
-              <Globe size={32} className="text-gray-400" />
+          <div className="py-32 text-center border border-gray-200 rounded-[2.5rem] bg-[#fcfdfc] border-dashed px-6 flex flex-col items-center">
+            <div className="h-20 w-20 rounded-[2rem] bg-gray-50 border border-gray-100 flex items-center justify-center mb-8">
+              <Globe size={32} className="text-gray-300" />
             </div>
-            <h3 className="text-xl font-semibold text-gray-900 mb-2 tracking-tight">
-              No sites created yet
+            <h3 className="text-2xl font-black text-[#0b1411] tracking-tight mb-3">
+              No Domains Launched
             </h3>
-            <p className="text-base text-gray-500 max-w-sm mb-8">
+            <p className="text-base font-medium text-gray-500 max-w-sm mb-10 leading-relaxed">
               {canCreate ? 'Start building your digital presence by creating your first website in this workspace.' : 'No sites have been created yet.'}
             </p>
             {canCreate && (
               <button
                 onClick={() => setShowCreate(true)}
-                className="inline-flex items-center justify-center px-6 py-3 bg-white border border-gray-300 text-gray-900 text-sm font-medium rounded-xl hover:bg-gray-50 transition-colors focus:outline-none focus:ring-2 focus:ring-gray-200"
+                className="h-14 px-8 bg-[#0b1411] text-[#d3ff4a] font-bold rounded-full flex items-center justify-center hover:bg-[#1d2321] transition-all hover:scale-105 active:scale-95 shadow-lg"
               >
-                <Plus size={16} className="mr-2" />
-                Create your first site
+                <Plus size={20} className="mr-2" />
+                Initialize Site
               </button>
             )}
           </div>
@@ -491,34 +497,33 @@ export default function SitesPage() {
 
       {/* Delete confirmation */}
       {deleteTarget && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/40 backdrop-blur-sm">
-          <div className="bg-white rounded-2xl shadow-xl border border-gray-200 w-full max-w-sm mx-4 p-8 text-center text-gray-900">
-            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-red-50 mb-5">
-              <Trash2 className="h-8 w-8 text-red-600" />
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#0b1411]/40 backdrop-blur-md">
+          <div className="bg-[#fcfdfc] rounded-[2rem] shadow-2xl border border-gray-100 w-full max-w-md mx-4 p-8 text-center text-[#0b1411]">
+            <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-[2rem] border border-red-100 bg-red-50 mb-6 shadow-sm">
+              <Trash2 className="h-8 w-8 text-red-500" />
             </div>
-            <h2 className="text-xl font-bold tracking-tight mb-2">
+            <h2 className="text-2xl font-black tracking-tight uppercase mb-3">
               Delete Site
             </h2>
-            <p className="text-sm text-gray-500 mb-8 leading-relaxed">
-              Are you sure you want to delete <strong className="text-gray-900 font-semibold">{deleteTarget.name}</strong>? This action cannot be undone and will permanently remove all pages and content.
+            <p className="text-sm font-medium text-gray-500 mb-8 leading-relaxed px-2">
+              Are you sure you want to delete <strong className="text-gray-900 font-bold">{deleteTarget.name}</strong>? This action cannot be undone and will permanently remove all pages and content.
             </p>
             <div className="flex flex-col-reverse sm:flex-row gap-3">
               <button
                 onClick={() => setDeleteTarget(null)}
                 disabled={deleting}
-                className="flex-1 px-5 py-3 border border-gray-300 bg-white text-gray-700 text-sm font-medium rounded-xl hover:bg-gray-50 transition-colors focus:outline-none focus:ring-2 focus:ring-gray-200"
+                className="flex-1 px-6 py-4 bg-[#f2f4f2] text-gray-600 text-sm font-bold uppercase tracking-widest rounded-full hover:bg-gray-200 transition-colors focus:outline-none"
               >
                 Cancel
               </button>
               <button
                 onClick={handleDelete}
                 disabled={deleting}
-                className="flex-1 flex items-center justify-center gap-2 px-5 py-3 bg-red-600 text-white text-sm font-medium rounded-xl hover:bg-red-700 transition-colors disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-red-600 focus:ring-offset-2"
+                className="flex-1 flex items-center justify-center px-6 py-4 bg-red-500 text-white text-sm font-black uppercase tracking-widest rounded-full hover:bg-red-600 hover:scale-[1.02] active:scale-95 transition-all disabled:opacity-50 disabled:hover:scale-100 shadow-lg shadow-red-500/20"
               >
                 {deleting ? (
                   <Loader2 size={16} className="animate-spin" />
-                ) : null}
-                {deleting ? "Deleting..." : "Delete Site"}
+                ) : "Delete Site"}
               </button>
             </div>
           </div>

@@ -85,7 +85,7 @@ function InlineRename({ siteId, deployment, onRenamed }) {
 
   if (editing) {
     return (
-      <span className="flex items-center gap-1.5 min-w-0">
+      <span className="flex items-center gap-2 min-w-0">
         <input
           autoFocus
           value={value}
@@ -94,31 +94,31 @@ function InlineRename({ siteId, deployment, onRenamed }) {
             if (e.key === "Enter") save();
             if (e.key === "Escape") setEditing(false);
           }}
-          className="flex-1 min-w-0 px-2 py-0.5 text-sm bg-slate-100 border border-indigo-400 rounded focus:outline-none"
+          className="flex-1 min-w-0 px-3 py-1.5 text-xs font-bold bg-[#f2f4f2] text-[#0b1411] border-none rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0b1411]/20 shadow-inner"
         />
-        <button onClick={save} disabled={saving} className="p-1 text-emerald-600 hover:bg-emerald-50 rounded">
-          {saving ? <Loader2 size={13} className="animate-spin" /> : <Check size={13} />}
+        <button onClick={save} disabled={saving} className="p-1.5 bg-[#d3ff4a] text-[#0b1411] hover:bg-[#c0eb3f] rounded-lg transition-colors">
+          {saving ? <Loader2 size={14} className="animate-spin" /> : <Check size={14} />}
         </button>
-        <button onClick={() => setEditing(false)} className="p-1 text-gray-400 hover:bg-gray-100 rounded">
-          <X size={13} />
+        <button onClick={() => setEditing(false)} className="p-1.5 text-gray-400 hover:bg-gray-100 hover:text-[#0b1411] rounded-lg transition-colors">
+          <X size={14} />
         </button>
       </span>
     );
   }
 
   return (
-    <span className="flex items-center gap-1.5 group min-w-0">
-      <span className="font-medium text-gray-900 truncate text-sm">
+    <span className="flex items-center gap-2 group min-w-0">
+      <span className="font-black text-[#1d2321] truncate text-[1.1rem]">
         {deployment.deploymentName || (
-          <span className="text-gray-400 italic">Untitled deployment</span>
+          <span className="text-gray-400 font-bold italic">Untitled version</span>
         )}
       </span>
       <button
         onClick={() => setEditing(true)}
-        className="opacity-0 group-hover:opacity-100 p-1 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded transition-opacity"
+        className="opacity-0 group-hover:opacity-100 p-1.5 text-gray-400 hover:text-[#0b1411] hover:bg-gray-100 rounded-lg transition-all"
         title="Rename deployment"
       >
-        <Pencil size={11} />
+        <Pencil size={12} />
       </button>
     </span>
   );
@@ -141,18 +141,18 @@ function DeploymentRow({ siteId, siteSlug, deployment, onRollback, onRenamed }) 
 
   return (
     <div
-      className={`flex items-center gap-4 px-5 py-4 border-b border-gray-100 last:border-0 hover:bg-gray-50 transition-colors ${deployment.isActive ? "bg-indigo-50/60" : ""
+      className={`flex items-center gap-6 px-8 py-5 border-b border-gray-100 last:border-0 hover:bg-gray-50/50 transition-colors ${deployment.isActive ? "bg-emerald-50/30" : ""
         }`}
     >
       {/* Status Dot */}
       <div className="shrink-0">
         {deployment.isActive ? (
-          <span className="flex items-center gap-1.5 text-xs font-semibold text-emerald-600 bg-emerald-100 rounded-full px-2.5 py-1">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block animate-pulse" />
+          <span className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-[#0b1411] bg-[#d3ff4a] rounded-full px-3 py-1.5 shadow-sm">
+            <span className="w-1.5 h-1.5 rounded-full bg-[#0b1411] inline-block animate-pulse" />
             Live
           </span>
         ) : (
-          <span className="flex items-center gap-1.5 text-xs text-gray-400 bg-gray-100 rounded-full px-2.5 py-1">
+          <span className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-gray-500 bg-[#f2f4f2] rounded-full px-3 py-1.5">
             <Clock size={11} />
             Past
           </span>
@@ -162,38 +162,52 @@ function DeploymentRow({ siteId, siteSlug, deployment, onRollback, onRenamed }) 
       {/* Name + ID */}
       <div className="flex-1 min-w-0">
         <InlineRename siteId={siteId} deployment={deployment} onRenamed={onRenamed} />
-        <p className="text-xs text-gray-400 mt-0.5 font-mono truncate">
-          {deployment.deploymentId}
-        </p>
+        <div className="flex items-center gap-3 mt-1.5">
+          <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest truncate">
+            {deployment.deploymentId}
+          </p>
+          {/* CDN Status inline on small screens */}
+          {deployment.kvsUpdated ? (
+            <span className="text-[10px] font-black uppercase tracking-widest text-emerald-600 flex items-center gap-1 sm:hidden">
+              <CheckCircle2 size={10} />
+              Edge Live
+            </span>
+          ) : (
+            <span className="text-[10px] font-black uppercase tracking-widest text-amber-500 flex items-center gap-1 sm:hidden">
+              <AlertCircle size={10} />
+              Edge Pending
+            </span>
+          )}
+        </div>
       </div>
 
       {/* KVS status */}
       <div className="shrink-0 hidden sm:block">
         {deployment.kvsUpdated ? (
-          <span className="text-xs text-emerald-600 flex items-center gap-1">
+          <span className="text-[10px] font-black uppercase tracking-widest text-emerald-600 flex items-center gap-1 border border-emerald-100 bg-emerald-50 px-2 py-1 rounded-md">
             <CheckCircle2 size={12} />
-            CDN live
+            Edge Live
           </span>
         ) : (
-          <span className="text-xs text-amber-500 flex items-center gap-1">
+          <span className="text-[10px] font-black uppercase tracking-widest text-amber-500 flex items-center gap-1 border border-amber-100 bg-amber-50 px-2 py-1 rounded-md">
             <AlertCircle size={12} />
-            CDN pending
+            Edge Pending
           </span>
         )}
       </div>
 
       {/* Timestamp */}
-      <div className="shrink-0 text-right hidden md:block">
-        <p className="text-xs text-gray-500">{formatRelative(deployment.createdAt)}</p>
-        <p className="text-xs text-gray-400">{formatDate(deployment.createdAt)}</p>
+      <div className="shrink-0 text-right hidden md:block w-[120px]">
+        <p className="text-xs font-bold text-[#1d2321]">{formatRelative(deployment.createdAt)}</p>
+        <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mt-0.5">{formatDate(deployment.createdAt)}</p>
       </div>
 
       {/* Actions */}
-      {!deployment.isActive && (
+      {!deployment.isActive ? (
         <button
           onClick={handleRollback}
           disabled={rolling}
-          className="shrink-0 flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-indigo-600 border border-indigo-200 rounded-lg hover:bg-indigo-50 transition-colors disabled:opacity-50"
+          className="shrink-0 flex items-center gap-1.5 px-4 h-10 text-[10px] font-black uppercase tracking-widest text-[#0b1411] bg-[#f2f4f2] hover:bg-[#0b1411] hover:text-[#d3ff4a] rounded-full transition-all disabled:opacity-50"
           title="Roll back to this deployment"
         >
           {rolling ? (
@@ -203,9 +217,8 @@ function DeploymentRow({ siteId, siteSlug, deployment, onRollback, onRenamed }) 
           )}
           Restore
         </button>
-      )}
-      {deployment.isActive && (
-        <span className="shrink-0 w-[72px]" /> // spacer to align
+      ) : (
+        <span className="shrink-0 w-[104px]" /> // Spacer to align
       )}
     </div>
   );
@@ -354,6 +367,10 @@ export default function SiteDetailPage() {
       const { site: siteData } = await siteRes.json();
       setSite(siteData);
 
+      if (siteData.domain) {
+        setDomains([siteData.domain]);
+      }
+
       if (depRes.ok) {
         const { deployments: deps } = await depRes.json();
         setDeployments(deps || []);
@@ -432,29 +449,31 @@ export default function SiteDetailPage() {
   // ─── Render: Loading ──────────────────────────────────────────────────────
   if (isPending || loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#FDFDFD]">
-        <Loader2 size={32} className="animate-spin text-gray-400" />
+      <div className="min-h-screen flex items-center justify-center bg-[#fcfdfc]">
+        <div className="animate-spin rounded-full h-10 w-10 border-[4px] border-gray-100 border-t-[#0b1411]" />
       </div>
     );
   }
 
   if (!site) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-[#FDFDFD] px-6">
-        <div className="h-16 w-16 bg-gray-50 border border-gray-200 rounded-2xl flex items-center justify-center mb-6">
-          <Globe size={32} className="text-gray-400" />
+      <div className="min-h-screen flex items-center justify-center bg-[#fcfdfc]">
+        <div className="text-center max-w-sm px-6">
+          <div className="bg-red-50 text-red-500 p-5 rounded-[2rem] inline-flex mb-8 shadow-sm">
+            <Globe className="h-10 w-10" />
+          </div>
+          <h2 className="text-3xl font-black text-[#1d2321] uppercase tracking-tighter mb-3">Site not found</h2>
+          <p className="text-sm font-medium text-gray-500 mb-10 leading-relaxed">
+            The site you're looking for was either deleted or doesn't exist.
+          </p>
+          <button
+            onClick={() => router.push(`/${params.tenantId}`)}
+            className="w-full py-4 px-6 bg-[#0b1411] text-[#d3ff4a] rounded-full hover:bg-[#1d2321] transition-all font-black uppercase tracking-widest text-xs inline-flex justify-center items-center shadow-lg hover:scale-[1.02] active:scale-95"
+          >
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Back to Workspace
+          </button>
         </div>
-        <h2 className="text-xl font-semibold text-gray-900 mb-2">Site not found</h2>
-        <p className="text-base text-gray-500 max-w-sm text-center mb-8">
-          The site you're looking for was either deleted or doesn't exist.
-        </p>
-        <button
-          onClick={() => router.push(`/${params.tenantId}`)}
-          className="inline-flex items-center justify-center px-6 py-3 bg-gray-900 border border-transparent text-white text-sm font-medium rounded-xl hover:bg-gray-800 transition-colors focus:outline-none focus:ring-2 focus:ring-gray-900 focus:ring-offset-2"
-        >
-          <ArrowLeft size={16} className="mr-2" />
-          Back to Workspace
-        </button>
       </div>
     );
   }
@@ -465,33 +484,36 @@ export default function SiteDetailPage() {
   const isPublished = Boolean(site.domain || domains.length > 0)
 
   return (
-    <div className="min-h-screen bg-[#FDFDFD] font-sans text-gray-900">
+    <div className="min-h-screen bg-[#fcfdfc] font-sans text-gray-900 pb-20 relative">
 
       {/* Header */}
-      <div className="bg-white border-b border-gray-200 sticky top-0 z-10">
-        <div className="max-w-7xl mx-auto px-6 sm:px-10 lg:px-12 py-5 sm:py-6">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <div className="flex items-center gap-4">
+      <div className="bg-white/80 backdrop-blur-md border-b border-gray-100 sticky top-0 z-20">
+        <div className="max-w-7xl mx-auto px-6 sm:px-10 lg:px-16 py-6">
+          <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-6">
+            <div className="flex items-start sm:items-center gap-6">
               <button
                 onClick={() => router.push(`/${params.tenantId}/sites`)}
-                className="p-2 -ml-2 text-gray-400 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-gray-200"
+                className="mt-1 sm:mt-0 p-3 bg-white border border-gray-200 text-gray-400 hover:text-[#0b1411] hover:border-[#0b1411]/20 rounded-2xl transition-all shadow-sm hover:shadow-md focus:outline-none"
                 title="Back to Sites"
               >
                 <ArrowLeft className="h-6 w-6" />
               </button>
               <div>
-                <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-gray-900 truncate max-w-md">
+                <p className="text-[#8bc4b1] text-[10px] font-bold tracking-[0.2em] uppercase mb-3">
+                  SITE DETAILS
+                </p>
+                <h1 className="text-4xl sm:text-5xl font-black text-[#1d2321] uppercase tracking-tighter leading-[1] truncate max-w-md">
                   {site.name}
                 </h1>
-                <p className="text-sm sm:text-base text-gray-500 mt-0.5 truncate">
+                <p className="text-xs font-bold uppercase tracking-widest text-[#8bc4b1] mt-2 truncate">
                   /{site.slug}
                 </p>
               </div>
             </div>
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3 w-full sm:w-auto mt-4 sm:mt-0">
               <button
                 onClick={() => router.push(`/${params.tenantId}/sites/${params.siteId}/pages`)}
-                className="inline-flex items-center justify-center px-4 py-2.5 bg-white border border-gray-200 text-gray-700 text-sm font-medium rounded-xl hover:bg-gray-50 transition-colors focus:outline-none focus:ring-2 focus:ring-gray-200"
+                className="w-full sm:w-auto bg-[#d3ff4a] text-[#0b1411] h-14 px-8 rounded-full font-bold flex items-center justify-center hover:bg-[#c0eb3f] transition-all active:scale-95 shadow-[0_0_20px_rgba(211,255,74,0.3)] hover:scale-105 duration-200 uppercase tracking-widest text-xs"
               >
                 <LayoutTemplate size={16} className="mr-2" />
                 Manage Pages
@@ -508,37 +530,38 @@ export default function SiteDetailPage() {
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-6 sm:px-10 lg:px-12 py-8 sm:py-12 space-y-8">
+      <div className="max-w-7xl mx-auto px-6 sm:px-10 lg:px-16 py-12 space-y-16">
 
         {/* Top Grid: Preview Card Left, Overview Right */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
 
           {/* Preview Card */}
           <div className="lg:col-span-1">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4 tracking-tight">Site Preview</h2>
-            <div className="bg-white border border-gray-200 rounded-2xl shadow-sm overflow-hidden flex flex-col h-[340px] group">
+            <h2 className="text-sm font-black text-gray-400 tracking-[0.15em] uppercase mb-6">Site Preview</h2>
+            <div className="bg-white border border-gray-100 rounded-[2rem] shadow-sm overflow-hidden flex flex-col h-[340px] group relative hover:border-[#8bc4b1] transition-colors">
               {isPublished ? (
-                <div className="flex-1 bg-gray-100 flex items-center justify-center overflow-hidden relative">
+                <div className="flex-1 bg-[#f2f4f2] flex items-center justify-center overflow-hidden relative">
                   <iframe
                     src={`https://${domains[0] || site.domain}`}
-                    className="w-full h-full border-0 pointer-events-none origin-top-left scale-[1]"
-                    style={{ width: '100%', height: '100%' }}
+                    className="w-[200%] h-[200%] border-0 pointer-events-none origin-top-left scale-[0.5]"
                     title="Site Live Preview"
                   />
                   <div className="absolute inset-0 z-10 bg-transparent" />
                 </div>
               ) : (
-                <div className="flex-1 bg-gray-50 flex flex-col items-center justify-center border-b border-gray-100 transition-colors">
-                  <MonitorOff className="h-10 w-10 text-gray-300 mb-4" />
-                  <span className="text-sm font-medium text-gray-500">Site is not published yet</span>
-                  <span className="text-xs text-gray-400 mt-1 max-w-[200px] text-center">Connect a domain to see a live preview.</span>
+                <div className="flex-1 bg-[#fcfdfc] flex flex-col items-center justify-center transition-colors">
+                  <div className="h-16 w-16 rounded-[2rem] bg-gray-50 border border-gray-100 flex items-center justify-center mb-4">
+                    <MonitorOff className="h-8 w-8 text-gray-300" />
+                  </div>
+                  <span className="text-sm font-bold text-[#1d2321]">Not Published</span>
+                  <span className="text-xs font-medium text-gray-400 mt-1 max-w-[200px] text-center">Connect a domain to preview</span>
                 </div>
               )}
 
-              <div className="p-5 bg-white flex justify-between items-center border-t border-gray-100">
+              <div className="p-6 bg-white flex justify-between items-center border-t border-gray-100 relative z-10">
                 <div className="min-w-0 pr-3">
-                  <h3 className="text-sm font-semibold text-gray-900 truncate">Live View</h3>
-                  <p className="text-xs text-gray-500 truncate mt-0.5">
+                  <h3 className="text-xs font-black uppercase tracking-widest text-[#0b1411] truncate">Live View</h3>
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400 truncate mt-1">
                     {isPublished ? (domains[0] || site.domain) : 'No connected domain'}
                   </p>
                 </div>
@@ -547,7 +570,7 @@ export default function SiteDetailPage() {
                     href={`https://${domains[0] || site.domain}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="p-2 bg-gray-50 border border-gray-200 text-gray-600 rounded-lg hover:bg-gray-100 hover:text-gray-900 transition-colors flex-shrink-0"
+                    className="h-10 w-10 flex items-center justify-center bg-[#f2f4f2] text-[#0b1411] rounded-2xl hover:bg-[#d3ff4a] transition-colors flex-shrink-0"
                     title="Open live site"
                   >
                     <ExternalLink size={16} />
@@ -558,18 +581,20 @@ export default function SiteDetailPage() {
           </div>
 
           {/* Overview & Domains */}
-          <div className="lg:col-span-2 space-y-8">
+          <div className="lg:col-span-2 space-y-12">
 
             {/* Stats Overview */}
             <div>
-              <h2 className="text-lg font-semibold text-gray-900 mb-4 tracking-tight">Overview</h2>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
-                <div className="bg-white border border-gray-200 rounded-2xl shadow-sm p-5 flex flex-col">
-                  <div className="flex items-center gap-2.5 text-gray-500 mb-3">
-                    <Calendar className="h-4 w-4" />
-                    <span className="text-sm font-medium">Created</span>
+              <h2 className="text-sm font-black text-gray-400 tracking-[0.15em] uppercase mb-6">Overview</h2>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+                <div className="bg-white border border-gray-100 rounded-[2rem] p-6 lg:p-8 shadow-sm flex flex-col justify-between hover:border-[#8bc4b1] transition-all group">
+                  <div className="flex items-center gap-4 mb-8 text-gray-500">
+                    <div className="h-10 w-10 rounded-2xl bg-[#f2f4f2] text-[#0b1411] flex items-center justify-center group-hover:bg-[#d3ff4a] transition-colors">
+                      <Calendar className="h-5 w-5" />
+                    </div>
+                    <span className="text-xs font-bold uppercase tracking-widest text-[#0b1411]">Created</span>
                   </div>
-                  <p className="text-xl font-bold text-gray-900 mt-auto">
+                  <p className="text-2xl font-black text-[#1d2321] tracking-tighter mt-auto">
                     {new Date(site.createdAt).toLocaleDateString('en-US', {
                       year: 'numeric',
                       month: 'short',
@@ -578,12 +603,14 @@ export default function SiteDetailPage() {
                   </p>
                 </div>
 
-                <div className="bg-white border border-gray-200 rounded-2xl shadow-sm p-5 flex flex-col">
-                  <div className="flex items-center gap-2.5 text-gray-500 mb-3">
-                    <Clock className="h-4 w-4" />
-                    <span className="text-sm font-medium">Last Updated</span>
+                <div className="bg-white border border-gray-100 rounded-[2rem] p-6 lg:p-8 shadow-sm flex flex-col justify-between hover:border-[#8bc4b1] transition-all group">
+                  <div className="flex items-center gap-4 mb-8 text-gray-500">
+                    <div className="h-10 w-10 rounded-2xl bg-[#f2f4f2] text-[#0b1411] flex items-center justify-center group-hover:bg-[#00e5ff] transition-colors">
+                      <Clock className="h-5 w-5" />
+                    </div>
+                    <span className="text-xs font-bold uppercase tracking-widest text-[#0b1411]">Updated</span>
                   </div>
-                  <p className="text-xl font-bold text-gray-900 mt-auto">
+                  <p className="text-2xl font-black text-[#1d2321] tracking-tighter mt-auto">
                     {new Date(site.updatedAt).toLocaleDateString('en-US', {
                       year: 'numeric',
                       month: 'short',
@@ -592,12 +619,14 @@ export default function SiteDetailPage() {
                   </p>
                 </div>
 
-                <div className="bg-white border border-gray-200 rounded-2xl shadow-sm p-5 flex flex-col">
-                  <div className="flex items-center gap-2.5 text-gray-500 mb-3">
-                    <History className="h-4 w-4" />
-                    <span className="text-sm font-medium">Deployments</span>
+                <div className="bg-white border border-gray-100 rounded-[2rem] p-6 lg:p-8 shadow-sm flex flex-col justify-between hover:border-[#8bc4b1] transition-all group">
+                  <div className="flex items-center gap-4 mb-8 text-gray-500">
+                    <div className="h-10 w-10 rounded-2xl bg-[#f2f4f2] text-[#0b1411] flex items-center justify-center group-hover:bg-[#1d2321] group-hover:text-white transition-colors">
+                      <History className="h-5 w-5" />
+                    </div>
+                    <span className="text-xs font-bold uppercase tracking-widest text-[#0b1411]">Deploys</span>
                   </div>
-                  <p className="text-xl font-bold text-gray-900 mt-auto">
+                  <p className="text-2xl font-black text-[#1d2321] tracking-tighter mt-auto">
                     {site._count?.versions || 0}
                   </p>
                 </div>
@@ -606,12 +635,12 @@ export default function SiteDetailPage() {
 
             {/* Domains Section */}
             <div>
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-lg font-semibold text-gray-900 tracking-tight">Connected Domains</h2>
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-sm font-black text-gray-400 tracking-[0.15em] uppercase">Connected Domains</h2>
                 {!showAddDomain && (
                   <button
                     onClick={() => setShowAddDomain(true)}
-                    className="inline-flex items-center justify-center px-4 py-2 bg-white border border-gray-200 text-gray-800 text-sm font-medium rounded-xl hover:bg-gray-50 transition-colors focus:outline-none focus:ring-2 focus:ring-gray-200"
+                    className="inline-flex items-center justify-center px-6 h-10 text-xs font-black uppercase tracking-widest text-[#d3ff4a] bg-[#0b1411] rounded-full hover:bg-[#1d2321] transition-all hover:scale-105 active:scale-95 shadow-lg focus:outline-none"
                   >
                     <Plus size={16} className="mr-1.5" />
                     Add Domain
@@ -619,15 +648,15 @@ export default function SiteDetailPage() {
                 )}
               </div>
 
-              <div className="bg-white border border-gray-200 rounded-2xl shadow-sm overflow-hidden">
+              <div className="bg-white border border-gray-100 rounded-[2rem] shadow-sm overflow-hidden relative">
                 {/* Add Domain Expandable Form */}
                 {showAddDomain && (
-                  <div className="p-5 bg-gray-50 border-b border-gray-200">
-                    <label className="block text-sm font-medium text-gray-900 mb-2">Configure new domain</label>
-                    <div className="flex flex-col sm:flex-row gap-3">
+                  <div className="p-8 bg-[#fcfdfc] border-b border-gray-100">
+                    <label className="block text-xs font-black uppercase tracking-widest text-[#0b1411] mb-4">Configure new domain</label>
+                    <div className="flex flex-col sm:flex-row gap-4">
                       <div className="relative flex-1">
-                        <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
-                          <LinkIcon className="h-4 w-4 text-gray-400" />
+                        <div className="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none">
+                          <LinkIcon className="h-5 w-5 text-gray-400" />
                         </div>
                         <input
                           type="text"
@@ -635,13 +664,13 @@ export default function SiteDetailPage() {
                           value={domainInput}
                           onChange={(e) => setDomainInput(e.target.value)}
                           onKeyPress={(e) => e.key === 'Enter' && handleAddDomain()}
-                          className="pl-10 w-full px-4 py-2.5 bg-white border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-gray-900/10 focus:border-gray-900 transition-colors"
+                          className="pl-12 w-full px-5 py-3.5 bg-[#f2f4f2] border-none rounded-2xl text-[#0b1411] font-bold focus:outline-none focus:ring-2 focus:ring-[#0b1411]/20 transition-all text-sm shadow-inner"
                         />
                       </div>
-                      <div className="flex gap-2 shrink-0">
+                      <div className="flex gap-3 shrink-0">
                         <button
                           onClick={handleAddDomain}
-                          className="px-5 py-2.5 bg-gray-900 text-white text-sm font-medium rounded-xl hover:bg-gray-800 transition-colors"
+                          className="px-8 py-3.5 bg-[#d3ff4a] text-[#0b1411] text-xs font-black uppercase tracking-widest rounded-full hover:bg-[#c0eb3f] transition-all shadow-sm hover:scale-105 active:scale-95 min-w-[100px]"
                         >
                           Add
                         </button>
@@ -650,7 +679,7 @@ export default function SiteDetailPage() {
                             setShowAddDomain(false)
                             setDomainInput('')
                           }}
-                          className="px-5 py-2.5 bg-white border border-gray-300 text-gray-700 text-sm font-medium rounded-xl hover:bg-gray-50 transition-colors"
+                          className="px-6 py-3.5 bg-transparent border-none text-gray-500 text-xs font-bold uppercase tracking-widest rounded-full hover:bg-gray-100 hover:text-[#0b1411] transition-all"
                         >
                           Cancel
                         </button>
@@ -662,25 +691,24 @@ export default function SiteDetailPage() {
                 {/* Domains List */}
                 <ul className="divide-y divide-gray-100">
                   {domains.length === 0 ? (
-                    <li className="p-8 text-center bg-white flex flex-col items-center justify-center">
-                      <div className="h-12 w-12 bg-gray-50 border border-gray-100 rounded-full flex items-center justify-center mb-3">
-                        <Monitor size={20} className="text-gray-400" />
+                    <li className="py-24 px-8 text-center bg-white flex flex-col items-center justify-center">
+                      <div className="h-16 w-16 bg-[#f2f4f2] border border-gray-100 rounded-[2rem] flex items-center justify-center mb-6">
+                        <Monitor size={24} className="text-gray-400" />
                       </div>
-                      <p className="text-sm font-medium text-gray-900">No domains connected</p>
-                      <p className="text-sm text-gray-500 mt-1">Add a custom domain to publish your site live.</p>
+                      <p className="text-xl font-black text-[#1d2321] tracking-tight mb-2">No domains connected</p>
+                      <p className="text-sm font-medium text-gray-500 max-w-sm">Add a custom domain to publish your site live.</p>
                     </li>
                   ) : (
                     domains.map((domain, idx) => (
-                      <li key={idx} className="p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:bg-gray-50/50 transition-colors">
-                        <div className="flex items-center gap-3">
-                          <div className="p-2 bg-gray-100 rounded-lg text-gray-500">
-                            <Globe size={18} />
+                      <li key={idx} className="p-6 lg:px-8 flex flex-col sm:flex-row sm:items-center justify-between gap-6 hover:bg-gray-50/50 transition-colors">
+                        <div className="flex items-center gap-5">
+                          <div className="h-12 w-12 bg-[#f2f4f2] rounded-2xl flex items-center justify-center text-[#0b1411] shadow-sm">
+                            <Globe size={20} />
                           </div>
                           <div>
-                            <p className="text-sm font-semibold text-gray-900 tracking-tight">{domain}</p>
-                            <div className="flex items-center gap-2 mt-0.5">
-                              <span className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${idx === 0 ? 'bg-indigo-50 text-indigo-700 border border-indigo-100' : 'bg-gray-100 text-gray-600 border border-gray-200'
-                                }`}>
+                            <p className="text-[1.1rem] font-black text-[#1d2321] tracking-tight hover:text-[#8bc4b1] transition-colors">{domain}</p>
+                            <div className="flex items-center gap-2 mt-1">
+                              <span className={`inline-flex items-center px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest ${idx === 0 ? 'bg-indigo-50 text-indigo-700 border border-indigo-100' : 'bg-[#f2f4f2] text-gray-600 border border-gray-100'}`}>
                                 {idx === 0 ? 'Primary' : 'Alias'}
                               </span>
                             </div>
@@ -688,7 +716,7 @@ export default function SiteDetailPage() {
                         </div>
                         <button
                           onClick={() => handleRemoveDomain(domain)}
-                          className="text-sm text-red-600 font-medium hover:text-red-800 transition-colors py-1.5 px-3 rounded-lg hover:bg-red-50 self-start sm:self-auto"
+                          className="text-xs text-red-600 font-bold uppercase tracking-widest hover:text-red-800 transition-colors py-2 px-4 rounded-full hover:bg-red-50 self-start sm:self-auto"
                         >
                           Remove
                         </button>
@@ -704,45 +732,45 @@ export default function SiteDetailPage() {
 
         {/* Analytics Section */}
         <div>
-          <h2 className="text-lg font-semibold text-gray-900 mb-4 tracking-tight">Site Analytics</h2>
-          <div className="bg-white border border-gray-200 rounded-2xl shadow-sm overflow-hidden flex flex-col">
-            <div className="p-6 sm:p-8">
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          <h2 className="text-sm font-black text-gray-400 tracking-[0.15em] uppercase mb-6">Site Analytics</h2>
+          <div className="bg-white border border-gray-100 rounded-[2rem] shadow-sm overflow-hidden flex flex-col relative text-[#0b1411]">
+            <div className="p-8 lg:p-10">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 mb-12">
 
                 <div className="flex flex-col">
-                  <span className="flex items-center gap-2 text-sm font-medium text-gray-500 mb-2">
-                    <Users size={16} className="text-gray-400" /> Visitors
+                  <span className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-gray-400 mb-4">
+                    <Users size={16} /> Visitors
                   </span>
-                  <span className="text-3xl font-bold text-gray-900">0</span>
+                  <span className="text-5xl font-black tracking-tighter">0</span>
                 </div>
 
                 <div className="flex flex-col">
-                  <span className="flex items-center gap-2 text-sm font-medium text-gray-500 mb-2">
-                    <MousePointerClick size={16} className="text-gray-400" /> Page Views
+                  <span className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-gray-400 mb-4">
+                    <MousePointerClick size={16} /> Page Views
                   </span>
-                  <span className="text-3xl font-bold text-gray-900">0</span>
+                  <span className="text-5xl font-black tracking-tighter">0</span>
                 </div>
 
                 <div className="flex flex-col">
-                  <span className="flex items-center gap-2 text-sm font-medium text-gray-500 mb-2">
-                    <Timer size={16} className="text-gray-400" /> Avg. Duration
+                  <span className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-gray-400 mb-4">
+                    <Timer size={16} /> Avg. Duration
                   </span>
-                  <span className="text-3xl font-bold text-gray-900">0s</span>
+                  <span className="text-5xl font-black tracking-tighter">0s</span>
                 </div>
 
                 <div className="flex flex-col">
-                  <span className="flex items-center gap-2 text-sm font-medium text-gray-500 mb-2">
-                    <ExternalLink size={16} className="text-gray-400" /> Bounce Rate
+                  <span className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-gray-400 mb-4">
+                    <ExternalLink size={16} /> Bounce Rate
                   </span>
-                  <span className="text-3xl font-bold text-gray-900">0%</span>
+                  <span className="text-5xl font-black tracking-tighter">0%</span>
                 </div>
               </div>
 
-              <div className="pt-6 border-t border-gray-100">
-                <p className="text-sm text-gray-500 text-center flex items-center justify-center gap-2">
-                  <span className="relative flex h-2 w-2">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-gray-400 opacity-75"></span>
-                    <span className="relative inline-flex rounded-full h-2 w-2 bg-gray-400"></span>
+              <div className="pt-8 border-t border-gray-100">
+                <p className="text-sm font-medium text-gray-500 text-center flex items-center justify-center gap-3">
+                  <span className="relative flex h-2.5 w-2.5">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
                   </span>
                   Analytics tracking will begin recording once traffic is detected on a live domain.
                 </p>
@@ -752,60 +780,65 @@ export default function SiteDetailPage() {
         </div>
 
         {/* ── Deployment History ────────────────────────────────────────────── */}
-        <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
-          <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
-            <h2 className="text-sm font-semibold text-gray-900 flex items-center gap-2">
-              <History size={15} className="text-indigo-500" />
-              Deployment History
-              <span className="text-xs text-gray-400 font-normal bg-gray-100 rounded-full px-2 py-0.5">
-                {deployments.length}
-              </span>
-            </h2>
-            <button
-              onClick={() => router.push(`/${params.tenantId}/sites/${params.siteId}/pages`)}
-              className="flex items-center gap-1.5 text-xs text-indigo-600 hover:text-indigo-700 font-medium"
-            >
-              <Pencil size={12} />
-              Manage Pages
-            </button>
-          </div>
-
-          {deployments.length === 0 ? (
-            <div className="text-center py-16">
-              <History size={36} className="mx-auto text-gray-200 mb-3" />
-              <p className="text-sm font-medium text-gray-600">No deployments yet</p>
-              <p className="text-xs text-gray-400 mt-1">
-                Open the builder and click &ldquo;Publish&rdquo; to create your first deployment.
-              </p>
+        <div>
+          <h2 className="text-sm font-black text-gray-400 tracking-[0.15em] uppercase mb-6 mt-8">Recent Deployments</h2>
+          <div className="bg-white rounded-[2rem] border border-gray-100 shadow-sm overflow-hidden relative">
+            <div className="px-8 py-6 border-b border-gray-100 flex items-center justify-between bg-[#fcfdfc]">
+              <h2 className="text-sm font-black uppercase tracking-widest text-[#1d2321] flex items-center gap-3">
+                <History size={16} className="text-[#8bc4b1]" />
+                Version History
+                <span className="text-[10px] text-gray-500 font-bold uppercase tracking-widest bg-[#f2f4f2] rounded-full px-2.5 py-1">
+                  {deployments.length}
+                </span>
+              </h2>
               <button
                 onClick={() => router.push(`/${params.tenantId}/sites/${params.siteId}/pages`)}
-                className="mt-4 inline-flex items-center gap-1.5 px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-xl hover:bg-indigo-700 transition-colors"
+                className="flex items-center gap-1.5 text-xs text-[#0b1411] hover:text-[#8bc4b1] font-bold uppercase tracking-widest transition-colors"
               >
-                <Pencil size={13} />
+                <Pencil size={12} />
                 Manage Pages
               </button>
             </div>
-          ) : (
-            <div className="divide-y divide-gray-100">
-              {deployments.map((dep) => (
-                <DeploymentRow
-                  key={dep.id}
-                  siteId={params.siteId}
-                  siteSlug={site.slug}
-                  deployment={dep}
-                  onRollback={handleRollback}
-                  onRenamed={handleRenamed}
-                />
-              ))}
-            </div>
-          )}
+
+            {deployments.length === 0 ? (
+              <div className="text-center py-24 px-8">
+                <div className="h-20 w-20 rounded-[2rem] bg-[#f2f4f2] border border-gray-100 flex items-center justify-center mb-8 mx-auto">
+                  <History size={36} className="text-gray-400" />
+                </div>
+                <p className="text-2xl font-black text-[#1d2321] tracking-tight mb-3">No deployments yet</p>
+                <p className="text-sm font-medium text-gray-500 max-w-sm mx-auto">
+                  Open the builder and click "Publish" to record your first deployment.
+                </p>
+                <button
+                  onClick={() => router.push(`/${params.tenantId}/sites/${params.siteId}/pages`)}
+                  className="mt-8 inline-flex items-center justify-center gap-2 px-8 h-14 bg-[#0b1411] text-[#d3ff4a] text-xs font-black uppercase tracking-widest rounded-full hover:bg-[#1d2321] transition-all hover:scale-105 active:scale-95 shadow-lg"
+                >
+                  <Pencil size={14} />
+                  Manage Pages
+                </button>
+              </div>
+            ) : (
+              <div className="divide-y divide-gray-100">
+                {deployments.map((dep) => (
+                  <DeploymentRow
+                    key={dep.id}
+                    siteId={params.siteId}
+                    siteSlug={site.slug}
+                    deployment={dep}
+                    onRollback={handleRollback}
+                    onRenamed={handleRenamed}
+                  />
+                ))}
+              </div>
+            )}
+          </div>
         </div>
 
         {/* ── Error ────────────────────────────────────────────────────────── */}
         {error && (
-          <div className="flex items-center gap-2 text-sm text-red-600 bg-red-50 border border-red-200 rounded-xl px-4 py-3">
-            <AlertCircle size={15} />
-            {error}
+          <div className="flex items-start gap-3 text-sm text-red-700 bg-red-50 border border-red-100 rounded-2xl px-6 py-5 shadow-inner">
+            <AlertCircle size={18} className="mt-0.5 shrink-0 text-red-500" />
+            <span className="font-bold">{error}</span>
           </div>
         )}
 

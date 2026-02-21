@@ -155,9 +155,9 @@ export default function TenantDashboardPage() {
 
   if (isPending || loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#FDFDFD]">
+      <div className="min-h-screen flex items-center justify-center bg-[#fcfdfc]">
         <div className="flex flex-col items-center">
-          <Loader2 className="h-10 w-10 animate-spin text-gray-400 mb-4" />
+          <div className="animate-spin rounded-full h-10 w-10 border-[4px] border-gray-100 border-t-[#0b1411] mb-4" />
         </div>
       </div>
     )
@@ -165,18 +165,18 @@ export default function TenantDashboardPage() {
 
   if (!tenant) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#FDFDFD]">
+      <div className="min-h-screen flex items-center justify-center bg-[#fcfdfc]">
         <div className="text-center max-w-sm px-6">
-          <div className="bg-red-50 text-red-600 p-4 rounded-full inline-flex mb-6">
-            <ShieldAlert className="h-8 w-8" />
+          <div className="bg-red-50 text-red-500 p-5 rounded-[2rem] inline-flex mb-8 shadow-sm">
+            <ShieldAlert className="h-10 w-10" />
           </div>
-          <h2 className="text-2xl font-semibold text-gray-900 mb-2">Workspace Not Found</h2>
-          <p className="text-gray-500 mb-8">This workspace doesn't exist or you don't have access to it.</p>
+          <h2 className="text-3xl font-black text-[#1d2321] uppercase tracking-tighter mb-3">Workspace Not Found</h2>
+          <p className="text-sm font-medium text-gray-500 mb-10 leading-relaxed">This workspace doesn't exist or you don't have access to it.</p>
           <button
             onClick={() => router.push('/dashboard')}
-            className="w-full py-3 px-4 bg-gray-900 border border-transparent text-white rounded-xl hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-900 transition-colors font-medium inline-flex justify-center items-center"
+            className="w-full py-4 px-6 bg-[#0b1411] text-[#d3ff4a] rounded-full hover:bg-[#1d2321] transition-all font-black uppercase tracking-widest text-xs inline-flex justify-center items-center shadow-lg hover:scale-[1.02] active:scale-95"
           >
-            <ArrowLeft className="h-5 w-5 mr-2 -ml-1" />
+            <ArrowLeft className="h-4 w-4 mr-2" />
             Back to Dashboard
           </button>
         </div>
@@ -185,32 +185,35 @@ export default function TenantDashboardPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#FDFDFD] font-sans text-gray-900 text-base">
+    <div className="min-h-screen bg-[#fcfdfc] font-sans text-gray-900 text-base pb-20 relative">
       {/* Header */}
-      <div className="bg-white border-b border-gray-200 sticky top-0 z-10">
-        <div className="max-w-7xl mx-auto px-6 sm:px-10 lg:px-12 py-5">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <div className="flex items-center gap-4">
+      <div className="bg-white/80 backdrop-blur-md border-b border-gray-100 sticky top-0 z-20">
+        <div className="max-w-7xl mx-auto px-6 sm:px-10 lg:px-16 py-6">
+          <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-6">
+            <div className="flex items-start sm:items-center gap-6">
               <button
                 onClick={() => router.push('/dashboard')}
-                className="p-2 -ml-2 text-gray-400 hover:text-gray-900 hover:bg-gray-50 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-gray-200"
+                className="mt-1 sm:mt-0 p-3 bg-white border border-gray-200 text-gray-400 hover:text-[#0b1411] hover:border-[#0b1411]/20 rounded-2xl transition-all shadow-sm hover:shadow-md focus:outline-none"
                 title="Back to Dashboard"
               >
-                <ArrowLeft className="h-5 w-5" />
+                <ArrowLeft className="h-6 w-6" />
               </button>
-              <div className="flex items-center gap-3 border-l border-gray-200 pl-4">
-                <div className="h-8 w-8 bg-gray-100 border border-gray-200 rounded-lg flex items-center justify-center overflow-hidden flex-shrink-0">
+              <div className="flex flex-row items-center gap-4">
+                <div className="h-14 w-14 bg-[#0b1411] text-[#d3ff4a] rounded-2xl flex items-center justify-center overflow-hidden shrink-0 shadow-lg font-black text-xl">
                   {tenant.logo ? (
                     <img src={tenant.logo} alt={tenant.name} className="h-full w-full object-cover" />
                   ) : (
-                    <span className="text-gray-500 font-semibold text-sm">{tenant.name.charAt(0).toUpperCase()}</span>
+                    <span>{tenant.name.substring(0, 2).toUpperCase()}</span>
                   )}
                 </div>
                 <div>
-                  <h1 className="text-lg font-semibold tracking-tight text-gray-900 leading-tight">
+                  <p className="text-[#8bc4b1] text-[10px] font-bold tracking-[0.2em] uppercase mb-1">
+                    WORKSPACE OVERVIEW
+                  </p>
+                  <h1 className="text-3xl sm:text-4xl font-black text-[#1d2321] uppercase tracking-tighter leading-tight">
                     {tenant.name}
                   </h1>
-                  <span className="text-sm text-gray-500">sitepilot.com/{tenant.slug}</span>
+                  <span className="text-xs text-gray-400 font-bold uppercase tracking-widest mt-1 block">sitepilot.com/{tenant.slug}</span>
                 </div>
               </div>
             </div>
@@ -218,59 +221,49 @@ export default function TenantDashboardPage() {
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-6 sm:px-10 lg:px-12 py-10 space-y-12">
+      <div className="max-w-7xl mx-auto px-6 sm:px-10 lg:px-16 py-12 space-y-16">
 
         {/* Quick Actions (Sites & Forms) */}
         <div>
-          <h2 className="text-lg font-semibold tracking-tight text-gray-900 mb-4">Quick Actions</h2>
+          <h2 className="text-sm font-black text-gray-400 tracking-[0.15em] uppercase mb-6">Quick Actions</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="bg-white border border-gray-200 rounded-2xl shadow-sm p-6 flex flex-col hover:border-gray-300 transition-colors">
-              <div className="flex items-center justify-between mb-2">
-                <div className="flex items-center gap-3">
-                  <div className="p-2.5 bg-gray-50 border border-gray-100 rounded-xl text-gray-700">
-                    <Globe className="h-5 w-5" />
+            <div className="group bg-white border border-gray-100 rounded-[2rem] shadow-sm p-6 lg:p-8 flex flex-col hover:border-[#8bc4b1] hover:shadow-[0_20px_40px_-15px_rgba(0,0,0,0.1)] hover:-translate-y-1 transition-all duration-500 relative overflow-hidden">
+              <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-[#d3ff4a]/0 to-[#8bc4b1]/0 group-hover:from-[#d3ff4a]/5 group-hover:to-[#8bc4b1]/5 rounded-bl-[100px] transition-all duration-500 pointer-events-none" />
+              <div className="flex items-center justify-between mb-6 relative z-10">
+                <div className="flex items-center gap-4">
+                  <div className="h-14 w-14 bg-[#0b1411] text-[#d3ff4a] rounded-2xl flex items-center justify-center shadow-lg shadow-black/5 group-hover:bg-[#d3ff4a] group-hover:text-[#0b1411] transition-colors">
+                    <Globe className="h-6 w-6" />
                   </div>
-                  <h3 className="text-base font-semibold text-gray-900">Sites</h3>
+                  <h3 className="text-xl font-black text-[#1d2321] tracking-tight group-hover:text-[#8bc4b1] transition-colors">Sites</h3>
                 </div>
-                <button
-                  onClick={() => router.push(`/${params.tenantId}/sites`)}
-                  className="text-sm font-medium text-gray-500 hover:text-gray-900 transition-colors"
-                >
-                  View All →
-                </button>
               </div>
-              <p className="text-gray-500 text-sm mb-6 flex-1">
+              <p className="text-gray-500 text-sm font-medium mb-8 flex-1 relative z-10 leading-relaxed max-w-[90%]">
                 {hasPermission(userRole, 'sites:create') ? 'Create, launch, and manage your websites.' : 'View your websites.'}
               </p>
               <button
                 onClick={() => router.push(`/${params.tenantId}/sites`)}
-                className="w-full py-2.5 px-4 bg-gray-900 text-white text-sm font-medium rounded-xl hover:bg-gray-800 transition-colors focus:outline-none focus:ring-2 focus:ring-gray-900 focus:ring-offset-1"
+                className="w-full relative z-10 py-3.5 px-6 bg-[#0b1411] text-[#d3ff4a] text-xs font-black uppercase tracking-widest rounded-full group-hover:bg-[#d3ff4a] group-hover:text-[#0b1411] shadow-lg hover:shadow-xl hover:scale-[1.02] active:scale-95 transition-all focus:outline-none"
               >
                 {hasPermission(userRole, 'sites:create') ? 'Manage Sites' : 'View Sites'}
               </button>
             </div>
 
-            <div className="bg-white border border-gray-200 rounded-2xl shadow-sm p-6 flex flex-col hover:border-gray-300 transition-colors">
-              <div className="flex items-center justify-between mb-2">
-                <div className="flex items-center gap-3">
-                  <div className="p-2.5 bg-gray-50 border border-gray-100 rounded-xl text-gray-700">
-                    <LayoutTemplate className="h-5 w-5" />
+            <div className="group bg-white border border-gray-100 rounded-[2rem] shadow-sm p-6 lg:p-8 flex flex-col hover:border-[#8bc4b1] hover:shadow-[0_20px_40px_-15px_rgba(0,0,0,0.1)] hover:-translate-y-1 transition-all duration-500 relative overflow-hidden">
+              <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-[#00e5ff]/0 to-[#0b1411]/0 group-hover:from-[#00e5ff]/5 group-hover:to-[#0b1411]/5 rounded-bl-[100px] transition-all duration-500 pointer-events-none" />
+              <div className="flex items-center justify-between mb-6 relative z-10">
+                <div className="flex items-center gap-4">
+                  <div className="h-14 w-14 bg-[#f2f4f2] text-[#0b1411] rounded-2xl flex items-center justify-center shadow-inner group-hover:bg-[#00e5ff] transition-colors">
+                    <LayoutTemplate className="h-6 w-6" />
                   </div>
-                  <h3 className="text-base font-semibold text-gray-900">Forms</h3>
+                  <h3 className="text-xl font-black text-[#1d2321] tracking-tight group-hover:text-[#00e5ff] transition-colors">Forms</h3>
                 </div>
-                <button
-                  onClick={() => router.push(`/${params.tenantId}/forms`)}
-                  className="text-sm font-medium text-gray-500 hover:text-gray-900 transition-colors"
-                >
-                  View All →
-                </button>
               </div>
-              <p className="text-gray-500 text-sm mb-6 flex-1">
+              <p className="text-gray-500 text-sm font-medium mb-8 flex-1 relative z-10 leading-relaxed max-w-[90%]">
                 {hasPermission(userRole, 'forms:create') ? 'Build custom forms with the drag-and-drop builder.' : 'View your forms.'}
               </p>
               <button
                 onClick={() => router.push(`/${params.tenantId}/forms`)}
-                className="w-full py-2.5 px-4 bg-white border border-gray-200 text-gray-900 text-sm font-medium rounded-xl hover:bg-gray-50 transition-colors focus:outline-none focus:ring-2 focus:ring-gray-200 focus:ring-offset-1"
+                className="w-full relative z-10 py-3.5 px-6 bg-[#f2f4f2] border border-transparent text-[#0b1411] text-xs font-black uppercase tracking-widest rounded-full group-hover:bg-[#0b1411] group-hover:text-[#00e5ff] shadow-inner group-hover:shadow-xl hover:scale-[1.02] active:scale-95 transition-all focus:outline-none"
               >
                 {hasPermission(userRole, 'forms:create') ? 'Manage Forms' : 'View Forms'}
               </button>
@@ -280,35 +273,41 @@ export default function TenantDashboardPage() {
 
         {/* Workspace Overview Stats */}
         <div>
-          <h2 className="text-lg font-semibold tracking-tight text-gray-900 mb-4">Overview</h2>
+          <h2 className="text-sm font-black text-gray-400 tracking-[0.15em] uppercase mb-6">Overview Data</h2>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-            <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm flex flex-col justify-between">
-              <div className="flex items-center gap-3 mb-4 text-gray-500">
-                <CreditCard className="h-5 w-5" />
-                <span className="text-sm font-medium">Billing Plan</span>
+            <div className="bg-white border border-gray-100 rounded-[2rem] p-6 lg:p-8 shadow-sm flex flex-col justify-between hover:border-[#8bc4b1] transition-all">
+              <div className="flex items-center gap-4 mb-8 text-gray-500">
+                <div className="h-10 w-10 rounded-2xl bg-[#f2f4f2] text-[#0b1411] flex items-center justify-center">
+                  <CreditCard className="h-5 w-5" />
+                </div>
+                <span className="text-xs font-bold uppercase tracking-widest text-[#0b1411]">Billing Plan</span>
               </div>
               <div>
-                <h3 className="text-2xl font-semibold text-gray-900 capitalize">{tenant.plan.toLowerCase()}</h3>
+                <h3 className="text-3xl font-black tracking-tight text-[#1d2321] capitalize">{tenant.plan.toLowerCase()}</h3>
               </div>
             </div>
 
-            <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm flex flex-col justify-between">
-              <div className="flex items-center gap-3 mb-4 text-gray-500">
-                <Users className="h-5 w-5" />
-                <span className="text-sm font-medium">Team Members</span>
+            <div className="bg-white border border-gray-100 rounded-[2rem] p-6 lg:p-8 shadow-sm flex flex-col justify-between hover:border-[#00e5ff] transition-all">
+              <div className="flex items-center gap-4 mb-8 text-gray-500">
+                <div className="h-10 w-10 rounded-2xl bg-[#f2f4f2] text-[#0b1411] flex items-center justify-center">
+                  <Users className="h-5 w-5" />
+                </div>
+                <span className="text-xs font-bold uppercase tracking-widest text-[#0b1411]">Team Members</span>
               </div>
               <div>
-                <h3 className="text-2xl font-semibold text-gray-900">{tenant._count?.tenantUsers || members.length}</h3>
+                <h3 className="text-4xl font-black tracking-tighter text-[#1d2321]">{tenant._count?.tenantUsers || members.length}</h3>
               </div>
             </div>
 
-            <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm flex flex-col justify-between">
-              <div className="flex items-center gap-3 mb-4 text-gray-500">
-                <Globe className="h-5 w-5" />
-                <span className="text-sm font-medium">Active Sites</span>
+            <div className="bg-white border border-gray-100 rounded-[2rem] p-6 lg:p-8 shadow-sm flex flex-col justify-between hover:border-[#d3ff4a] transition-all">
+              <div className="flex items-center gap-4 mb-8 text-gray-500">
+                <div className="h-10 w-10 rounded-2xl bg-[#f2f4f2] text-[#0b1411] flex items-center justify-center">
+                  <Globe className="h-5 w-5" />
+                </div>
+                <span className="text-xs font-bold uppercase tracking-widest text-[#0b1411]">Active Sites</span>
               </div>
               <div>
-                <h3 className="text-2xl font-semibold text-gray-900">{tenant._count?.sites || 0}</h3>
+                <h3 className="text-4xl font-black tracking-tighter text-[#1d2321]">{tenant._count?.sites || 0}</h3>
               </div>
             </div>
           </div>
@@ -316,34 +315,34 @@ export default function TenantDashboardPage() {
 
         {/* Team Settings */}
         <div>
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
-            <h2 className="text-lg font-semibold tracking-tight text-gray-900">Team Setting</h2>
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+            <h2 className="text-sm font-black text-gray-400 tracking-[0.15em] uppercase">User Access</h2>
             {hasPermission(userRole, 'members:invite') && !showAddMember && (
               <button
                 onClick={() => setShowAddMember(true)}
-                className="inline-flex items-center justify-center px-4 py-2 text-sm font-medium text-gray-900 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors focus:outline-none focus:ring-2 focus:ring-gray-200"
+                className="inline-flex items-center justify-center px-6 h-10 text-xs font-black uppercase tracking-widest text-[#d3ff4a] bg-[#0b1411] rounded-full hover:bg-[#1d2321] transition-all hover:scale-105 active:scale-95 shadow-lg focus:outline-none"
               >
-                <Plus className="h-4 w-4 mr-1.5" />
+                <Plus className="h-4 w-4 mr-2" />
                 Invite Member
               </button>
             )}
           </div>
 
-          <div className="bg-white border border-gray-200 rounded-2xl shadow-sm overflow-hidden">
+          <div className="bg-white border border-gray-100 rounded-[2rem] shadow-sm overflow-hidden relative">
 
             {/* Success Message */}
             {successMessage && (
-              <div className="px-6 py-4 bg-gray-50 border-b border-gray-200 flex items-start">
-                <ShieldCheck className="h-5 w-5 text-gray-900 mt-0.5 mr-3 flex-shrink-0" />
-                <p className="text-sm font-medium text-gray-900">{successMessage}</p>
+              <div className="px-8 py-6 bg-emerald-50 border-b border-emerald-100 flex items-start">
+                <ShieldCheck className="h-5 w-5 text-emerald-600 mt-0.5 mr-3 flex-shrink-0" />
+                <p className="text-sm font-bold text-emerald-800">{successMessage}</p>
               </div>
             )}
 
             {/* Add Member Form */}
             {showAddMember && (
-              <div className="p-6 bg-gray-50 border-b border-gray-200">
-                <div className="flex items-center justify-between mb-5">
-                  <h3 className="text-sm font-medium text-gray-900">Invite new team member</h3>
+              <div className="p-8 bg-[#fcfdfc] border-b border-gray-100">
+                <div className="flex items-center justify-between mb-6">
+                  <h3 className="text-xs font-black uppercase tracking-widest text-[#0b1411]">Invite new team member</h3>
                   <button
                     onClick={() => {
                       setShowAddMember(false)
@@ -351,7 +350,7 @@ export default function TenantDashboardPage() {
                       setMemberEmail('')
                       setSuccessMessage('')
                     }}
-                    className="text-sm text-gray-500 hover:text-gray-900 font-medium transition-colors"
+                    className="text-xs text-gray-400 font-bold uppercase tracking-widest hover:text-[#0b1411] transition-colors"
                   >
                     Cancel
                   </button>
@@ -359,15 +358,15 @@ export default function TenantDashboardPage() {
 
                 <form onSubmit={handleAddMember} className="space-y-4">
                   {error && (
-                    <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-xl flex items-start text-sm">
+                    <div className="bg-red-50 border border-red-100 text-red-600 px-5 py-4 rounded-2xl flex items-start text-sm">
                       <ShieldAlert className="h-4 w-4 mt-0.5 mr-2 flex-shrink-0" />
-                      <p className="font-medium">{error}</p>
+                      <p className="font-bold">{error}</p>
                     </div>
                   )}
-                  <div className="flex flex-col sm:flex-row gap-3">
+                  <div className="flex flex-col sm:flex-row gap-4">
                     <div className="flex-1 relative">
-                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                        <Mail className="h-4 w-4 text-gray-400" />
+                      <div className="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none">
+                        <Mail className="h-5 w-5 text-gray-400" />
                       </div>
                       <input
                         type="email"
@@ -375,14 +374,14 @@ export default function TenantDashboardPage() {
                         value={memberEmail}
                         onChange={(e) => setMemberEmail(e.target.value)}
                         required
-                        className="pl-9 block w-full px-4 py-2.5 bg-white border border-gray-300 rounded-xl text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-900/10 focus:border-gray-900 transition-colors text-sm"
+                        className="pl-12 block w-full px-5 py-3.5 bg-[#f2f4f2] border-none rounded-2xl text-[#0b1411] font-bold placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#0b1411]/20 transition-all text-sm shadow-inner"
                       />
                     </div>
-                    <div className="sm:w-40 relative">
+                    <div className="sm:w-48 relative">
                       <select
                         value={memberRole}
                         onChange={(e) => setMemberRole(e.target.value)}
-                        className="block w-full px-4 py-2.5 bg-white border border-gray-300 rounded-xl text-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-900/10 focus:border-gray-900 transition-colors text-sm appearance-none cursor-pointer"
+                        className="block w-full px-5 py-3.5 bg-[#f2f4f2] border-none rounded-2xl text-[#0b1411] font-bold focus:outline-none focus:ring-2 focus:ring-[#0b1411]/20 transition-all text-sm appearance-none cursor-pointer shadow-inner"
                       >
                         <option value="EDITOR">Editor</option>
                         <option value="VIEWER">Viewer</option>
@@ -392,7 +391,7 @@ export default function TenantDashboardPage() {
                     <button
                       type="submit"
                       disabled={addMemberLoading}
-                      className="inline-flex items-center justify-center px-6 py-2.5 text-sm font-medium text-white bg-gray-900 border border-transparent rounded-xl hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors min-w-[120px]"
+                      className="inline-flex items-center justify-center px-8 py-3.5 text-xs font-black uppercase tracking-widest text-[#0b1411] bg-[#d3ff4a] rounded-full hover:bg-[#c0eb3f] hover:scale-105 active:scale-95 disabled:opacity-50 disabled:hover:scale-100 disabled:cursor-not-allowed shadow-[0_0_20px_rgba(211,255,74,0.3)] transition-all min-w-[140px]"
                     >
                       {addMemberLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Send Invite'}
                     </button>
@@ -404,9 +403,9 @@ export default function TenantDashboardPage() {
             {/* Members List */}
             <ul className="divide-y divide-gray-100">
               {members.map((member) => (
-                <li key={member.id} className="p-4 sm:px-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:bg-gray-50/50 transition-colors">
-                  <div className="flex items-center gap-4">
-                    <div className="h-10 w-10 rounded-full border border-gray-200 bg-white flex items-center justify-center flex-shrink-0 overflow-hidden shadow-sm">
+                <li key={member.id} className="p-6 lg:px-8 flex flex-col sm:flex-row sm:items-center justify-between gap-6 hover:bg-gray-50/50 transition-colors">
+                  <div className="flex items-center gap-5">
+                    <div className="h-12 w-12 rounded-2xl border border-gray-100 bg-[#f2f4f2] text-[#0b1411] flex items-center justify-center flex-shrink-0 overflow-hidden shadow-sm">
                       {member.user.image ? (
                         <img
                           src={member.user.image}
@@ -414,31 +413,31 @@ export default function TenantDashboardPage() {
                           className="h-full w-full object-cover"
                         />
                       ) : (
-                        <span className="text-gray-500 font-medium text-sm">
+                        <span className="font-black text-lg">
                           {(member.user.name || member.user.email).charAt(0).toUpperCase()}
                         </span>
                       )}
                     </div>
                     <div>
-                      <p className="text-sm font-medium text-gray-900">
+                      <p className="text-sm font-bold text-[#1d2321]">
                         {member.user.name || 'Unknown User'}
                         {member.userId === session.user.id && (
-                          <span className="ml-2 text-xs font-normal text-gray-500">(You)</span>
+                          <span className="ml-2 text-[10px] font-black uppercase tracking-widest text-[#8bc4b1]">(You)</span>
                         )}
                       </p>
-                      <p className="text-sm text-gray-500">{member.user.email}</p>
+                      <p className="text-xs font-medium text-gray-500 mt-0.5">{member.user.email}</p>
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-3 justify-between sm:justify-end">
-                    <span className={`inline-flex items-center px-2 py-1 rounded text-xs font-medium border border-gray-200 ${ROLE_COLORS[member.role] || 'bg-gray-100 text-gray-600'}`}>
+                  <div className="flex items-center gap-4 justify-between sm:justify-end">
+                    <span className="inline-flex items-center px-3 py-1.5 bg-[#f2f4f2] text-gray-600 rounded-full text-[10px] font-black uppercase tracking-widest border border-gray-100">
                       {ROLE_LABELS[member.role] || member.role}
                     </span>
 
                     {hasPermission(userRole, 'members:remove') && member.userId !== tenant.ownerId && (
                       <button
                         onClick={() => handleRemoveMember(member.userId)}
-                        className="p-1.5 text-gray-400 hover:text-gray-900 rounded-md transition-colors"
+                        className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-xl transition-colors"
                         title="Remove member"
                       >
                         <UserX className="h-4 w-4" />
@@ -454,15 +453,15 @@ export default function TenantDashboardPage() {
         {/* Pending Invitations Section */}
         {hasPermission(userRole, 'members:invite') && invitations.length > 0 && (
           <div>
-            <h2 className="text-lg font-semibold tracking-tight text-gray-900 mb-4">Pending Invitations</h2>
-            <div className="bg-white border border-gray-200 rounded-2xl shadow-sm overflow-hidden">
+            <h2 className="text-sm font-black text-gray-400 tracking-[0.15em] uppercase mb-6 mt-16">Pending Invitations</h2>
+            <div className="bg-white border border-gray-100 rounded-[2rem] shadow-sm overflow-hidden relative">
               <ul className="divide-y divide-gray-100">
                 {invitations.map((invitation) => (
-                  <li key={invitation.id} className="p-4 sm:px-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:bg-gray-50/50 transition-colors">
+                  <li key={invitation.id} className="p-6 lg:px-8 flex flex-col sm:flex-row sm:items-center justify-between gap-6 hover:bg-gray-50/50 transition-colors">
                     <div className="flex items-center justify-between">
                       <div>
-                        <p className="text-sm font-medium text-gray-900">{invitation.email}</p>
-                        <div className="mt-1 flex items-center text-xs text-gray-500 space-x-2">
+                        <p className="text-sm font-bold text-[#1d2321]">{invitation.email}</p>
+                        <div className="mt-1.5 flex items-center text-xs font-black uppercase tracking-widest text-[#8bc4b1] space-x-2">
                           <span className="flex items-center">
                             <Clock className="h-3 w-3 mr-1" />
                             Invited {new Date(invitation.createdAt).toLocaleDateString()}
@@ -470,13 +469,13 @@ export default function TenantDashboardPage() {
                         </div>
                       </div>
                     </div>
-                    <div className="flex items-center gap-3 self-start sm:self-center">
-                      <span className="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-gray-50 text-gray-600 border border-gray-200 capitalize">
+                    <div className="flex items-center gap-4 self-start sm:self-center">
+                      <span className="inline-flex items-center px-3 py-1.5 bg-[#f2f4f2] text-gray-600 rounded-full text-[10px] font-black uppercase tracking-widest border border-gray-100">
                         {invitation.role.toLowerCase()} • Pending
                       </span>
                       <button
                         onClick={() => copyInvitationLink(invitation.token)}
-                        className="px-3 py-1.5 text-xs font-medium text-gray-700 bg-white hover:text-gray-900 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors shadow-sm"
+                        className="px-5 py-2.5 text-[10px] font-black uppercase tracking-widest text-[#0b1411] bg-[#d3ff4a] rounded-full hover:bg-[#c0eb3f] transition-colors shadow-sm focus:outline-none"
                         title="Copy invitation link"
                       >
                         {copiedId === invitation.token ? 'Copied' : 'Copy URL'}
