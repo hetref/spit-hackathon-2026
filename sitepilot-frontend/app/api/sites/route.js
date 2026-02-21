@@ -148,8 +148,9 @@ export async function POST(request) {
         where: { id: result.site.id },
         data: {
           cfStatus: provisioning.status,
-          cfTenantId: `tenant-${result.site.id}`, // Logical ID
-          // Assuming domain format is slug.sitepilot.devally.in
+          cfTenantId: provisioning.cfTenantId,
+          cfTenantArn: provisioning.cfTenantArn,
+          cfConnectionGroupId: provisioning.cfConnectionGroupId,
         },
       });
     } catch (provisionError) {

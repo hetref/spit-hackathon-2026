@@ -362,7 +362,7 @@ export default function SiteDetailPage() {
 
   return (
     <div className="min-h-screen bg-[#FDFDFD] font-sans text-gray-900">
-      
+
       {/* Header */}
       <div className="bg-white border-b border-gray-200 sticky top-0 z-10">
         <div className="max-w-7xl mx-auto px-6 sm:px-10 lg:px-12 py-5 sm:py-6">
@@ -392,43 +392,29 @@ export default function SiteDetailPage() {
                 <LayoutTemplate size={16} className="mr-2" />
                 Manage Pages
               </button>
-              <div className="min-w-0">
-                <h1 className="text-xl font-bold text-gray-900 truncate">{site.name}</h1>
-                <p className="text-xs text-gray-500 mt-0.5">/{site.slug}</p>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-2 shrink-0">
-              <button
-                onClick={() => router.push(`/${params.tenantId}/sites/${params.siteId}/builder`)}
-                className="flex items-center gap-1.5 px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-xl hover:bg-indigo-700 transition-colors"
-              >
-                <Pencil size={14} />
-                Edit in Builder
-              </button>
             </div>
           </div>
         </div>
       </div>
 
       <div className="max-w-7xl mx-auto px-6 sm:px-10 lg:px-12 py-8 sm:py-12 space-y-8">
-        
+
         {/* Top Grid: Preview Card Left, Overview Right */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          
+
           {/* Preview Card */}
           <div className="lg:col-span-1">
             <h2 className="text-lg font-semibold text-gray-900 mb-4 tracking-tight">Site Preview</h2>
             <div className="bg-white border border-gray-200 rounded-2xl shadow-sm overflow-hidden flex flex-col h-[340px] group">
               {isPublished ? (
                 <div className="flex-1 bg-gray-100 flex items-center justify-center overflow-hidden relative">
-                   <iframe 
-                     src={`https://${domains[0] || site.domain}`} 
-                     className="w-full h-full border-0 pointer-events-none origin-top-left scale-[1]" 
-                     style={{ width: '100%', height: '100%' }}
-                     title="Site Live Preview"
-                   />
-                   <div className="absolute inset-0 z-10 bg-transparent" />
+                  <iframe
+                    src={`https://${domains[0] || site.domain}`}
+                    className="w-full h-full border-0 pointer-events-none origin-top-left scale-[1]"
+                    style={{ width: '100%', height: '100%' }}
+                    title="Site Live Preview"
+                  />
+                  <div className="absolute inset-0 z-10 bg-transparent" />
                 </div>
               ) : (
                 <div className="flex-1 bg-gray-50 flex flex-col items-center justify-center border-b border-gray-100 transition-colors">
@@ -437,7 +423,7 @@ export default function SiteDetailPage() {
                   <span className="text-xs text-gray-400 mt-1 max-w-[200px] text-center">Connect a domain to see a live preview.</span>
                 </div>
               )}
-              
+
               <div className="p-5 bg-white flex justify-between items-center border-t border-gray-100">
                 <div className="min-w-0 pr-3">
                   <h3 className="text-sm font-semibold text-gray-900 truncate">Live View</h3>
@@ -462,49 +448,49 @@ export default function SiteDetailPage() {
 
           {/* Overview & Domains */}
           <div className="lg:col-span-2 space-y-8">
-            
+
             {/* Stats Overview */}
             <div>
-               <h2 className="text-lg font-semibold text-gray-900 mb-4 tracking-tight">Overview</h2>
-               <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
-                 <div className="bg-white border border-gray-200 rounded-2xl shadow-sm p-5 flex flex-col">
-                   <div className="flex items-center gap-2.5 text-gray-500 mb-3">
-                     <Calendar className="h-4 w-4" />
-                     <span className="text-sm font-medium">Created</span>
-                   </div>
-                   <p className="text-xl font-bold text-gray-900 mt-auto">
-                     {new Date(site.createdAt).toLocaleDateString('en-US', {
-                       year: 'numeric',
-                       month: 'short',
-                       day: 'numeric'
-                     })}
-                   </p>
-                 </div>
+              <h2 className="text-lg font-semibold text-gray-900 mb-4 tracking-tight">Overview</h2>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
+                <div className="bg-white border border-gray-200 rounded-2xl shadow-sm p-5 flex flex-col">
+                  <div className="flex items-center gap-2.5 text-gray-500 mb-3">
+                    <Calendar className="h-4 w-4" />
+                    <span className="text-sm font-medium">Created</span>
+                  </div>
+                  <p className="text-xl font-bold text-gray-900 mt-auto">
+                    {new Date(site.createdAt).toLocaleDateString('en-US', {
+                      year: 'numeric',
+                      month: 'short',
+                      day: 'numeric'
+                    })}
+                  </p>
+                </div>
 
-                 <div className="bg-white border border-gray-200 rounded-2xl shadow-sm p-5 flex flex-col">
-                   <div className="flex items-center gap-2.5 text-gray-500 mb-3">
-                     <Clock className="h-4 w-4" />
-                     <span className="text-sm font-medium">Last Updated</span>
-                   </div>
-                   <p className="text-xl font-bold text-gray-900 mt-auto">
-                     {new Date(site.updatedAt).toLocaleDateString('en-US', {
-                       year: 'numeric',
-                       month: 'short',
-                       day: 'numeric'
-                     })}
-                   </p>
-                 </div>
+                <div className="bg-white border border-gray-200 rounded-2xl shadow-sm p-5 flex flex-col">
+                  <div className="flex items-center gap-2.5 text-gray-500 mb-3">
+                    <Clock className="h-4 w-4" />
+                    <span className="text-sm font-medium">Last Updated</span>
+                  </div>
+                  <p className="text-xl font-bold text-gray-900 mt-auto">
+                    {new Date(site.updatedAt).toLocaleDateString('en-US', {
+                      year: 'numeric',
+                      month: 'short',
+                      day: 'numeric'
+                    })}
+                  </p>
+                </div>
 
-                 <div className="bg-white border border-gray-200 rounded-2xl shadow-sm p-5 flex flex-col">
-                   <div className="flex items-center gap-2.5 text-gray-500 mb-3">
-                     <History className="h-4 w-4" />
-                     <span className="text-sm font-medium">Deployments</span>
-                   </div>
-                   <p className="text-xl font-bold text-gray-900 mt-auto">
-                     {site._count?.versions || 0}
-                   </p>
-                 </div>
-               </div>
+                <div className="bg-white border border-gray-200 rounded-2xl shadow-sm p-5 flex flex-col">
+                  <div className="flex items-center gap-2.5 text-gray-500 mb-3">
+                    <History className="h-4 w-4" />
+                    <span className="text-sm font-medium">Deployments</span>
+                  </div>
+                  <p className="text-xl font-bold text-gray-900 mt-auto">
+                    {site._count?.versions || 0}
+                  </p>
+                </div>
+              </div>
             </div>
 
             {/* Domains Section */}
@@ -566,25 +552,24 @@ export default function SiteDetailPage() {
                 <ul className="divide-y divide-gray-100">
                   {domains.length === 0 ? (
                     <li className="p-8 text-center bg-white flex flex-col items-center justify-center">
-                       <div className="h-12 w-12 bg-gray-50 border border-gray-100 rounded-full flex items-center justify-center mb-3">
-                         <Monitor size={20} className="text-gray-400" />
-                       </div>
-                       <p className="text-sm font-medium text-gray-900">No domains connected</p>
-                       <p className="text-sm text-gray-500 mt-1">Add a custom domain to publish your site live.</p>
+                      <div className="h-12 w-12 bg-gray-50 border border-gray-100 rounded-full flex items-center justify-center mb-3">
+                        <Monitor size={20} className="text-gray-400" />
+                      </div>
+                      <p className="text-sm font-medium text-gray-900">No domains connected</p>
+                      <p className="text-sm text-gray-500 mt-1">Add a custom domain to publish your site live.</p>
                     </li>
                   ) : (
                     domains.map((domain, idx) => (
                       <li key={idx} className="p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:bg-gray-50/50 transition-colors">
                         <div className="flex items-center gap-3">
                           <div className="p-2 bg-gray-100 rounded-lg text-gray-500">
-                             <Globe size={18} />
+                            <Globe size={18} />
                           </div>
                           <div>
                             <p className="text-sm font-semibold text-gray-900 tracking-tight">{domain}</p>
                             <div className="flex items-center gap-2 mt-0.5">
-                              <span className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${
-                                idx === 0 ? 'bg-indigo-50 text-indigo-700 border border-indigo-100' : 'bg-gray-100 text-gray-600 border border-gray-200'
-                              }`}>
+                              <span className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${idx === 0 ? 'bg-indigo-50 text-indigo-700 border border-indigo-100' : 'bg-gray-100 text-gray-600 border border-gray-200'
+                                }`}>
                                 {idx === 0 ? 'Primary' : 'Alias'}
                               </span>
                             </div>
@@ -612,7 +597,7 @@ export default function SiteDetailPage() {
           <div className="bg-white border border-gray-200 rounded-2xl shadow-sm overflow-hidden flex flex-col">
             <div className="p-6 sm:p-8">
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-                
+
                 <div className="flex flex-col">
                   <span className="flex items-center gap-2 text-sm font-medium text-gray-500 mb-2">
                     <Users size={16} className="text-gray-400" /> Visitors
