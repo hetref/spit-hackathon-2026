@@ -19,11 +19,12 @@ export const runtime = "nodejs";
  * Publishes the entire site to S3 with a new versioned deploymentId.
  * Flow (atomic by design):
  *   1. Auth + access check
- *   2. Fetch all pages for the site
+ *   2. Fetch all published pages for the site
  *   3. Generate HTML for each page
- *   4. Upload to S3: sites/{userId}/{businessId}/{siteId}/deployments/{deploymentId}/
- *   5. Only after ALL uploads succeed → update CloudFront KVS
- *   6. Record deployment in DB, mark all others as inactive
+ *   4. Create a ContentVersion snapshot in DB
+ *   5. Upload to S3: sites/{userId}/{businessId}/{siteId}/deployments/{deploymentId}/
+ *   6. Only after ALL uploads succeed → update CloudFront KVS
+ *   7. Record deployment in DB, mark all others as inactive
  *
  * Body (JSON):
  *   { deploymentName?: string }  — optional friendly label for this deployment
@@ -41,7 +42,9 @@ export async function POST(request, { params }) {
         const site = await prisma.site.findUnique({
             where: { id: siteId },
             include: {
-                pages: true,
+                pages: {
+                    where: { isPublished: true },
+                },
                 tenant: { select: { id: true, ownerId: true } },
             },
         });
@@ -66,54 +69,100 @@ export async function POST(request, { params }) {
             // body is optional
         }
 
-        // ── 3. Generate HTML for all pages ────────────────────────────────────────
+        // ── 3. Validate pages ─────────────────────────────────────────────────────
         if (!site.pages || site.pages.length === 0) {
             return NextResponse.json(
-                { error: "Site has no pages to publish" },
+                { error: "Site has no published pages to deploy" },
                 { status: 400 }
             );
         }
 
-        // Build HTML for the home page (slug "/") as index.html
-        // Additional pages can be added later as sub-paths
-        const homePage =
-            site.pages.find((p) => p.slug === "/" || p.slug === "") ||
-            site.pages[0];
-
-        const { html, css, js } = convertPageToHtml(
-            site.theme,
-            homePage,
-            site.name,
-            { stylesHref: "styles.css", scriptSrc: "script.js" }
-        );
-
-        // ── 4. Generate deploymentId & upload to S3 ───────────────────────────────
+        // ── 4. Generate deploymentId & Compile HTML for DO NOT OVERWRITE ──────────
         const deploymentId = randomUUID();
         const userId = site.tenant.ownerId;
         const businessId = site.tenantId;
 
+        const files = [];
+        const snapshotPages = [];
+
+        for (const page of site.pages) {
+            // Compile snapshot data
+            snapshotPages.push({
+                slug: page.slug,
+                name: page.name,
+                layout: page.layout,
+                seo: page.seo,
+            });
+
+            // Determine output paths
+            const isHomePage = page.slug === "/";
+            const baseFilename = isHomePage
+                ? "index"
+                : page.slug.replace(/^\//, "").replace(/\//g, "-");
+
+            const cssFilename = `${baseFilename}.css`;
+            const jsFilename = `${baseFilename}.js`;
+
+            // Compile the page
+            const { html, css, js } = convertPageToHtml(
+                site.theme,
+                page,
+                site.name,
+                { stylesHref: cssFilename, scriptSrc: jsFilename }
+            );
+
+            // If the user wants `about/index.html` structure instead of `about.html`:
+            // The prompt says "about/index.html" structure. Note: CloudFront standard KVS points to prefix, 
+            // so requesting /about would normally need CloudFront to append /index.html 
+            // but let's use the requested structure or standard index.html nesting.
+            const htmlPath = isHomePage ? "index.html" : `${page.slug.replace(/^\//, "")}/index.html`;
+            const cssPath = `${baseFilename}.css`;
+            const jsPath = `${baseFilename}.js`;
+
+            files.push({ path: htmlPath, content: html, contentType: "text/html; charset=utf-8" });
+            files.push({ path: cssPath, content: css, contentType: "text/css; charset=utf-8" });
+            files.push({ path: jsPath, content: js, contentType: "application/javascript; charset=utf-8" });
+        }
+
+        // ── 5. Create ContentVersion Snapshot ─────────────────────────────────────
+        // Determine the next version number
+        const lastVersion = await prisma.contentVersion.findFirst({
+            where: { siteId },
+            orderBy: { versionNumber: 'desc' }
+        });
+        const nextVersionNumber = (lastVersion?.versionNumber || 0) + 1;
+
+        const contentVersion = await prisma.contentVersion.create({
+            data: {
+                siteId,
+                versionNumber: nextVersionNumber,
+                pages: snapshotPages,
+                theme: site.theme,
+                globalSettings: site.globalSettings,
+            }
+        });
+
+        // ── 6. Upload ALL pages to S3 ─────────────────────────────────────────────
         const { s3Prefix } = await uploadDeploymentToS3({
             userId,
             businessId,
             siteId,
             deploymentId,
-            html,
-            css,
-            js,
+            files,
         });
 
-        // ── 5. Update CloudFront KVS (only after successful S3 upload) ────────────
+        // ── 7. Update CloudFront KVS ──────────────────────────────────────────────
+        const kvsKey = site.slug;
+
         let kvsUpdated = false;
         try {
-            await updateKVS(site.slug, s3Prefix);
+            await updateKVS(kvsKey, s3Prefix);
             kvsUpdated = true;
         } catch (kvsError) {
-            // KVS update is best-effort; S3 files are already safe.
-            // We still record the deployment so manual/rollback can fix KVS later.
             console.error("KVS update failed (non-fatal):", kvsError.message);
         }
 
-        // ── 6. Persist deployment to DB (transaction) ─────────────────────────────
+        // ── 8. Persist deployment to DB (transaction) ─────────────────────────────
         const deployment = await prisma.$transaction(async (tx) => {
             // Deactivate all previous deployments for this site
             await tx.deployment.updateMany({
@@ -130,19 +179,14 @@ export async function POST(request, { params }) {
                     isActive: true,
                     kvsUpdated,
                     siteId,
+                    contentVersionId: contentVersion.id,
                 },
-            });
-
-            // Mark all pages as published
-            await tx.page.updateMany({
-                where: { siteId },
-                data: { isPublished: true, publishedAt: new Date() },
             });
 
             return dep;
         });
 
-        const siteUrl = buildSiteUrl(site.slug);
+        const siteUrl = buildSiteUrl(site.slug); // Note: Should probably use the actual Domain
 
         return NextResponse.json({
             success: true,

@@ -25,7 +25,8 @@ import {
   LayoutTemplate,
   Clock,
   CheckCircle2,
-  RotateCcw
+  RotateCcw,
+  Rocket
 } from "lucide-react";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -210,6 +211,117 @@ function DeploymentRow({ siteId, siteSlug, deployment, onRollback, onRenamed }) 
   );
 }
 
+// ─── Publish Modal ────────────────────────────────────────────────────────────
+
+function PublishModal({ siteId, onClose, onSuccess }) {
+  const [deploymentName, setDeploymentName] = useState("");
+  const [isPublishing, setIsPublishing] = useState(false);
+  const [error, setError] = useState(null);
+
+  const handlePublish = async () => {
+    setError(null);
+    setIsPublishing(true);
+    try {
+      const res = await fetch(`/api/sites/${siteId}/publish`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          deploymentName: deploymentName.trim() || null,
+        }),
+      });
+      const result = await res.json();
+      if (!res.ok) throw new Error(result.error || "Publish failed");
+      onSuccess(result);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setIsPublishing(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-gray-900/60 backdrop-blur-sm">
+      <div className="bg-white border border-gray-200 rounded-2xl shadow-2xl w-full max-w-md mx-4 overflow-hidden">
+        {/* Header */}
+        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 bg-gray-50/50">
+          <div className="flex items-center gap-2">
+            <div className="w-8 h-8 bg-indigo-100 rounded-lg flex items-center justify-center">
+              <Rocket size={16} className="text-indigo-600" />
+            </div>
+            <h2 className="text-base font-semibold text-gray-900">Publish Site</h2>
+          </div>
+          <button
+            onClick={onClose}
+            className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-md transition-colors"
+          >
+            <X size={16} />
+          </button>
+        </div>
+
+        {/* Body */}
+        <div className="px-6 py-5 space-y-4">
+          <p className="text-sm text-gray-500">
+            Your site will be uploaded to S3 and CloudFront will be
+            updated instantly. Every publish creates a new versioned snapshot —
+            you can roll back at any time.
+          </p>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1.5">
+              Deployment name{" "}
+              <span className="text-gray-400 font-normal">(optional)</span>
+            </label>
+            <input
+              type="text"
+              value={deploymentName}
+              onChange={(e) => setDeploymentName(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && handlePublish()}
+              placeholder="e.g. v1.2 — Added hero section"
+              autoFocus
+              className="w-full px-3.5 py-2.5 bg-white border border-gray-300 text-gray-900 text-sm rounded-xl placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-colors"
+            />
+          </div>
+
+          {error && (
+            <div className="flex items-start gap-2 text-sm text-red-600 bg-red-50 border border-red-200 rounded-xl px-4 py-3">
+              <AlertCircle size={15} className="mt-0.5 shrink-0" />
+              {error}
+            </div>
+          )}
+        </div>
+
+        {/* Footer */}
+        <div className="px-6 pb-5 flex gap-3">
+          <button
+            onClick={onClose}
+            disabled={isPublishing}
+            className="flex-1 px-4 py-2.5 border border-gray-300 text-gray-700 bg-white text-sm font-medium rounded-xl hover:bg-gray-50 transition-colors disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-gray-200"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={handlePublish}
+            disabled={isPublishing}
+            className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-indigo-600 text-white text-sm font-medium rounded-xl hover:bg-indigo-700 transition-colors disabled:opacity-60 shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-600 focus:ring-offset-2"
+          >
+            {isPublishing ? (
+              <>
+                <Loader2 size={16} className="animate-spin" />
+                Publishing…
+              </>
+            ) : (
+              <>
+                <Rocket size={16} />
+                Publish now
+              </>
+            )}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ─── Page Component ───────────────────────────────────────────────────────────
 
 export default function SiteDetailPage() {
@@ -224,6 +336,7 @@ export default function SiteDetailPage() {
   const [showAddDomain, setShowAddDomain] = useState(false);
   const [domainInput, setDomainInput] = useState('');
   const [domains, setDomains] = useState([]);
+  const [showPublishModal, setShowPublishModal] = useState(false);
 
   const siteUrl = site ? `https://${site.slug}.sitepilot.devally.in` : null;
 
@@ -311,6 +424,11 @@ export default function SiteDetailPage() {
     }
   }, [site]);
 
+  const handlePublishSuccess = (result) => {
+    setShowPublishModal(false);
+    fetchData(); // reload deployments list and site state
+  };
+
   // ─── Render: Loading ──────────────────────────────────────────────────────
   if (isPending || loading) {
     return (
@@ -373,10 +491,17 @@ export default function SiteDetailPage() {
             <div className="flex items-center gap-3">
               <button
                 onClick={() => router.push(`/${params.tenantId}/sites/${params.siteId}/pages`)}
-                className="inline-flex items-center justify-center px-5 py-2.5 bg-gray-900 text-white text-sm font-medium rounded-xl hover:bg-gray-800 transition-colors focus:outline-none focus:ring-2 focus:ring-gray-900 focus:ring-offset-2"
+                className="inline-flex items-center justify-center px-4 py-2.5 bg-white border border-gray-200 text-gray-700 text-sm font-medium rounded-xl hover:bg-gray-50 transition-colors focus:outline-none focus:ring-2 focus:ring-gray-200"
               >
                 <LayoutTemplate size={16} className="mr-2" />
                 Manage Pages
+              </button>
+              <button
+                onClick={() => setShowPublishModal(true)}
+                className="inline-flex items-center justify-center px-5 py-2.5 bg-indigo-600 text-white text-sm font-medium rounded-xl hover:bg-indigo-700 transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-600 focus:ring-offset-2 shadow-sm shadow-indigo-500/20"
+              >
+                <Rocket size={16} className="mr-2" />
+                Publish Site
               </button>
             </div>
           </div>
@@ -685,6 +810,14 @@ export default function SiteDetailPage() {
         )}
 
       </div>
+
+      {showPublishModal && site && (
+        <PublishModal
+          siteId={site.id}
+          onClose={() => setShowPublishModal(false)}
+          onSuccess={handlePublishSuccess}
+        />
+      )}
     </div>
   );
 }

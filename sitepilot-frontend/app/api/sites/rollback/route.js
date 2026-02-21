@@ -83,10 +83,17 @@ export async function POST(request) {
             );
         }
 
+        // ─NEW─ Find the previously active deployment
+        const previouslyActive = await prisma.deployment.findFirst({
+            where: { siteId: site.id, isActive: true },
+        });
+
         // ── 5. Update CloudFront KVS ──────────────────────────────────────────────
+        const kvsKey = site.slug;
+
         let kvsUpdated = false;
         try {
-            await updateKVS(siteSlug, deployment.s3Key);
+            await updateKVS(kvsKey, deployment.s3Key);
             kvsUpdated = true;
         } catch (kvsError) {
             console.error("KVS rollback update failed:", kvsError.message);
@@ -96,7 +103,7 @@ export async function POST(request) {
             );
         }
 
-        // ── 6. Update DB atomically ───────────────────────────────────────────────
+        // ── 6. Update DB atomically & cleanup previous ────────────────────────────
         await prisma.$transaction(async (tx) => {
             // Deactivate all deployments for the site
             await tx.deployment.updateMany({
@@ -109,7 +116,21 @@ export async function POST(request) {
                 where: { id: deployment.id },
                 data: { isActive: true, kvsUpdated: true },
             });
+
+            // If we are rolling back from A to B, delete A in DB
+            if (previouslyActive && previouslyActive.id !== deployment.id) {
+                await tx.deployment.delete({ where: { id: previouslyActive.id } });
+            }
         });
+
+        // Delete from S3 in background/async safely AFTER database commits
+        if (previouslyActive && previouslyActive.id !== deployment.id) {
+            import('@/lib/aws/s3-publish').then(({ deleteDeploymentFromS3 }) => {
+                deleteDeploymentFromS3(previouslyActive.s3Key).catch(err => {
+                    console.error("Failed to cleanup old S3 deployment after rollback:", err);
+                });
+            });
+        }
 
         const siteUrl = buildSiteUrl(siteSlug);
 

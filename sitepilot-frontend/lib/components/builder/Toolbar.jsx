@@ -31,115 +31,7 @@ import useHistoryStore from "@/lib/stores/historyStore";
 import useBuilderStore, { clearSavedState } from "@/lib/stores/builderStore";
 import { clsx } from "clsx";
 
-// ─── Publish Modal ────────────────────────────────────────────────────────────
-
-function PublishModal({ siteId, onClose, onSuccess }) {
-  const [deploymentName, setDeploymentName] = useState("");
-  const [isPublishing, setIsPublishing] = useState(false);
-  const [error, setError] = useState(null);
-
-  const handlePublish = async () => {
-    setError(null);
-    setIsPublishing(true);
-    try {
-      const res = await fetch(`/api/sites/${siteId}/publish`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          deploymentName: deploymentName.trim() || null,
-        }),
-      });
-      const result = await res.json();
-      if (!res.ok) throw new Error(result.error || "Publish failed");
-      onSuccess(result);
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setIsPublishing(false);
-    }
-  };
-
-  return (
-    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-sm">
-      <div className="bg-[#1E293B] border border-slate-700 rounded-2xl shadow-2xl w-full max-w-md mx-4 overflow-hidden">
-        {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-700">
-          <div className="flex items-center gap-2">
-            <div className="w-7 h-7 bg-gradient-to-br from-blue-500 to-violet-500 rounded-lg flex items-center justify-center">
-              <Rocket size={14} className="text-white" />
-            </div>
-            <h2 className="text-sm font-bold text-white">Publish Site</h2>
-          </div>
-          <button
-            onClick={onClose}
-            className="p-1.5 text-slate-400 hover:text-white hover:bg-slate-700 rounded-md transition-colors"
-          >
-            <X size={16} />
-          </button>
-        </div>
-
-        {/* Body */}
-        <div className="px-6 py-5 space-y-4">
-          <p className="text-xs text-slate-400">
-            Your site will be uploaded to S3 and the CloudFront CDN will be
-            updated instantly. Every publish creates a new versioned snapshot —
-            you can roll back at any time.
-          </p>
-
-          <div>
-            <label className="block text-xs font-medium text-slate-300 mb-1.5">
-              Deployment name{" "}
-              <span className="text-slate-500 font-normal">(optional)</span>
-            </label>
-            <input
-              type="text"
-              value={deploymentName}
-              onChange={(e) => setDeploymentName(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && handlePublish()}
-              placeholder="e.g. v1.2 — Added hero section"
-              className="w-full px-3.5 py-2.5 bg-slate-800 border border-slate-600 text-white text-sm rounded-lg placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
-            />
-          </div>
-
-          {error && (
-            <div className="flex items-start gap-2 text-xs text-red-400 bg-red-500/10 border border-red-500/20 rounded-lg px-3 py-2.5">
-              <span className="mt-0.5">⚠</span>
-              {error}
-            </div>
-          )}
-        </div>
-
-        {/* Footer */}
-        <div className="px-6 pb-5 flex gap-3">
-          <button
-            onClick={onClose}
-            disabled={isPublishing}
-            className="flex-1 px-4 py-2.5 border border-slate-600 text-slate-300 text-sm font-medium rounded-xl hover:bg-slate-700 transition-colors disabled:opacity-50"
-          >
-            Cancel
-          </button>
-          <button
-            onClick={handlePublish}
-            disabled={isPublishing}
-            className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-gradient-to-r from-blue-600 to-violet-600 text-white text-sm font-medium rounded-xl hover:from-blue-500 hover:to-violet-500 transition-all disabled:opacity-60 shadow-lg shadow-blue-500/20"
-          >
-            {isPublishing ? (
-              <>
-                <Loader2 size={14} className="animate-spin" />
-                Publishing…
-              </>
-            ) : (
-              <>
-                <Rocket size={14} />
-                Publish now
-              </>
-            )}
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
+// ─── Publish Modal Removed (now handled in Site Dashboard) ────────────────────────────────────────────────────────────
 
 // ─── Success Toast / Banner ───────────────────────────────────────────────────
 
@@ -189,7 +81,7 @@ export default function Toolbar({ saving: autoSaving, lastSaved, saveError }) {
 
   const [isSaving, setIsSaving] = useState(false);
   const [saveStatus, setSaveStatus] = useState(null); // "saved" | "error" | null
-  const [showPublishModal, setShowPublishModal] = useState(false);
+  const [isPublishing, setIsPublishing] = useState(false);
   const [publishResult, setPublishResult] = useState(null);
 
   const handleUndo = () => {
@@ -256,12 +148,28 @@ export default function Toolbar({ saving: autoSaving, lastSaved, saveError }) {
     }
   };
 
-  const handlePublishClick = () => {
-    const { siteId } = useBuilderStore.getState();
+  const handlePublishClick = async () => {
+    const { siteId, pageId } = useBuilderStore.getState();
 
     // DB-backed: open the publish modal
-    if (siteId) {
-      setShowPublishModal(true);
+    if (siteId && pageId) {
+      if (isSaving || isPublishing) return;
+      setIsPublishing(true);
+      try {
+        const res = await fetch(`/api/sites/${siteId}/pages/${pageId}/publish`, {
+          method: "POST"
+        });
+        const result = await res.json();
+        if (!res.ok) throw new Error(result.error || "Failed to publish page");
+
+        handlePublishSuccess({
+          deploymentName: result.message || "Page marked as published."
+        });
+      } catch (err) {
+        alert(err.message);
+      } finally {
+        setIsPublishing(false);
+      }
       return;
     }
 
@@ -270,7 +178,6 @@ export default function Toolbar({ saving: autoSaving, lastSaved, saveError }) {
   };
 
   const handlePublishSuccess = (result) => {
-    setShowPublishModal(false);
     setPublishResult(result);
     // Auto-dismiss success banner after 8 seconds
     setTimeout(() => setPublishResult(null), 8000);
@@ -397,22 +304,20 @@ export default function Toolbar({ saving: autoSaving, lastSaved, saveError }) {
 
           <button
             onClick={handlePublishClick}
-            className="flex items-center gap-1.5 px-4 py-1.5 bg-gradient-to-r from-blue-600 to-violet-600 text-white text-xs font-medium rounded-md hover:from-blue-500 hover:to-violet-500 transition-all shadow-md shadow-blue-500/20"
+            disabled={isPublishing}
+            className={clsx(
+              "flex items-center gap-1.5 px-4 py-1.5 text-white text-xs font-medium rounded-md transition-all shadow-md",
+              isPublishing
+                ? "bg-slate-600 opacity-70 cursor-wait shadow-none"
+                : "bg-gradient-to-r from-blue-600 to-violet-600 hover:from-blue-500 hover:to-violet-500 shadow-blue-500/20"
+            )}
           >
-            <Eye size={14} />
-            Publish
+            {isPublishing ? <Loader2 size={14} className="animate-spin" /> : <Eye size={14} />}
+            {isPublishing ? "Publishing…" : "Publish"}
           </button>
         </div>
       </div>
 
-      {/* Publish Modal */}
-      {showPublishModal && siteId && (
-        <PublishModal
-          siteId={siteId}
-          onClose={() => setShowPublishModal(false)}
-          onSuccess={handlePublishSuccess}
-        />
-      )}
 
       {/* Success Banner */}
       {publishResult && (
