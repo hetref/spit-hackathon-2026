@@ -145,10 +145,10 @@ export default function FormBuilderPage() {
   // Loading state
   if (isLoading || isPending) {
     return (
-      <div className="h-screen flex items-center justify-center bg-gray-50">
+      <div className="h-screen flex items-center justify-center bg-[#fcfdfc]">
         <div className="text-center">
-          <Loader2 size={32} className="animate-spin text-gray-400 mx-auto mb-4" />
-          <p className="text-gray-600 text-sm font-medium">
+          <Loader2 size={32} className="animate-spin text-[#0b1411] mx-auto mb-4" />
+          <p className="text-gray-500 text-xs font-bold uppercase tracking-widest">
             Loading Form Builder...
           </p>
         </div>
@@ -157,7 +157,7 @@ export default function FormBuilderPage() {
   }
 
   return (
-    <div className="h-screen flex flex-col bg-white overflow-hidden">
+    <div className="h-screen flex flex-col bg-[#fcfdfc] font-sans text-gray-900 overflow-hidden text-base">
       {/* Top Toolbar */}
       <FormBuilderToolbar onSave={handleSave} saving={saving} lastSaved={lastSaved} />
 

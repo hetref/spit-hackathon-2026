@@ -30,6 +30,7 @@ import useUIStore from "@/lib/stores/uiStore";
 import useHistoryStore from "@/lib/stores/historyStore";
 import useBuilderStore, { clearSavedState } from "@/lib/stores/builderStore";
 import { clsx } from "clsx";
+import AvatarStack from "@/components/builder/AvatarStack";
 
 // ─── Publish Modal ────────────────────────────────────────────────────────────
 
@@ -278,27 +279,32 @@ export default function Toolbar({ saving: autoSaving, lastSaved, saveError }) {
 
   return (
     <>
-      <div className="h-14 bg-[#1E293B] flex items-center justify-between px-4 shadow-lg">
+      <div className="h-20 bg-white/80 backdrop-blur-md border-b border-gray-100 flex items-center justify-between px-6 sm:px-10 z-20 shadow-sm relative shrink-0">
         {/* Left Side — Logo + Undo/Redo */}
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-6">
           <div className="flex items-center gap-2 mr-2">
-            <div className="w-7 h-7 bg-gradient-to-br from-blue-500 to-violet-500 rounded-lg flex items-center justify-center">
-              <Zap size={14} className="text-white" />
+            <div className="w-10 h-10 bg-[#0b1411] rounded-xl flex items-center justify-center shadow-inner">
+              <Zap size={18} className="text-[#d3ff4a]" />
             </div>
-            <span className="text-sm font-bold text-white tracking-tight">
-              SitePilot
-            </span>
+            <div>
+              <p className="text-[#8bc4b1] text-[10px] font-bold tracking-[0.2em] uppercase mb-0.5">
+                PAGE BUILDER
+              </p>
+              <h1 className="text-xl font-black text-[#1d2321] uppercase tracking-tighter leading-none">
+                SitePilot
+              </h1>
+            </div>
           </div>
 
-          <div className="w-px h-6 bg-slate-600" />
+          <div className="w-px h-10 bg-gray-200" />
 
           <button
             onClick={handleUndo}
             disabled={!canUndo}
             className={clsx(
-              "p-2 rounded-md text-slate-300 hover:bg-slate-700 hover:text-white transition-colors",
+              "p-2.5 rounded-xl text-gray-400 hover:bg-[#f2f4f2] hover:text-[#0b1411] transition-colors",
               !canUndo &&
-              "opacity-30 cursor-not-allowed hover:bg-transparent hover:text-slate-300"
+              "opacity-30 cursor-not-allowed hover:bg-transparent hover:text-gray-400"
             )}
             title="Undo (Ctrl+Z)"
           >
@@ -308,9 +314,9 @@ export default function Toolbar({ saving: autoSaving, lastSaved, saveError }) {
             onClick={handleRedo}
             disabled={!canRedo}
             className={clsx(
-              "p-2 rounded-md text-slate-300 hover:bg-slate-700 hover:text-white transition-colors",
+              "p-2.5 rounded-xl text-gray-400 hover:bg-[#f2f4f2] hover:text-[#0b1411] transition-colors",
               !canRedo &&
-              "opacity-30 cursor-not-allowed hover:bg-transparent hover:text-slate-300"
+              "opacity-30 cursor-not-allowed hover:bg-transparent hover:text-gray-400"
             )}
             title="Redo (Ctrl+Y)"
           >
@@ -319,7 +325,7 @@ export default function Toolbar({ saving: autoSaving, lastSaved, saveError }) {
         </div>
 
         {/* Center — Device Preview */}
-        <div className="flex items-center gap-0.5 bg-slate-700/60 rounded-lg p-0.5">
+        <div className="flex items-center gap-1 bg-[#f2f4f2] rounded-full p-1 border border-gray-100 shadow-inner">
           {[
             { key: "desktop", Icon: Monitor, label: "Desktop" },
             { key: "tablet", Icon: Tablet, label: "Tablet" },
@@ -329,10 +335,10 @@ export default function Toolbar({ saving: autoSaving, lastSaved, saveError }) {
               key={key}
               onClick={() => setDevicePreview(key)}
               className={clsx(
-                "flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all duration-200",
+                "flex items-center gap-1.5 px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest transition-all duration-300",
                 devicePreview === key
-                  ? "bg-white text-slate-800 shadow-sm"
-                  : "text-slate-400 hover:text-white hover:bg-slate-600"
+                  ? "bg-white text-[#0b1411] shadow-sm transform scale-105"
+                  : "text-gray-400 hover:text-gray-900 hover:bg-gray-200/50"
               )}
               title={label}
             >
@@ -343,7 +349,9 @@ export default function Toolbar({ saving: autoSaving, lastSaved, saveError }) {
         </div>
 
         {/* Right Side — Actions */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-4">
+          <AvatarStack />
+          
           <button
             onClick={() => {
               if (confirm("Reset to demo data? All changes will be lost.")) {
@@ -351,25 +359,27 @@ export default function Toolbar({ saving: autoSaving, lastSaved, saveError }) {
                 window.location.reload();
               }
             }}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-slate-400 hover:text-white hover:bg-slate-700 rounded-md transition-colors"
+            className="flex items-center gap-2 px-4 py-2 text-[10px] font-bold uppercase tracking-widest text-red-500 hover:text-red-600 hover:bg-red-50 rounded-full transition-colors"
             title="Reset to demo"
           >
-            <RotateCcw size={13} />
+            <RotateCcw size={14} />
             <span className="hidden sm:inline">Reset</span>
           </button>
+          
+          <div className="h-8 w-px bg-gray-200 mx-1" />
 
           {/* Auto-save status indicator */}
           {autoSaving ? (
-            <span className="flex items-center gap-1 text-[10px] text-amber-400">
-              <Loader2 size={10} className="animate-spin" />
+            <span className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-widest text-[#8bc4b1]">
+              <Loader2 size={12} className="animate-spin" />
               Auto-saving…
             </span>
           ) : lastSaved ? (
-            <span className="text-[10px] text-emerald-400" title={lastSaved.toLocaleTimeString()}>
+            <span className="text-[10px] font-bold uppercase tracking-widest text-gray-400" title={lastSaved.toLocaleTimeString()}>
               Auto-saved
             </span>
           ) : saveError ? (
-            <span className="text-[10px] text-red-400" title={saveError}>
+            <span className="text-[10px] font-bold uppercase tracking-widest text-red-400" title={saveError}>
               Save failed
             </span>
           ) : null}
@@ -378,10 +388,10 @@ export default function Toolbar({ saving: autoSaving, lastSaved, saveError }) {
             onClick={handleSave}
             disabled={isSaving}
             className={clsx(
-              "flex items-center gap-1.5 px-4 py-1.5 text-xs font-medium rounded-md transition-colors",
+              "flex items-center gap-2 px-6 py-2.5 h-10 text-[10px] font-black uppercase tracking-widest rounded-full transition-all duration-300 shadow-sm hover:shadow-md",
               saveStatus === "saved"
-                ? "bg-emerald-600 text-white"
-                : "bg-slate-600 text-white hover:bg-slate-500",
+                ? "bg-[#8bc4b1] text-white"
+                : "bg-white border border-gray-200 text-[#0b1411] hover:border-[#0b1411]/20 hover:scale-105 active:scale-95",
               isSaving && "opacity-70 cursor-wait"
             )}
           >
@@ -397,7 +407,7 @@ export default function Toolbar({ saving: autoSaving, lastSaved, saveError }) {
 
           <button
             onClick={handlePublishClick}
-            className="flex items-center gap-1.5 px-4 py-1.5 bg-gradient-to-r from-blue-600 to-violet-600 text-white text-xs font-medium rounded-md hover:from-blue-500 hover:to-violet-500 transition-all shadow-md shadow-blue-500/20"
+            className="flex items-center gap-2 px-6 py-2.5 h-10 bg-[#d3ff4a] text-[#0b1411] text-[10px] font-black uppercase tracking-widest rounded-full hover:bg-[#c0eb3f] transition-all hover:scale-105 active:scale-95 shadow-[0_0_20px_rgba(211,255,74,0.3)]"
           >
             <Eye size={14} />
             Publish
