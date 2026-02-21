@@ -1,0 +1,184 @@
+import {
+    S3Client,
+    PutObjectCommand,
+    HeadObjectCommand,
+} from "@aws-sdk/client-s3";
+import {
+    CloudFrontKeyValueStoreClient,
+    PutKeyCommand,
+    DescribeKeyValueStoreCommand,
+} from "@aws-sdk/client-cloudfront-keyvaluestore";
+
+// ─── IMPORTANT: REGISTRATION FOR SigV4A ─────────────────────────────────────
+// Importing this package registers the pure-JS SigV4a implementation globally.
+// This is required for CloudFront KVS as it uses multi-region signing.
+import "@aws-sdk/signature-v4a";
+
+// ─── S3 Client ───────────────────────────────────────────────────────────────
+
+const s3 = new S3Client({
+    region: process.env.AWS_REGION,
+    credentials: {
+        accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+        secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+    },
+});
+
+// ─── CloudFront KVS Client ───────────────────────────────────────────────────
+// With "@aws-sdk/signature-v4a" imported above, the client will automatically
+// find and use the JS implementation for multi-region signing.
+
+const kvsClient = new CloudFrontKeyValueStoreClient({
+    region: "us-east-1",
+    credentials: {
+        accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+        secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+    },
+});
+
+const BUCKET = process.env.AWS_S3_BUCKET;
+const KVS_ARN = process.env.CLOUDFRONT_KVS_ARN; // e.g. arn:aws:cloudfront::123456789:key-value-store/abc-def
+
+// ─── Build S3 key paths ───────────────────────────────────────────────────────
+
+/**
+ * Returns the S3 key prefix for a specific deployment.
+ * Structure: sites/{userId}/{businessId}/{siteId}/deployments/{deploymentId}/
+ */
+export function buildDeploymentPrefix(userId, businessId, siteId, deploymentId) {
+    return `sites/${userId}/${businessId}/${siteId}/deployments/${deploymentId}`;
+}
+
+/**
+ * Returns the public CloudFront URL base for a site.
+ */
+export function buildSiteUrl(siteSlug) {
+    return `https://${siteSlug}.sitepilot.devally.in`;
+}
+
+// ─── S3 Upload ────────────────────────────────────────────────────────────────
+
+/**
+ * Upload a single file to S3.
+ * Idempotent — S3 PutObject is inherently idempotent (same key = overwrite,
+ * but since deploymentId is unique per publish no previous version is touched).
+ *
+ * @param {string} key         - Full S3 object key
+ * @param {Buffer|string} body - File content
+ * @param {string} contentType - MIME type
+ */
+async function uploadFile(key, body, contentType) {
+    if (!BUCKET) throw new Error("AWS_S3_BUCKET env var is not set");
+
+    const cmd = new PutObjectCommand({
+        Bucket: BUCKET,
+        Key: key,
+        Body: body,
+        ContentType: contentType,
+        CacheControl: "public, max-age=31536000, immutable", // versioned paths are immutable
+    });
+
+    await s3.send(cmd);
+    return key;
+}
+
+/**
+ * Upload all site files for a deployment.
+ * Uploads each file and returns the S3 prefix used.
+ *
+ * @param {object} params
+ * @param {string} params.userId
+ * @param {string} params.businessId
+ * @param {string} params.siteId
+ * @param {string} params.deploymentId  - UUID for this deployment
+ * @param {string} params.html          - index.html content
+ * @param {string} params.css           - styles.css content
+ * @param {string} params.js            - script.js content
+ * @returns {{ s3Prefix: string, keys: string[] }}
+ */
+export async function uploadDeploymentToS3({
+    userId,
+    businessId,
+    siteId,
+    deploymentId,
+    html,
+    css,
+    js,
+}) {
+    if (!userId || !businessId || !siteId || !deploymentId) {
+        throw new Error("Missing required upload parameters");
+    }
+
+    const prefix = buildDeploymentPrefix(userId, businessId, siteId, deploymentId);
+
+    // Upload all files concurrently
+    const uploads = await Promise.all([
+        uploadFile(`${prefix}/index.html`, html, "text/html; charset=utf-8"),
+        uploadFile(`${prefix}/styles.css`, css, "text/css; charset=utf-8"),
+        uploadFile(`${prefix}/script.js`, js, "application/javascript; charset=utf-8"),
+    ]);
+
+    return {
+        s3Prefix: prefix,
+        keys: uploads,
+    };
+}
+
+// ─── CloudFront KVS ───────────────────────────────────────────────────────────
+
+/**
+ * Update the CloudFront Key Value Store to point a site slug to a deployment.
+ *
+ * KVS key   = siteSlug  (e.g. "my-site")
+ * KVS value = s3Prefix  (e.g. "sites/userId/businessId/siteId/deployments/deploymentId")
+ *
+ * The CloudFront Function reads this KV pair and rewrites the origin request
+ * to the correct S3 path automatically.
+ *
+ * @param {string} siteSlug    - The site's slug (subdomain)
+ * @param {string} s3Prefix    - The S3 key prefix for the target deployment
+ */
+export async function updateKVS(siteSlug, s3Prefix) {
+    if (!KVS_ARN) {
+        console.warn("CLOUDFRONT_KVS_ARN not set — skipping KVS update");
+        return { skipped: true };
+    }
+
+    // Step 1: Get the current ETag of the KV store (required for optimistic locking)
+    const describeCmd = new DescribeKeyValueStoreCommand({ KvsARN: KVS_ARN });
+    const describeResult = await kvsClient.send(describeCmd);
+    const etag = describeResult.ETag;
+
+    // Step 2: Put the key
+    const putCmd = new PutKeyCommand({
+        KvsARN: KVS_ARN,
+        Key: siteSlug,
+        Value: s3Prefix,
+        IfMatch: etag, // Optimistic locking to prevent race conditions
+    });
+
+    await kvsClient.send(putCmd);
+
+    return { updated: true, key: siteSlug, value: s3Prefix };
+}
+
+// ─── Verify deployment exists in S3 ─────────────────────────────────────────
+
+/**
+ * Verify that a deployment's index.html exists in S3 before pointing KVS to it.
+ * Used during rollback to ensure the target version is still valid.
+ *
+ * @param {string} s3Prefix
+ * @returns {boolean}
+ */
+export async function verifyDeploymentExists(s3Prefix) {
+    if (!BUCKET) throw new Error("AWS_S3_BUCKET env var is not set");
+    try {
+        await s3.send(
+            new HeadObjectCommand({ Bucket: BUCKET, Key: `${s3Prefix}/index.html` })
+        );
+        return true;
+    } catch {
+        return false;
+    }
+}
