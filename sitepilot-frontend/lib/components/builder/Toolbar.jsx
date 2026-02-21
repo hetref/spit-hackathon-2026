@@ -181,7 +181,7 @@ function PublishSuccessBanner({ result, onClose }) {
 
 // ─── Main Toolbar ─────────────────────────────────────────────────────────────
 
-export default function Toolbar() {
+export default function Toolbar({ saving: autoSaving, lastSaved, saveError }) {
   const { devicePreview, setDevicePreview } = useUIStore();
   const { canUndo, canRedo, undo, redo } = useHistoryStore();
   const { getLayoutJSON, updateLayoutJSON, siteId, pageId, getPageLayout } =
@@ -357,6 +357,22 @@ export default function Toolbar() {
             <RotateCcw size={13} />
             <span className="hidden sm:inline">Reset</span>
           </button>
+
+          {/* Auto-save status indicator */}
+          {autoSaving ? (
+            <span className="flex items-center gap-1 text-[10px] text-amber-400">
+              <Loader2 size={10} className="animate-spin" />
+              Auto-saving…
+            </span>
+          ) : lastSaved ? (
+            <span className="text-[10px] text-emerald-400" title={lastSaved.toLocaleTimeString()}>
+              Auto-saved
+            </span>
+          ) : saveError ? (
+            <span className="text-[10px] text-red-400" title={saveError}>
+              Save failed
+            </span>
+          ) : null}
 
           <button
             onClick={handleSave}
