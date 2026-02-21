@@ -58,7 +58,7 @@ const componentRenderers = {
     }
 
     return `<section style="min-height: 400px; display: flex; align-items: center; justify-content: center; background-color: ${bg}; padding-top: ${pt}; padding-bottom: ${pb}; ${bgImg}">
-  <div style="max-width: 56rem; margin: 0 auto; text-align: center; padding: 0 1rem;">
+  <div style="width: 100%; margin: 0 auto; text-align: center; padding: 0 1rem;">
     <h1 style="font-size: 3rem; font-weight: 700; margin-bottom: 1rem; color: ${color};">${escapeHtml(props.title || "Your Hero Title")}</h1>
     <p style="font-size: 1.25rem; margin-bottom: 2rem; color: ${color};">${escapeHtml(props.subtitle || "Your hero subtitle goes here")}</p>
     ${cta}
@@ -464,7 +464,7 @@ const componentRenderers = {
       "background-color": bg,
     };
     return `<div${styleObj(wrapStyle)}>
-  <div style="max-width: 48rem; margin: 0 auto; padding: 0 1rem;">
+  <div style="width: 100%; margin: 0 auto; padding: 0 1rem;">
     <h2 style="font-size: 2.25rem; font-weight: 700; margin-bottom: 1rem; color: ${color};">${escapeHtml(props.title || "Ready to Get Started?")}</h2>
     <p style="font-size: 1.25rem; margin-bottom: 2rem; opacity: 0.9; color: ${color};">${escapeHtml(props.description || "Join us today")}</p>
     <a href="${escapeHtml(props.buttonLink || "#")}" class="sp-btn-white">${escapeHtml(props.buttonText || "Get Started")}</a>
