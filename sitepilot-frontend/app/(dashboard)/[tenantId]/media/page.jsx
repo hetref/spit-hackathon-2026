@@ -9,25 +9,43 @@ import {
   Search,
   FolderOpen
 } from 'lucide-react'
+import { Toaster, toast } from 'sonner'
 
 export default function MediaLibraryPage() {
   const router = useRouter()
   const params = useParams()
-  
+
   // Empty state for pure UI scaffolding
   const [images, setImages] = useState([])
   const [searchQuery, setSearchQuery] = useState('')
   const [isUploading, setIsUploading] = useState(false)
+  const [isLoading, setIsLoading] = useState(true)
   const fileInputRef = useRef(null)
 
-  // Initialize and persist mock storage
+  // Initialize and fetch media from database
   useEffect(() => {
-    const localMedia = localStorage.getItem(`sitepilot_media_${params.tenantId}`)
-    if (localMedia) {
-      setImages(JSON.parse(localMedia))
+    const fetchMedia = async () => {
+      try {
+        const res = await fetch(`/api/tenants/${params.tenantId}/media`)
+        const data = await res.json()
+        if (data.success && data.media) {
+          const formattedMedia = data.media.map(m => ({
+            id: m.id,
+            url: m.url,
+            originalKey: m.originalKey,
+            name: m.name,
+            date: new Date(m.createdAt).toLocaleDateString()
+          }))
+          setImages(formattedMedia)
+        }
+      } catch (err) {
+        console.error("Failed to fetch media", err)
+      } finally {
+        setIsLoading(false)
+      }
     }
+    fetchMedia()
   }, [params.tenantId])
-
   const handleFileUpload = async (e) => {
     const file = e.target.files[0]
     if (!file) return
@@ -37,24 +55,24 @@ export default function MediaLibraryPage() {
     formData.append('file', file)
 
     try {
-      const res = await fetch('/api/upload', {
+      const res = await fetch(`/api/tenants/${params.tenantId}/media`, {
         method: 'POST',
         body: formData,
       })
 
       const data = await res.json()
-      
-      if (data.success && data.url) {
+
+      if (data.success && data.media) {
         const newImage = {
-          id: Date.now().toString(),
-          url: data.url,
-          name: data.fileName || file.name,
-          date: new Date().toLocaleDateString()
+          id: data.media.id,
+          url: data.media.url,
+          originalKey: data.media.originalKey,
+          name: data.media.name,
+          date: new Date(data.media.createdAt).toLocaleDateString()
         }
-        
+
         const nextState = [newImage, ...images]
         setImages(nextState)
-        localStorage.setItem(`sitepilot_media_${params.tenantId}`, JSON.stringify(nextState))
       } else {
         alert(data.error || 'Upload failed')
       }
@@ -71,12 +89,13 @@ export default function MediaLibraryPage() {
 
   const triggerUpload = () => fileInputRef.current?.click()
 
-  const filteredImages = images.filter(img => 
+  const filteredImages = images.filter(img =>
     img.name.toLowerCase().includes(searchQuery.toLowerCase())
   )
 
   return (
     <div className="min-h-screen bg-[#fcfdfc] font-sans text-gray-900 text-base pb-20 relative">
+      <Toaster position="top-center" richColors />
       {/* Header */}
       <div className="bg-white/80 backdrop-blur-md border-b border-gray-100 sticky top-0 z-20">
         <div className="max-w-7xl mx-auto px-6 sm:px-10 lg:px-16 py-6">
@@ -99,15 +118,15 @@ export default function MediaLibraryPage() {
                 <span className="text-xs text-gray-400 font-bold uppercase tracking-widest mt-1 block">Manage your uploaded assets</span>
               </div>
             </div>
-            
-            <input 
-              type="file" 
-              className="hidden" 
-              ref={fileInputRef} 
+
+            <input
+              type="file"
+              className="hidden"
+              ref={fileInputRef}
               onChange={handleFileUpload}
               accept="image/*"
             />
-            <button 
+            <button
               onClick={triggerUpload}
               disabled={isUploading}
               className="w-full sm:w-auto bg-[#d3ff4a] text-[#0b1411] h-14 px-8 rounded-full font-bold flex items-center justify-center hover:bg-[#c0eb3f] transition-all active:scale-95 shadow-[0_0_20px_rgba(211,255,74,0.3)] hover:scale-105 duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
@@ -142,48 +161,78 @@ export default function MediaLibraryPage() {
             />
           </div>
           <div className="flex items-center gap-2 text-xs font-bold text-gray-500 uppercase tracking-widest hidden sm:flex">
-             {filteredImages.length} {filteredImages.length === 1 ? 'Asset' : 'Assets'} Found
+            {isLoading ? (
+              <div className="h-3 w-24 bg-gray-100 rounded-full animate-pulse" />
+            ) : (
+              <>{filteredImages.length} {filteredImages.length === 1 ? 'Asset' : 'Assets'} Found</>
+            )}
           </div>
         </div>
 
         {/* Media Grid / Empty State */}
-        {filteredImages.length === 0 ? (
+        {isLoading ? (
+          // Skeleton Loading State
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+            {[...Array(8)].map((_, idx) => (
+              <div
+                key={idx}
+                className="bg-white border border-gray-100 rounded-3xl overflow-hidden shadow-sm animate-pulse"
+              >
+                <div className="aspect-square bg-gray-100" />
+                <div className="p-4 bg-white border-t border-gray-50">
+                  <div className="h-3 bg-gray-100 rounded-full w-3/4 mb-2" />
+                  <div className="h-2 bg-gray-100 rounded-full w-1/2" />
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : filteredImages.length === 0 ? (
           <div className="py-32 text-center border border-gray-200 rounded-[2.5rem] bg-[#fcfdfc] border-dashed px-6 flex flex-col items-center">
-             <div className="h-24 w-24 rounded-[2.5rem] bg-gray-50 border border-gray-100 flex items-center justify-center mb-8 shadow-inner">
-               <FolderOpen size={40} className="text-gray-300" />
-             </div>
-             <h3 className="text-2xl font-black text-[#0b1411] tracking-tight mb-3">
-               {searchQuery ? 'No Results Found' : 'No Media Uploaded'}
-             </h3>
-             <p className="text-base font-medium text-gray-500 max-w-sm mb-10 leading-relaxed">
-               {searchQuery ? 'Try adjusting your search query.' : 'Drop images here to start building out your media library. Uploaded assets will be reusable across all your websites.'}
-             </p>
-             {!searchQuery && (
-               <>
-                 <button 
+            <div className="h-24 w-24 rounded-[2.5rem] bg-gray-50 border border-gray-100 flex items-center justify-center mb-8 shadow-inner">
+              <FolderOpen size={40} className="text-gray-300" />
+            </div>
+            <h3 className="text-2xl font-black text-[#0b1411] tracking-tight mb-3">
+              {searchQuery ? 'No Results Found' : 'No Media Uploaded'}
+            </h3>
+            <p className="text-base font-medium text-gray-500 max-w-sm mb-10 leading-relaxed">
+              {searchQuery ? 'Try adjusting your search query.' : 'Drop images here to start building out your media library. Uploaded assets will be reusable across all your websites.'}
+            </p>
+            {!searchQuery && (
+              <>
+                <button
                   onClick={triggerUpload}
                   className="h-14 px-8 bg-[#0b1411] text-[#d3ff4a] font-bold rounded-full flex items-center justify-center hover:bg-[#1d2321] transition-all hover:scale-105 active:scale-95 shadow-lg"
-                 >
-                   <Upload size={20} className="mr-2" />
-                   Select Files
-                 </button>
-                 <p className="mt-4 text-[10px] text-gray-400 font-bold uppercase tracking-widest">
-                    Supported formats: PNG, JPG, JPEG, WEBP, SVG
-                 </p>
-               </>
-             )}
+                >
+                  <Upload size={20} className="mr-2" />
+                  Select Files
+                </button>
+                <p className="mt-4 text-[10px] text-gray-400 font-bold uppercase tracking-widest">
+                  Supported formats: PNG, JPG, JPEG, WEBP, SVG
+                </p>
+              </>
+            )}
           </div>
         ) : (
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
             {filteredImages.map((img) => (
-              <div key={img.id} className="group relative bg-white border border-gray-100 rounded-3xl overflow-hidden shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-300">
-                 <div className="aspect-square bg-gray-50 flex items-center justify-center overflow-hidden">
-                    <img src={img.url} alt={img.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
-                 </div>
-                 <div className="p-4 bg-white border-t border-gray-50">
-                    <h4 className="text-xs font-bold text-gray-900 truncate" title={img.name}>{img.name}</h4>
-                    <p className="text-[10px] font-medium text-gray-400 mt-0.5">{img.date}</p>
-                 </div>
+              <div
+                key={img.id}
+                onClick={() => {
+                  navigator.clipboard.writeText(img.url);
+                  toast.success('URL copied to clipboard!');
+                }}
+                className="group relative bg-white border border-gray-100 rounded-3xl overflow-hidden shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-300 cursor-pointer"
+              >
+                <div className="aspect-square bg-gray-50 flex items-center justify-center overflow-hidden">
+                  <img src={img.url} alt={img.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                  <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                    <span className="text-white font-bold text-sm bg-black/50 px-4 py-2 rounded-full backdrop-blur-sm">Copy URL</span>
+                  </div>
+                </div>
+                <div className="p-4 bg-white border-t border-gray-50 pointer-events-none">
+                  <h4 className="text-xs font-bold text-gray-900 truncate" title={img.name}>{img.name}</h4>
+                  <p className="text-[10px] font-medium text-gray-400 mt-0.5">{img.date}</p>
+                </div>
               </div>
             ))}
           </div>
