@@ -109,7 +109,14 @@ export async function POST(request, { params }) {
     if (!form) {
       return NextResponse.json(
         { error: 'Form not found' },
-        { status: 404 }
+        { 
+          status: 404,
+          headers: {
+            'Access-Control-Allow-Origin': '*',
+            'Access-Control-Allow-Methods': 'POST, OPTIONS',
+            'Access-Control-Allow-Headers': 'Content-Type',
+          }
+        }
       );
     }
 
@@ -127,9 +134,17 @@ export async function POST(request, { params }) {
       return NextResponse.json(
         { 
           error: 'Validation failed',
-          errors: validationErrors
+          errors: validationErrors,
+          message: validationErrors[0] // Return first error as main message
         },
-        { status: 400 }
+        { 
+          status: 400,
+          headers: {
+            'Access-Control-Allow-Origin': '*',
+            'Access-Control-Allow-Methods': 'POST, OPTIONS',
+            'Access-Control-Allow-Headers': 'Content-Type',
+          }
+        }
       );
     }
 
@@ -156,12 +171,18 @@ export async function POST(request, { params }) {
       console.log('Email notifications:', settings.emailNotifications);
     }
 
-    // Return success response
+    // Return success response with CORS headers
     return NextResponse.json({
       success: true,
       message: settings.successMessage || 'Thank you! Your submission has been received.',
       submissionId: submission.id,
       redirectUrl: settings.redirectUrl || null
+    }, {
+      headers: {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'POST, OPTIONS',
+        'Access-Control-Allow-Headers': 'Content-Type',
+      }
     });
 
   } catch (error) {
@@ -171,7 +192,14 @@ export async function POST(request, { params }) {
         error: 'Failed to submit form',
         message: 'Something went wrong. Please try again.'
       },
-      { status: 500 }
+      { 
+        status: 500,
+        headers: {
+          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Methods': 'POST, OPTIONS',
+          'Access-Control-Allow-Headers': 'Content-Type',
+        }
+      }
     );
   }
 }

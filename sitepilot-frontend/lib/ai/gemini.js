@@ -9,6 +9,43 @@ import { GoogleGenerativeAI } from '@google/generative-ai';
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
 /**
+ * Clean up common JSON issues
+ */
+function cleanupJSON(jsonText) {
+  return jsonText
+    .replace(/,(\s*[}\]])/g, '$1')  // Remove trailing commas
+    .replace(/([{,]\s*)(\w+):/g, '$1"$2":')  // Quote unquoted keys
+    .trim();
+}
+
+/**
+ * Aggressive JSON cleanup as last resort
+ */
+function aggressiveJSONCleanup(jsonText) {
+  let cleaned = jsonText;
+  
+  // Remove all trailing commas more aggressively
+  cleaned = cleaned.replace(/,(\s*[}\]])/g, '$1');
+  
+  // Fix unquoted keys
+  cleaned = cleaned.replace(/([{,]\s*)([a-zA-Z_$][a-zA-Z0-9_$]*)(\s*):/g, '$1"$2"$3:');
+  
+  // Fix single quotes to double quotes
+  cleaned = cleaned.replace(/'/g, '"');
+  
+  // Remove comments (// and /* */)
+  cleaned = cleaned.replace(/\/\/.*$/gm, '');
+  cleaned = cleaned.replace(/\/\*[\s\S]*?\*\//g, '');
+  
+  // Fix missing commas between properties (common AI mistake)
+  cleaned = cleaned.replace(/"\s*\n\s*"/g, '",\n"');
+  cleaned = cleaned.replace(/}\s*\n\s*"/g, '},\n"');
+  cleaned = cleaned.replace(/]\s*\n\s*"/g, '],\n"');
+  
+  return cleaned.trim();
+}
+
+/**
  * Generate layout JSON with strict validation
  */
 export async function generateLayout({ description, businessType, pageType = 'home' }) {

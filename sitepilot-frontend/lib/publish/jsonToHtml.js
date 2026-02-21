@@ -883,39 +883,36 @@ export async function convertPageToHtml(
       where: {
         id: { in: formIds },
       },
-      include: {
-        currentVersion: true,
-      },
     });
 
     for (const form of forms) {
-      if (form.currentVersion) {
-        const formHTML = generateFormHTML({
-          id: form.id,
-          schema: form.currentVersion.schema,
-          settings: form.currentVersion.settings,
-          styling: form.currentVersion.styling || {},
-        });
-        
-        const formCSS = generateFormCSS({
-          id: form.id,
-          styling: form.currentVersion.styling || {},
-        });
-        
-        const formJS = generateFormJS({
-          id: form.id,
-        });
+      const formHTML = generateFormHTML({
+        id: form.id,
+        schema: form.schema,
+        settings: form.settings,
+        styling: form.styling || {},
+      });
+      
+      const formCSS = generateFormCSS({
+        id: form.id,
+        styling: form.styling || {},
+      });
+      
+      // Pass the API base URL (use environment variable or default)
+      const apiBaseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://sitepilot-frontend.vercel.app';
+      const formJS = generateFormJS({
+        id: form.id,
+      }, apiBaseUrl);
 
-        formData[form.id] = formHTML;
-        additionalCSS += '\n' + formCSS;
-        additionalJS += '\n' + formJS;
+      formData[form.id] = formHTML;
+      additionalCSS += '\n' + formCSS;
+      additionalJS += '\n' + formJS;
 
-        // Replace placeholder with actual form HTML
-        bodyContent = bodyContent.replace(
-          `<!-- FORM_EMBED:${form.id} -->`,
-          formHTML
-        );
-      }
+      // Replace placeholder with actual form HTML
+      bodyContent = bodyContent.replace(
+        `<!-- FORM_EMBED:${form.id} -->`,
+        formHTML
+      );
     }
   }
 
