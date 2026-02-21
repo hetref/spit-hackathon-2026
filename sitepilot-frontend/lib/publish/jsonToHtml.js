@@ -684,7 +684,6 @@ function renderContainer(container) {
     "align-items": isHorizontal
       ? settings.verticalAlign || "stretch"
       : undefined,
-    "flex-wrap": "wrap",
     "box-sizing": "border-box",
   };
 
