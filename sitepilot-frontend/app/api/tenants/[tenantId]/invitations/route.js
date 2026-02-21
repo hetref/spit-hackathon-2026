@@ -2,16 +2,7 @@ import { NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
 import { auth } from '@/lib/auth'
 import { headers } from 'next/headers'
-import nodemailer from 'nodemailer'
-
-// Create email transporter
-const transporter = nodemailer.createTransport({
-  service: 'gmail',
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASSWORD
-  }
-})
+import { sendInvitationEmail } from '@/lib/email'
 
 export async function POST(request, { params }) {
   try {
@@ -110,25 +101,16 @@ export async function POST(request, { params }) {
 
     // Send invitation email
     const invitationUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/invitations/${invitation.token}`
-    
-    await transporter.sendMail({
-      from: process.env.EMAIL_USER,
+    const emailSent = await sendInvitationEmail({
       to: email,
-      subject: `Invitation to join ${tenant.name} on DevAlly`,
-      html: `
-        <h2>You've been invited to join ${tenant.name}</h2>
-        <p>You have been invited to join the workspace "${tenant.name}" as a ${role}.</p>
-        <p>Click the link below to accept the invitation:</p>
-        <a href="${invitationUrl}" style="display: inline-block; padding: 10px 20px; background-color: #3b82f6; color: white; text-decoration: none; border-radius: 5px; margin: 10px 0;">Accept Invitation</a>
-        <p>Or copy and paste this URL into your browser:</p>
-        <p>${invitationUrl}</p>
-        <p>This invitation will expire in 7 days.</p>
-        <p>If you don't want to join this workspace, you can ignore this email.</p>
-      `
+      tenantName: tenant.name,
+      role,
+      invitationUrl,
     })
 
     return NextResponse.json({ 
-      message: 'Invitation sent successfully',
+      message: emailSent ? 'Invitation sent successfully' : 'Invitation created (email not configured)',
+      invitationUrl: !emailSent ? invitationUrl : undefined,
       invitation: {
         id: invitation.id,
         email: invitation.email,

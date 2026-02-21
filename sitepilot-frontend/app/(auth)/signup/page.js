@@ -7,9 +7,10 @@ export default function SignUpPage() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const redirectUrl = searchParams.get('redirect')
+  const prefilledEmail = searchParams.get('email')
   const [formData, setFormData] = useState({
     name: '',
-    email: '',
+    email: prefilledEmail || '',
     password: ''
   })
   const [error, setError] = useState('')
@@ -22,10 +23,16 @@ export default function SignUpPage() {
 
     try {
       const result = await signUp.email(formData)
-      // Email verification is automatically sent by Better Auth
-      // User will receive verification email
-      alert('Account created! Check your email to verify your address.')
-      router.push(redirectUrl || '/dashboard')
+      
+      // If there's a redirect URL (invitation), proceed with auto-signin
+      if (redirectUrl) {
+        // Redirect to the invitation page after signup
+        router.push(redirectUrl)
+      } else {
+        // Regular signup flow
+        alert('Account created! Check your email to verify your address.')
+        router.push('/dashboard')
+      }
     } catch (err) {
       console.error('Sign up error:', err)
       setError(err.message || 'Sign up failed. Please try again.')
@@ -78,6 +85,7 @@ export default function SignUpPage() {
                 type="email"
                 autoComplete="email"
                 required
+                readOnly={!!prefilledEmail}
                 className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
                 placeholder="Email address"
                 value={formData.email}
