@@ -204,6 +204,24 @@ function DeploymentRow({ siteId, siteSlug, deployment, onRollback, onRenamed }) 
 }
 
 // ─── Page Component ───────────────────────────────────────────────────────────
+import {
+  ArrowLeft,
+  Globe,
+  Plus,
+  Loader2,
+  ExternalLink,
+  Trash2,
+  Calendar,
+  Clock,
+  History,
+  Link as LinkIcon,
+  Monitor,
+  Users,
+  Timer,
+  MousePointerClick,
+  MonitorOff,
+  LayoutTemplate
+} from 'lucide-react'
 
 export default function SiteDetailPage() {
   const params = useParams();
@@ -298,41 +316,68 @@ export default function SiteDetailPage() {
   // ─── Render: Loading ──────────────────────────────────────────────────────
   if (isPending || loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <Loader2 size={28} className="animate-spin text-indigo-500" />
+      <div className="min-h-screen flex items-center justify-center bg-[#FDFDFD]">
+        <Loader2 size={32} className="animate-spin text-gray-400" />
       </div>
     );
   }
 
   if (!site) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="text-center">
-          <h2 className="text-2xl font-bold text-gray-900">Site not found</h2>
-          <button
-            onClick={() => router.push(`/${params.tenantId}/sites`)}
-            className="mt-4 px-4 py-2 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 text-sm"
-          >
-            Back to Sites
-          </button>
+      <div className="min-h-screen flex flex-col items-center justify-center bg-[#FDFDFD] px-6">
+        <div className="h-16 w-16 bg-gray-50 border border-gray-200 rounded-2xl flex items-center justify-center mb-6">
+          <Globe size={32} className="text-gray-400" />
         </div>
+        <h2 className="text-xl font-semibold text-gray-900 mb-2">Site not found</h2>
+        <p className="text-base text-gray-500 max-w-sm text-center mb-8">
+          The site you're looking for was either deleted or doesn't exist.
+        </p>
+        <button
+          onClick={() => router.push(`/${params.tenantId}`)}
+          className="inline-flex items-center justify-center px-6 py-3 bg-gray-900 border border-transparent text-white text-sm font-medium rounded-xl hover:bg-gray-800 transition-colors focus:outline-none focus:ring-2 focus:ring-gray-900 focus:ring-offset-2"
+        >
+          <ArrowLeft size={16} className="mr-2" />
+          Back to Workspace
+        </button>
       </div>
     );
   }
 
   const activeDeployment = deployments.find((d) => d.isActive);
 
+  // Fallback to determine visually if it's "published" 
+  const isPublished = Boolean(site.domain || domains.length > 0)
+
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* ── Header ─────────────────────────────────────────────────────────── */}
-      <div className="bg-white border-b border-gray-200">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 py-4">
-          <div className="flex items-center justify-between gap-4">
-            <div className="flex items-center gap-3 min-w-0">
+    <div className="min-h-screen bg-[#FDFDFD] font-sans text-gray-900">
+      
+      {/* Header */}
+      <div className="bg-white border-b border-gray-200 sticky top-0 z-10">
+        <div className="max-w-7xl mx-auto px-6 sm:px-10 lg:px-12 py-5 sm:py-6">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="flex items-center gap-4">
+              <button
+                onClick={() => router.push(`/${params.tenantId}/sites`)}
+                className="p-2 -ml-2 text-gray-400 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-gray-200"
+                title="Back to Sites"
+              >
+                <ArrowLeft className="h-6 w-6" />
+              </button>
+              <div>
+                <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-gray-900 truncate max-w-md">
+                  {site.name}
+                </h1>
+                <p className="text-sm sm:text-base text-gray-500 mt-0.5 truncate">
+                  /{site.slug}
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-3">
               <button
                 onClick={() => router.push(`/${params.tenantId}/sites/${params.siteId}/pages`)}
-                className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+                className="inline-flex items-center justify-center px-5 py-2.5 bg-gray-900 text-white text-sm font-medium rounded-xl hover:bg-gray-800 transition-colors focus:outline-none focus:ring-2 focus:ring-gray-900 focus:ring-offset-2"
               >
+                <LayoutTemplate size={16} className="mr-2" />
                 Manage Pages
               </button>
               <div className="min-w-0">
@@ -354,113 +399,246 @@ export default function SiteDetailPage() {
         </div>
       </div>
 
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 py-8 space-y-6">
-
-        {/* ── Rollback notification ────────────────────────────────────────── */}
-        {rollbackMsg && (
-          <div
-            className={`flex items-start gap-2 text-sm rounded-xl px-4 py-3 ${rollbackMsg.type === "success"
-              ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
-              : "bg-red-50 text-red-600 border border-red-200"
-              }`}
-          >
-            {rollbackMsg.type === "success" ? (
-              <CheckCircle2 size={16} className="mt-0.5 shrink-0" />
-            ) : (
-              <AlertCircle size={16} className="mt-0.5 shrink-0" />
-            )}
-            {rollbackMsg.text}
-          </div>
-        )}
-
-        {/* ── Live URL card ─────────────────────────────────────────────────── */}
-        <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
-          <div className="px-6 py-4 border-b border-gray-100">
-            <h2 className="text-sm font-semibold text-gray-900 flex items-center gap-2">
-              <Globe size={15} className="text-indigo-500" />
-              Live Site URL
-            </h2>
-          </div>
-          <div className="px-6 py-5">
-            <div className="flex items-center gap-3">
-              <div
-                className={`flex items-center gap-2 flex-1 min-w-0 px-4 py-2.5 rounded-xl border ${activeDeployment
-                  ? "bg-emerald-50 border-emerald-200"
-                  : "bg-gray-50 border-gray-200"
-                  }`}
-              >
-                <span
-                  className={`w-2 h-2 rounded-full shrink-0 ${site.cfStatus === "LIVE" ? "bg-emerald-500 animate-pulse" : "bg-amber-400"
-                    }`}
-                />
-                <span
-                  className={`text-sm font-medium truncate ${site.cfStatus === "LIVE" ? "text-emerald-800" : "text-amber-800"
-                    }`}
-                >
-                  {siteUrl}
-                </span>
-              </div>
-
-              <button
-                onClick={handleCopyUrl}
-                className="shrink-0 p-2.5 border border-gray-200 text-gray-500 rounded-xl hover:bg-gray-50 hover:text-gray-700 transition-colors"
-                title="Copy URL"
-              >
-                {copied ? <Check size={15} className="text-emerald-500" /> : <Copy size={15} />}
-              </button>
-
-              {site.cfStatus === "LIVE" ? (
-                <a
-                  href={siteUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="shrink-0 flex items-center gap-1.5 px-4 py-2.5 bg-indigo-600 text-white text-sm font-medium rounded-xl hover:bg-indigo-700 transition-colors"
-                >
-                  <ExternalLink size={13} />
-                  Visit
-                </a>
+      <div className="max-w-7xl mx-auto px-6 sm:px-10 lg:px-12 py-8 sm:py-12 space-y-8">
+        
+        {/* Top Grid: Preview Card Left, Overview Right */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          
+          {/* Preview Card */}
+          <div className="lg:col-span-1">
+            <h2 className="text-lg font-semibold text-gray-900 mb-4 tracking-tight">Site Preview</h2>
+            <div className="bg-white border border-gray-200 rounded-2xl shadow-sm overflow-hidden flex flex-col h-[340px] group">
+              {isPublished ? (
+                <div className="flex-1 bg-gray-100 flex items-center justify-center overflow-hidden relative">
+                   <iframe 
+                     src={`https://${domains[0] || site.domain}`} 
+                     className="w-full h-full border-0 pointer-events-none origin-top-left scale-[1]" 
+                     style={{ width: '100%', height: '100%' }}
+                     title="Site Live Preview"
+                   />
+                   <div className="absolute inset-0 z-10 bg-transparent" />
+                </div>
               ) : (
-                <span className="shrink-0 text-xs text-amber-600 font-medium px-4 py-2 bg-amber-50 rounded-xl border border-amber-200 flex items-center gap-1.5">
-                  <Loader2 size={12} className="animate-spin" />
-                  Provisioning…
-                </span>
+                <div className="flex-1 bg-gray-50 flex flex-col items-center justify-center border-b border-gray-100 transition-colors">
+                  <MonitorOff className="h-10 w-10 text-gray-300 mb-4" />
+                  <span className="text-sm font-medium text-gray-500">Site is not published yet</span>
+                  <span className="text-xs text-gray-400 mt-1 max-w-[200px] text-center">Connect a domain to see a live preview.</span>
+                </div>
               )}
+              
+              <div className="p-5 bg-white flex justify-between items-center border-t border-gray-100">
+                <div className="min-w-0 pr-3">
+                  <h3 className="text-sm font-semibold text-gray-900 truncate">Live View</h3>
+                  <p className="text-xs text-gray-500 truncate mt-0.5">
+                    {isPublished ? (domains[0] || site.domain) : 'No connected domain'}
+                  </p>
+                </div>
+                {isPublished && (
+                  <a
+                    href={`https://${domains[0] || site.domain}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="p-2 bg-gray-50 border border-gray-200 text-gray-600 rounded-lg hover:bg-gray-100 hover:text-gray-900 transition-colors flex-shrink-0"
+                    title="Open live site"
+                  >
+                    <ExternalLink size={16} />
+                  </a>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Overview & Domains */}
+          <div className="lg:col-span-2 space-y-8">
+            
+            {/* Stats Overview */}
+            <div>
+               <h2 className="text-lg font-semibold text-gray-900 mb-4 tracking-tight">Overview</h2>
+               <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
+                 <div className="bg-white border border-gray-200 rounded-2xl shadow-sm p-5 flex flex-col">
+                   <div className="flex items-center gap-2.5 text-gray-500 mb-3">
+                     <Calendar className="h-4 w-4" />
+                     <span className="text-sm font-medium">Created</span>
+                   </div>
+                   <p className="text-xl font-bold text-gray-900 mt-auto">
+                     {new Date(site.createdAt).toLocaleDateString('en-US', {
+                       year: 'numeric',
+                       month: 'short',
+                       day: 'numeric'
+                     })}
+                   </p>
+                 </div>
+
+                 <div className="bg-white border border-gray-200 rounded-2xl shadow-sm p-5 flex flex-col">
+                   <div className="flex items-center gap-2.5 text-gray-500 mb-3">
+                     <Clock className="h-4 w-4" />
+                     <span className="text-sm font-medium">Last Updated</span>
+                   </div>
+                   <p className="text-xl font-bold text-gray-900 mt-auto">
+                     {new Date(site.updatedAt).toLocaleDateString('en-US', {
+                       year: 'numeric',
+                       month: 'short',
+                       day: 'numeric'
+                     })}
+                   </p>
+                 </div>
+
+                 <div className="bg-white border border-gray-200 rounded-2xl shadow-sm p-5 flex flex-col">
+                   <div className="flex items-center gap-2.5 text-gray-500 mb-3">
+                     <History className="h-4 w-4" />
+                     <span className="text-sm font-medium">Deployments</span>
+                   </div>
+                   <p className="text-xl font-bold text-gray-900 mt-auto">
+                     {site._count?.versions || 0}
+                   </p>
+                 </div>
+               </div>
             </div>
 
-            {activeDeployment && (
-              <p className="text-xs text-gray-500 mt-2.5 flex items-center gap-1.5">
-                <Zap size={11} className="text-indigo-400" />
-                Served via CloudFront CDN · Deployment:{" "}
-                <span className="font-mono">{activeDeployment.deploymentId.slice(0, 8)}…</span>
-                {activeDeployment.deploymentName && (
-                  <span className="text-gray-600">({activeDeployment.deploymentName})</span>
+            {/* Domains Section */}
+            <div>
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-lg font-semibold text-gray-900 tracking-tight">Connected Domains</h2>
+                {!showAddDomain && (
+                  <button
+                    onClick={() => setShowAddDomain(true)}
+                    className="inline-flex items-center justify-center px-4 py-2 bg-white border border-gray-200 text-gray-800 text-sm font-medium rounded-xl hover:bg-gray-50 transition-colors focus:outline-none focus:ring-2 focus:ring-gray-200"
+                  >
+                    <Plus size={16} className="mr-1.5" />
+                    Add Domain
+                  </button>
                 )}
-              </p>
-            )}
+              </div>
+
+              <div className="bg-white border border-gray-200 rounded-2xl shadow-sm overflow-hidden">
+                {/* Add Domain Expandable Form */}
+                {showAddDomain && (
+                  <div className="p-5 bg-gray-50 border-b border-gray-200">
+                    <label className="block text-sm font-medium text-gray-900 mb-2">Configure new domain</label>
+                    <div className="flex flex-col sm:flex-row gap-3">
+                      <div className="relative flex-1">
+                        <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
+                          <LinkIcon className="h-4 w-4 text-gray-400" />
+                        </div>
+                        <input
+                          type="text"
+                          placeholder="subdomain.example.com"
+                          value={domainInput}
+                          onChange={(e) => setDomainInput(e.target.value)}
+                          onKeyPress={(e) => e.key === 'Enter' && handleAddDomain()}
+                          className="pl-10 w-full px-4 py-2.5 bg-white border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-gray-900/10 focus:border-gray-900 transition-colors"
+                        />
+                      </div>
+                      <div className="flex gap-2 shrink-0">
+                        <button
+                          onClick={handleAddDomain}
+                          className="px-5 py-2.5 bg-gray-900 text-white text-sm font-medium rounded-xl hover:bg-gray-800 transition-colors"
+                        >
+                          Add
+                        </button>
+                        <button
+                          onClick={() => {
+                            setShowAddDomain(false)
+                            setDomainInput('')
+                          }}
+                          className="px-5 py-2.5 bg-white border border-gray-300 text-gray-700 text-sm font-medium rounded-xl hover:bg-gray-50 transition-colors"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Domains List */}
+                <ul className="divide-y divide-gray-100">
+                  {domains.length === 0 ? (
+                    <li className="p-8 text-center bg-white flex flex-col items-center justify-center">
+                       <div className="h-12 w-12 bg-gray-50 border border-gray-100 rounded-full flex items-center justify-center mb-3">
+                         <Monitor size={20} className="text-gray-400" />
+                       </div>
+                       <p className="text-sm font-medium text-gray-900">No domains connected</p>
+                       <p className="text-sm text-gray-500 mt-1">Add a custom domain to publish your site live.</p>
+                    </li>
+                  ) : (
+                    domains.map((domain, idx) => (
+                      <li key={idx} className="p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:bg-gray-50/50 transition-colors">
+                        <div className="flex items-center gap-3">
+                          <div className="p-2 bg-gray-100 rounded-lg text-gray-500">
+                             <Globe size={18} />
+                          </div>
+                          <div>
+                            <p className="text-sm font-semibold text-gray-900 tracking-tight">{domain}</p>
+                            <div className="flex items-center gap-2 mt-0.5">
+                              <span className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${
+                                idx === 0 ? 'bg-indigo-50 text-indigo-700 border border-indigo-100' : 'bg-gray-100 text-gray-600 border border-gray-200'
+                              }`}>
+                                {idx === 0 ? 'Primary' : 'Alias'}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                        <button
+                          onClick={() => handleRemoveDomain(domain)}
+                          className="text-sm text-red-600 font-medium hover:text-red-800 transition-colors py-1.5 px-3 rounded-lg hover:bg-red-50 self-start sm:self-auto"
+                        >
+                          Remove
+                        </button>
+                      </li>
+                    ))
+                  )}
+                </ul>
+              </div>
+            </div>
+
           </div>
         </div>
 
-        {/* ── Site Stats ────────────────────────────────────────────────────── */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-          {[
-            { label: "Pages", value: site.pages?.length ?? 0, color: "text-indigo-600 bg-indigo-50" },
-            { label: "Deployments", value: deployments.length, color: "text-violet-600 bg-violet-50" },
-            {
-              label: "Tenant Status",
-              value: site.cfStatus || "PROVISIONING",
-              color: site.cfStatus === "LIVE" ? "text-emerald-600 bg-emerald-50" : "text-amber-600 bg-amber-50",
-            },
-            {
-              label: "Last updated",
-              value: formatRelative(site.updatedAt),
-              color: "text-blue-600 bg-blue-50",
-            },
-          ].map((stat) => (
-            <div key={stat.label} className="bg-white rounded-2xl border border-gray-200 shadow-sm p-4">
-              <p className="text-xs text-gray-500">{stat.label}</p>
-              <p className={`mt-1.5 text-lg font-bold rounded-md px-1.5 inline-block ${stat.color}`}>
-                {stat.value}
-              </p>
+        {/* Analytics Section */}
+        <div>
+          <h2 className="text-lg font-semibold text-gray-900 mb-4 tracking-tight">Site Analytics</h2>
+          <div className="bg-white border border-gray-200 rounded-2xl shadow-sm overflow-hidden flex flex-col">
+            <div className="p-6 sm:p-8">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                
+                <div className="flex flex-col">
+                  <span className="flex items-center gap-2 text-sm font-medium text-gray-500 mb-2">
+                    <Users size={16} className="text-gray-400" /> Visitors
+                  </span>
+                  <span className="text-3xl font-bold text-gray-900">0</span>
+                </div>
+
+                <div className="flex flex-col">
+                  <span className="flex items-center gap-2 text-sm font-medium text-gray-500 mb-2">
+                    <MousePointerClick size={16} className="text-gray-400" /> Page Views
+                  </span>
+                  <span className="text-3xl font-bold text-gray-900">0</span>
+                </div>
+
+                <div className="flex flex-col">
+                  <span className="flex items-center gap-2 text-sm font-medium text-gray-500 mb-2">
+                    <Timer size={16} className="text-gray-400" /> Avg. Duration
+                  </span>
+                  <span className="text-3xl font-bold text-gray-900">0s</span>
+                </div>
+
+                <div className="flex flex-col">
+                  <span className="flex items-center gap-2 text-sm font-medium text-gray-500 mb-2">
+                    <ExternalLink size={16} className="text-gray-400" /> Bounce Rate
+                  </span>
+                  <span className="text-3xl font-bold text-gray-900">0%</span>
+                </div>
+              </div>
+
+              <div className="pt-6 border-t border-gray-100">
+                <p className="text-sm text-gray-500 text-center flex items-center justify-center gap-2">
+                  <span className="relative flex h-2 w-2">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-gray-400 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-2 w-2 bg-gray-400"></span>
+                  </span>
+                  Analytics tracking will begin recording once traffic is detected on a live domain.
+                </p>
+              </div>
             </div>
           ))}
         </div>
@@ -522,6 +700,7 @@ export default function SiteDetailPage() {
             {error}
           </div>
         )}
+
       </div>
     </div>
   );
