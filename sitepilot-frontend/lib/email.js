@@ -25,7 +25,7 @@ function getFromAddress() {
   return process.env.GMAIL_ADDRESS || process.env.EMAIL_USER
 }
 
-export async function sendInvitationEmail({ to, tenantName, role, invitationUrl }) {
+export async function sendInvitationEmail({ to, tenantName, role, acceptUrl, declineUrl }) {
   const transporter = getTransporter()
   if (!transporter) return false
 
@@ -38,9 +38,11 @@ export async function sendInvitationEmail({ to, tenantName, role, invitationUrl 
       <html>
         <head>
           <style>
-            body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+            body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0; }
             .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-            .button { display: inline-block; padding: 12px 24px; background-color: #3b82f6; color: #ffffff; text-decoration: none; border-radius: 5px; margin: 20px 0; }
+            .button { display: inline-block; padding: 12px 24px; text-decoration: none; border-radius: 5px; margin: 10px 8px 10px 0; font-weight: bold; font-size: 14px; }
+            .accept-btn { background-color: #3b82f6; color: #ffffff; }
+            .decline-btn { background-color: #e5e7eb; color: #374151; }
             .footer { margin-top: 30px; padding-top: 20px; border-top: 1px solid #eee; font-size: 12px; color: #666; }
           </style>
         </head>
@@ -48,13 +50,14 @@ export async function sendInvitationEmail({ to, tenantName, role, invitationUrl 
           <div class="container">
             <h2>You've been invited to join ${tenantName}</h2>
             <p>You have been invited to join the workspace <strong>${tenantName}</strong> as a <strong>${role}</strong>.</p>
-            <p>Click the button below to accept the invitation:</p>
-            <a href="${invitationUrl}" class="button">Accept Invitation</a>
-            <p>Or copy and paste this link in your browser:</p>
-            <p style="word-break: break-all;">${invitationUrl}</p>
+            <p>Would you like to accept this invitation?</p>
+            <div>
+              <a href="${acceptUrl}" class="button accept-btn">Accept Invitation</a>
+              <a href="${declineUrl}" class="button decline-btn">Decline</a>
+            </div>
             <div class="footer">
               <p>This invitation will expire in 7 days.</p>
-              <p>If you don't want to join this workspace, you can safely ignore this email.</p>
+              <p>If you don't want to join this workspace, you can click Decline or simply ignore this email.</p>
             </div>
           </div>
         </body>

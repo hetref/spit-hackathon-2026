@@ -7,12 +7,16 @@ import {
   Globe,
   Plus,
   Pencil,
+  Eye,
   Trash2,
   ExternalLink,
   Loader2,
   X,
   AlertCircle,
+  CheckCircle2,
+  ArrowLeft,
 } from "lucide-react";
+import { hasPermission } from "@/lib/permissions";
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
@@ -83,94 +87,96 @@ function CreateSiteModal({ tenantId, onClose, onCreated }) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md mx-4 overflow-hidden">
-        <div className="flex items-center justify-between px-6 py-5 border-b border-gray-100">
-          <h2 className="text-lg font-semibold text-gray-900">
-            Create new site
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/40 backdrop-blur-sm">
+      <div className="bg-white rounded-2xl shadow-xl border border-gray-200 w-full max-w-md mx-4 overflow-hidden">
+        <div className="flex items-center justify-between px-6 py-5 border-b border-gray-100 bg-gray-50/50">
+          <h2 className="text-lg font-semibold text-gray-900 tracking-tight">
+            Create New Site
           </h2>
           <button
             onClick={onClose}
-            className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+            className="p-2 text-gray-400 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
           >
             <X size={18} />
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="px-6 py-5 space-y-4">
+        <form onSubmit={handleSubmit} className="px-6 py-6 space-y-5">
           {error && (
-            <div className="flex items-start gap-2 text-sm text-red-600 bg-red-50 rounded-lg px-3 py-2.5">
-              <AlertCircle size={15} className="mt-0.5 shrink-0" />
-              {error}
+            <div className="flex items-start gap-3 text-sm text-red-700 bg-red-50 border border-red-100 rounded-xl px-4 py-3">
+              <AlertCircle size={16} className="mt-0.5 shrink-0 text-red-500" />
+              <span className="font-medium">{error}</span>
             </div>
           )}
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1.5">
-              Site name <span className="text-red-500">*</span>
+            <label className="block text-sm font-medium text-gray-900 mb-2">
+              Site Name <span className="text-red-500">*</span>
             </label>
             <input
               type="text"
               value={name}
               onChange={handleNameChange}
-              placeholder="My Awesome Website"
-              className="w-full px-3.5 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+              placeholder="e.g. Acme Marketing"
+              className="w-full px-4 py-3 bg-white border border-gray-300 rounded-xl text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-900/10 focus:border-gray-900 transition-colors"
               required
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1.5">
-              URL slug <span className="text-red-500">*</span>
+            <label className="block text-sm font-medium text-gray-900 mb-2">
+              URL Slug <span className="text-red-500">*</span>
             </label>
-            <div className="flex items-center border border-gray-300 rounded-lg focus-within:ring-2 focus-within:ring-indigo-500 focus-within:border-transparent overflow-hidden">
-              <span className="px-3.5 py-2.5 bg-gray-50 border-r border-gray-300 text-gray-500 text-sm select-none">
-                sitepilot/
+            <div className="flex items-center border border-gray-300 rounded-xl focus-within:ring-2 focus-within:ring-gray-900/10 focus-within:border-gray-900 overflow-hidden transition-colors">
+              <span className="px-4 py-3 bg-gray-50 border-r border-gray-300 text-gray-500 text-sm select-none">
+                sitepilot.com/
               </span>
               <input
                 type="text"
                 value={slug}
                 onChange={handleSlugChange}
-                placeholder="my-awesome-site"
-                className="flex-1 px-3.5 py-2.5 text-sm focus:outline-none"
+                placeholder="acme-marketing"
+                className="flex-1 px-4 py-3 bg-white text-sm text-gray-900 placeholder-gray-400 focus:outline-none"
                 required
               />
             </div>
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1.5">
+            <label className="block text-sm font-medium text-gray-900 mb-2">
               Description{" "}
               <span className="text-gray-400 font-normal">(optional)</span>
             </label>
             <textarea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              placeholder="A short description of this site…"
+              placeholder="A brief description of this site's purpose..."
               rows={2}
-              className="w-full px-3.5 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent resize-none"
+              className="w-full px-4 py-3 bg-white border border-gray-300 rounded-xl text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-900/10 focus:border-gray-900 transition-colors resize-y"
             />
           </div>
 
-          <div className="flex gap-3 pt-1">
+          <div className="flex items-center justify-end gap-3 pt-4 border-t border-gray-100 mt-6 -mx-6 px-6 sm:pb-0 pb-6">
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 px-4 py-2.5 border border-gray-300 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-50 transition-colors"
+              className="px-5 py-2.5 bg-white border border-gray-300 text-gray-700 text-sm font-medium rounded-xl hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-200 transition-colors"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={loading}
-              className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 transition-colors disabled:opacity-60"
+              className="inline-flex items-center justify-center px-6 py-2.5 bg-gray-900 text-white text-sm font-medium border border-transparent rounded-xl hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-gray-900 focus:ring-offset-2 transition-colors min-w-[120px]"
             >
               {loading ? (
-                <Loader2 size={15} className="animate-spin" />
+                <>
+                  <Loader2 size={16} className="animate-spin mr-2" />
+                  Creating...
+                </>
               ) : (
-                <Plus size={15} />
+                'Create Site'
               )}
-              {loading ? "Creating…" : "Create site"}
             </button>
           </div>
         </form>
@@ -181,95 +187,106 @@ function CreateSiteModal({ tenantId, onClose, onCreated }) {
 
 // ─── Site Card ───────────────────────────────────────────────────────────────
 
-function SiteCard({ site, tenantId, onDelete, router }) {
+function SiteCard({ site, tenantId, onDelete, router, userRole }) {
   const publishedCount = site.pages?.filter((p) => p.isPublished).length ?? 0;
   const totalPages = site._count?.pages ?? site.pages?.length ?? 0;
+  const canEdit = hasPermission(userRole, 'sites:edit');
+  const canDelete = hasPermission(userRole, 'sites:delete');
 
   const openBuilder = () => {
-    const firstPage = site.pages?.[0];
     router.push(`/${tenantId}/sites/${site.id}/pages`);
   };
 
   return (
-    <div className="group bg-white border border-gray-200 rounded-2xl overflow-hidden hover:border-indigo-300 hover:shadow-lg transition-all duration-200">
-      {/* Thumbnail placeholder */}
-      <div
-        className="h-36 flex items-center justify-center"
-        style={{
-          background: `linear-gradient(135deg, ${site.theme?.primaryColor || "#6366f1"}22, ${site.theme?.secondaryColor || "#8b5cf6"}44)`,
-        }}
-      >
-        <Globe size={40} className="text-indigo-400 opacity-60" />
-      </div>
+    <div className="group flex flex-col bg-white border border-gray-200 rounded-2xl hover:border-gray-300 hover:shadow-md transition-all duration-200 overflow-hidden">
 
-      {/* Info */}
-      <div className="p-5">
-        <div className="flex items-start justify-between gap-2">
-          <div className="min-w-0">
-            <h3 className="font-semibold text-gray-900 truncate">
-              {site.name}
-            </h3>
-            <p className="text-xs text-gray-400 mt-0.5 truncate">
-              /{site.slug}
-            </p>
+      {/* Header Info */}
+      <div className="p-6 pb-4 border-b border-gray-100 flex-1">
+        <div className="flex items-start justify-between gap-4 mb-3">
+          <div className="flex items-center gap-4 min-w-0">
+            <div className="h-12 w-12 rounded-xl border border-gray-200 bg-gray-50 flex items-center justify-center shrink-0">
+              <Globe className="h-6 w-6 text-gray-400 group-hover:text-gray-600 transition-colors" />
+            </div>
+            <div className="min-w-0">
+              <h3 className="text-lg font-bold text-gray-900 tracking-tight truncate group-hover:text-gray-900 transition-colors">
+                {site.name}
+              </h3>
+              <p className="text-sm text-gray-500 mt-0.5 truncate">
+                /{site.slug}
+              </p>
+            </div>
           </div>
-          <span className="shrink-0 text-xs text-gray-500 bg-gray-100 rounded-full px-2.5 py-0.5 font-medium">
-            {totalPages} {totalPages === 1 ? "page" : "pages"}
-          </span>
         </div>
 
         {site.description && (
-          <p className="text-sm text-gray-500 mt-2 line-clamp-2">
+          <p className="text-sm text-gray-500 mt-4 line-clamp-2 leading-relaxed">
             {site.description}
           </p>
         )}
 
-        <div className="flex items-center gap-1 mt-2">
+        <div className="flex items-center gap-3 mt-5">
           {publishedCount > 0 ? (
-            <span className="inline-flex items-center gap-1 text-xs text-emerald-600 bg-emerald-50 rounded-full px-2 py-0.5">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block" />
-              {publishedCount} published
+            <span className="inline-flex items-center gap-1.5 text-xs font-medium text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-md px-2.5 py-1">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+              {publishedCount} Published
             </span>
           ) : (
-            <span className="inline-flex items-center gap-1 text-xs text-gray-400 bg-gray-50 rounded-full px-2 py-0.5">
-              <span className="w-1.5 h-1.5 rounded-full bg-gray-300 inline-block" />
+            <span className="inline-flex items-center gap-1.5 text-xs font-medium text-gray-600 bg-gray-100 border border-gray-200 rounded-md px-2.5 py-1">
+              <span className="w-1.5 h-1.5 rounded-full bg-gray-400" />
               Draft
             </span>
           )}
-          <span className="text-xs text-gray-400 ml-auto">
+          <span className="text-xs text-gray-400 flex items-center gap-1.5">
+            <span className="w-1 h-1 rounded-full bg-gray-300" />
             Updated {formatDate(site.updatedAt)}
           </span>
         </div>
+      </div>
 
-        {/* Actions */}
-        <div className="flex items-center gap-2 mt-4">
+      {/* Actions Footer */}
+      <div className="px-6 py-4 bg-gray-50/50 flex items-center justify-between gap-3">
+        {canEdit ? (
           <button
             onClick={openBuilder}
-            className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 transition-colors"
+            className="flex-1 inline-flex items-center justify-center gap-2 px-4 py-2 bg-white text-gray-900 text-sm font-medium border border-gray-300 rounded-xl hover:bg-gray-50 transition-colors focus:outline-none focus:ring-2 focus:ring-gray-200"
           >
-            <Pencil size={14} />
-            Edit in builder
+            <Pencil size={15} className="text-gray-500" />
+            Edit Pages
           </button>
+        ) : (
+          <button
+            onClick={() => router.push(`/${tenantId}/sites/${site.id}`)}
+            className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 bg-gray-100 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-200 transition-colors"
+          >
+            <Eye size={14} />
+            View site
+          </button>
+        )}
+
+        <div className="flex items-center gap-2 shrink-0">
           {site.domain && (
             <a
               href={`https://${site.domain}`}
               target="_blank"
               rel="noopener noreferrer"
-              className="p-2 border border-gray-200 text-gray-500 rounded-lg hover:bg-gray-50 hover:text-gray-700 transition-colors"
+              className="p-2.5 bg-white border border-gray-300 text-gray-500 rounded-xl hover:bg-gray-50 hover:text-gray-900 transition-colors focus:outline-none focus:ring-2 focus:ring-gray-200"
               title="Open live site"
             >
-              <ExternalLink size={15} />
+              <ExternalLink size={16} />
             </a>
           )}
-          <button
-            onClick={() => onDelete(site)}
-            className="p-2 border border-gray-200 text-gray-400 rounded-lg hover:bg-red-50 hover:border-red-200 hover:text-red-500 transition-colors"
-            title="Delete site"
-          >
-            <Trash2 size={15} />
-          </button>
+          {canDelete && (
+            <button
+              onClick={() => onDelete(site)}
+              className="p-2.5 border border-transparent text-gray-400 rounded-xl hover:bg-red-50 hover:text-red-600 hover:border-red-100 transition-colors focus:outline-none focus:ring-2 focus:ring-red-100"
+              title="Delete site"
+            >
+              <Trash2 size={16} />
+            </button>
+          )}
         </div>
       </div>
+
     </div>
   );
 }
@@ -288,14 +305,33 @@ export default function SitesPage() {
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState("");
+  const [userRole, setUserRole] = useState(null);
+  const [successToast, setSuccessToast] = useState(null); // Added state for toast
+
+  const canCreate = hasPermission(userRole, 'sites:create');
 
   useEffect(() => {
     if (!isPending && !session) router.push("/auth/signin");
   }, [session, isPending, router]);
 
   useEffect(() => {
-    if (session && tenantId) fetchSites();
+    if (session && tenantId) {
+      fetchSites();
+      fetchUserRole();
+    }
   }, [session, tenantId]);
+
+  const fetchUserRole = async () => {
+    try {
+      const res = await fetch(`/api/tenants/${tenantId}`);
+      if (res.ok) {
+        const data = await res.json();
+        setUserRole(data.userRole);
+      }
+    } catch (err) {
+      console.error('Error fetching role:', err);
+    }
+  };
 
   const fetchSites = async () => {
     setLoading(true);
@@ -314,8 +350,11 @@ export default function SitesPage() {
   const handleCreated = (newSite) => {
     setSites((prev) => [newSite, ...prev]);
     setShowCreate(false);
-    // Navigate straight into the builder for the new site
-    router.push(`/${tenantId}/sites/${newSite.id}/builder`);
+    setSuccessToast(newSite.name);
+    // Give the user a moment to see the success toast before redirecting
+    setTimeout(() => {
+      router.push(`/${tenantId}/sites/${newSite.id}/builder`);
+    }, 1500);
   };
 
   const handleDelete = async () => {
@@ -337,60 +376,77 @@ export default function SitesPage() {
 
   if (isPending || loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <Loader2 size={28} className="animate-spin text-indigo-500" />
+      <div className="min-h-screen flex items-center justify-center bg-[#FDFDFD]">
+        <Loader2 size={32} className="animate-spin text-gray-400" />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 py-8">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-8">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900">Sites</h1>
-            <p className="text-sm text-gray-500 mt-1">
-              {sites.length} site{sites.length !== 1 ? "s" : ""} in this
-              workspace
-            </p>
-          </div>
-          <button
-            onClick={() => setShowCreate(true)}
-            className="flex items-center gap-2 px-4 py-2.5 bg-indigo-600 text-white text-sm font-medium rounded-xl hover:bg-indigo-700 transition-colors shadow-sm shadow-indigo-200"
-          >
-            <Plus size={16} />
-            New site
-          </button>
-        </div>
+    <div className="min-h-screen bg-[#FDFDFD] font-sans text-gray-900 pb-12">
 
+      {/* Header aligned with other dashboard views */}
+      <div className="bg-white border-b border-gray-200 sticky top-0 z-10">
+        <div className="max-w-7xl mx-auto px-6 sm:px-10 lg:px-12 py-5 sm:py-6">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="flex items-center gap-4">
+              <button
+                onClick={() => router.push(`/${tenantId}`)}
+                className="p-2 -ml-2 text-gray-400 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-gray-200"
+                title="Back to Workspace"
+              >
+                <ArrowLeft className="h-6 w-6" />
+              </button>
+              <div>
+                <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-gray-900">Sites</h1>
+                <p className="text-sm sm:text-base text-gray-500 mt-0.5">Manage your workspace websites</p>
+              </div>
+            </div>
+            {canCreate && (
+              <button
+                onClick={() => setShowCreate(true)}
+                className="inline-flex items-center justify-center px-6 py-2.5 bg-gray-900 text-white text-sm font-medium rounded-xl hover:bg-gray-800 transition-colors focus:outline-none focus:ring-2 focus:ring-gray-900 focus:ring-offset-2"
+              >
+                <Plus size={16} className="mr-2" />
+                New Site
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
+
+      <div className="max-w-7xl mx-auto px-6 sm:px-10 lg:px-12 py-8 sm:py-12">
         {error && (
-          <div className="mb-6 flex items-center gap-2 text-sm text-red-600 bg-red-50 rounded-xl px-4 py-3">
-            <AlertCircle size={16} />
-            {error}
+          <div className="mb-8 flex items-start gap-3 text-sm text-red-700 bg-red-50 border border-red-100 rounded-xl px-5 py-4">
+            <AlertCircle size={18} className="mt-0.5 shrink-0 text-red-500" />
+            <span className="font-medium text-base">{error}</span>
           </div>
         )}
 
         {/* Sites grid */}
         {sites.length === 0 ? (
-          <div className="text-center py-24 bg-white rounded-2xl border border-dashed border-gray-200">
-            <Globe size={48} className="mx-auto text-gray-200 mb-4" />
-            <h3 className="text-lg font-semibold text-gray-700 mb-2">
-              No sites yet
+          <div className="text-center py-32 bg-white rounded-3xl border border-dashed border-gray-300 flex flex-col items-center">
+            <div className="h-16 w-16 bg-gray-50 border border-gray-200 rounded-2xl flex items-center justify-center mb-6">
+              <Globe size={32} className="text-gray-400" />
+            </div>
+            <h3 className="text-xl font-semibold text-gray-900 mb-2 tracking-tight">
+              No sites created yet
             </h3>
-            <p className="text-sm text-gray-400 mb-6">
-              Create your first site to get started.
+            <p className="text-base text-gray-500 max-w-sm mb-8">
+              {canCreate ? 'Start building your digital presence by creating your first website in this workspace.' : 'No sites have been created yet.'}
             </p>
-            <button
-              onClick={() => setShowCreate(true)}
-              className="inline-flex items-center gap-2 px-5 py-2.5 bg-indigo-600 text-white text-sm font-medium rounded-xl hover:bg-indigo-700 transition-colors"
-            >
-              <Plus size={15} />
-              Create site
-            </button>
+            {canCreate && (
+              <button
+                onClick={() => setShowCreate(true)}
+                className="inline-flex items-center justify-center px-6 py-3 bg-white border border-gray-300 text-gray-900 text-sm font-medium rounded-xl hover:bg-gray-50 transition-colors focus:outline-none focus:ring-2 focus:ring-gray-200"
+              >
+                <Plus size={16} className="mr-2" />
+                Create your first site
+              </button>
+            )}
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {sites.map((site) => (
               <SiteCard
                 key={site.id}
@@ -398,11 +454,31 @@ export default function SitesPage() {
                 tenantId={tenantId}
                 onDelete={setDeleteTarget}
                 router={router}
+                userRole={userRole}
               />
             ))}
           </div>
         )}
       </div>
+
+      {/* Toast Notification */}
+      {successToast && (
+        <div className="fixed bottom-6 right-6 z-50 flex items-center gap-3 px-5 py-4 bg-gray-900 text-white rounded-2xl shadow-2xl animate-in slide-in-from-bottom-5 duration-300">
+          <div className="p-1 bg-emerald-500 rounded-full">
+            <CheckCircle2 size={16} className="text-white" />
+          </div>
+          <div>
+            <p className="text-sm font-semibold">Site created successfully!</p>
+            <p className="text-xs text-gray-400 mt-0.5">Your CloudFront tenant is live.</p>
+          </div>
+          <button
+            onClick={() => setSuccessToast(null)}
+            className="ml-4 p-1 text-gray-500 hover:text-white transition-colors"
+          >
+            <X size={16} />
+          </button>
+        </div>
+      )}
 
       {/* Create modal */}
       {showCreate && (
@@ -415,37 +491,34 @@ export default function SitesPage() {
 
       {/* Delete confirmation */}
       {deleteTarget && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm mx-4 p-6">
-            <h2 className="text-lg font-semibold text-gray-900 mb-2">
-              Delete site?
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/40 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl shadow-xl border border-gray-200 w-full max-w-sm mx-4 p-8 text-center text-gray-900">
+            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-red-50 mb-5">
+              <Trash2 className="h-8 w-8 text-red-600" />
+            </div>
+            <h2 className="text-xl font-bold tracking-tight mb-2">
+              Delete Site
             </h2>
-            <p className="text-sm text-gray-500 mb-6">
-              <span className="font-medium text-gray-800">
-                {deleteTarget.name}
-              </span>{" "}
-              and all its pages will be permanently deleted. This cannot be
-              undone.
+            <p className="text-sm text-gray-500 mb-8 leading-relaxed">
+              Are you sure you want to delete <strong className="text-gray-900 font-semibold">{deleteTarget.name}</strong>? This action cannot be undone and will permanently remove all pages and content.
             </p>
-            <div className="flex gap-3">
+            <div className="flex flex-col-reverse sm:flex-row gap-3">
               <button
                 onClick={() => setDeleteTarget(null)}
                 disabled={deleting}
-                className="flex-1 px-4 py-2.5 border border-gray-300 text-gray-700 text-sm font-medium rounded-xl hover:bg-gray-50 transition-colors"
+                className="flex-1 px-5 py-3 border border-gray-300 bg-white text-gray-700 text-sm font-medium rounded-xl hover:bg-gray-50 transition-colors focus:outline-none focus:ring-2 focus:ring-gray-200"
               >
                 Cancel
               </button>
               <button
                 onClick={handleDelete}
                 disabled={deleting}
-                className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-red-600 text-white text-sm font-medium rounded-xl hover:bg-red-700 transition-colors disabled:opacity-60"
+                className="flex-1 flex items-center justify-center gap-2 px-5 py-3 bg-red-600 text-white text-sm font-medium rounded-xl hover:bg-red-700 transition-colors disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-red-600 focus:ring-offset-2"
               >
                 {deleting ? (
-                  <Loader2 size={15} className="animate-spin" />
-                ) : (
-                  <Trash2 size={15} />
-                )}
-                {deleting ? "Deleting…" : "Delete"}
+                  <Loader2 size={16} className="animate-spin" />
+                ) : null}
+                {deleting ? "Deleting..." : "Delete Site"}
               </button>
             </div>
           </div>

@@ -32,7 +32,7 @@ export default function SignUpPage() {
 
     try {
       const result = await signUp.email(formData)
-      
+
       // If there's a redirect URL (invitation), proceed with auto-signin
       if (redirectUrl) {
         // Redirect to the invitation page after signup
