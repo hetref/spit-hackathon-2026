@@ -826,6 +826,65 @@ document.addEventListener('DOMContentLoaded', function() {
  * @param {string} [pageId]   – Optional page ID (defaults to first page)
  * @returns {{ html: string, css: string, js: string }}
  */
+/**
+ * Convert a single Page record (from the DB) into { html, css, js } strings.
+ * Use this for the per-page storage architecture.
+ *
+ * @param {object} theme    – Site.theme from the DB (primaryColor, fontFamily, …)
+ * @param {object} page     – Page record from the DB (name, slug, seo, layout)
+ * @param {string} siteName – Human-readable site name used as fallback <title>
+ * @param {object} [opts]   – { stylesHref, scriptSrc } for asset path control
+ * @returns {{ html: string, css: string, js: string }}
+ */
+export function convertPageToHtml(
+  theme,
+  page,
+  siteName = "SitePilot Site",
+  opts = {},
+) {
+  if (!page) throw new Error("Page is required");
+
+  const { stylesHref = "styles.css", scriptSrc = "script.js" } = opts;
+  const seo = page.seo || {};
+
+  // `layout` is stored as the raw containers array in the DB
+  const bodyContent = (page.layout || [])
+    .map(renderContainer)
+    .filter(Boolean)
+    .join("\n\n");
+
+  const css = generateCSS(theme || {});
+  const js = generateJS();
+
+  const html = `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>${escapeHtml(seo.title || page.name || siteName)}</title>
+  <meta name="description" content="${escapeHtml(seo.description || "")}" />
+  ${seo.ogImage ? `<meta property="og:image" content="${escapeHtml(seo.ogImage)}" />` : ""}
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="${stylesHref}" />
+</head>
+<body>
+${bodyContent}
+  <script src="${scriptSrc}"><\/script>
+</body>
+</html>`;
+
+  return { html, css, js };
+}
+
+/**
+ * Convert a layout JSON object into { html, css, js } strings.
+ *
+ * @param {object} layoutJSON – The full layout JSON from the builder store
+ * @param {string} [pageId]   – Optional page ID (defaults to first page)
+ * @returns {{ html: string, css: string, js: string }}
+ */
 export function convertJsonToHtml(layoutJSON, pageId) {
   const page = pageId
     ? layoutJSON.pages.find((p) => p.id === pageId)
