@@ -26,15 +26,18 @@ export async function provisionSiteTenant(siteSlug) {
         await ensureComingSoonTemplate();
 
         // 2. Update KVS mapping
-        // key: siteSlug.sitepilot.devally.in
+        // key: siteSlug
         // value: site-basics/site-coming-soon-template
-        const kvsKey = `${siteSlug}.sitepilot.devally.in`;
+        const kvsKey = siteSlug;
         await updateKVS(kvsKey, COMING_SOON_PREFIX);
 
         return {
             success: true,
-            domain: kvsKey,
+            domain: `${siteSlug}.sitepilot.devally.in`,
             status: "LIVE",
+            cfTenantId: process.env.CLOUDFRONT_DISTRIBUTION_ID || `tenant-${siteSlug}`,
+            cfTenantArn: process.env.CLOUDFRONT_DISTRIBUTION_ARN || null,
+            cfConnectionGroupId: process.env.CLOUDFRONT_CONNECTION_GROUP_ID || null,
         };
     } catch (error) {
         console.error("Provisioning error:", error);

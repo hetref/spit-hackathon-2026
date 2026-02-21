@@ -175,9 +175,10 @@ model Site {
   favicon        String?
 
   // CloudFront Tenant Metadata
-  cfTenantId     String?       @unique // Logical ID or association record
-  cfTenantArn    String?       // Reference to associated CF resources
-  cfStatus       String        @default("PROVISIONING") // PROVISIONING, LIVE, ERROR
+  cfTenantId          String?       @unique // Logical ID or association record
+  cfTenantArn         String?       // Reference to associated CF resources
+  cfConnectionGroupId String?       // Associated connection group ID
+  cfStatus            String        @default("PROVISIONING") // PROVISIONING, LIVE, ERROR
 
   // Shared theme applied to all pages
   theme          Json          @default("{}")
