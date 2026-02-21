@@ -4,6 +4,8 @@
  * TOP TOOLBAR
  *
  * Dark-themed professional toolbar with undo/redo, device preview, save, publish.
+ * Automatically uses real DB APIs when a siteId/pageId are present in the store,
+ * otherwise falls back to legacy demo behaviour.
  */
 
 import { useState } from "react";
@@ -19,48 +21,117 @@ import {
   Layers,
   Zap,
   Loader2,
+  CheckCircle2,
 } from "lucide-react";
 import useUIStore from "@/lib/stores/uiStore";
 import useHistoryStore from "@/lib/stores/historyStore";
 import useBuilderStore, { clearSavedState } from "@/lib/stores/builderStore";
-import { siteAPI } from "@/lib/data/demoData";
 import { clsx } from "clsx";
 
 export default function Toolbar() {
   const { devicePreview, setDevicePreview } = useUIStore();
   const { canUndo, canRedo, undo, redo } = useHistoryStore();
-  const { getLayoutJSON, updateLayoutJSON } = useBuilderStore();
+  const { getLayoutJSON, updateLayoutJSON, siteId, pageId, getPageLayout } =
+    useBuilderStore();
+
+  const [isSaving, setIsSaving] = useState(false);
   const [isPublishing, setIsPublishing] = useState(false);
+  const [saveStatus, setSaveStatus] = useState(null); // "saved" | "error" | null
 
   const handleUndo = () => {
     if (canUndo) {
       const previousState = undo();
-      if (previousState) {
-        updateLayoutJSON(previousState);
-      }
+      if (previousState) updateLayoutJSON(previousState);
     }
   };
 
   const handleRedo = () => {
     if (canRedo) {
       const nextState = redo();
-      if (nextState) {
-        updateLayoutJSON(nextState);
-      }
+      if (nextState) updateLayoutJSON(nextState);
     }
   };
 
   const handleSave = async () => {
-    const layoutJSON = getLayoutJSON();
-    try {
-      const result = await siteAPI.saveSite(layoutJSON);
-      alert(result.message);
-    } catch (error) {
-      alert("Failed to save");
+    const store = useBuilderStore.getState();
+    const { siteId, pageId, layoutJSON, currentPageId } = store;
+
+    // ── DB-backed save ──────────────────────────────────────────
+    if (siteId && pageId) {
+      setIsSaving(true);
+      setSaveStatus(null);
+      try {
+        const page = layoutJSON?.pages?.find((p) => p.id === currentPageId);
+        const res = await fetch(`/api/sites/${siteId}/pages/${pageId}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            layout: page?.layout ?? [],
+            name: page?.name,
+            seo: page?.seo,
+          }),
+        });
+        if (!res.ok) throw new Error((await res.json()).error || "Save failed");
+        setSaveStatus("saved");
+        setTimeout(() => setSaveStatus(null), 3000);
+      } catch (err) {
+        console.error("Save error:", err);
+        setSaveStatus("error");
+        alert(`Save failed: ${err.message}`);
+      } finally {
+        setIsSaving(false);
+      }
+      return;
+    }
+
+    // ── Demo / localStorage fallback ────────────────────────────
+    const fallbackLayout = getLayoutJSON();
+    if (fallbackLayout) {
+      try {
+        if (typeof window !== "undefined") {
+          localStorage.setItem(
+            "sitepilot_builder_v2",
+            JSON.stringify(fallbackLayout),
+          );
+        }
+        setSaveStatus("saved");
+        setTimeout(() => setSaveStatus(null), 2000);
+      } catch {
+        alert("Failed to save locally.");
+      }
     }
   };
 
   const handlePublish = async () => {
+    const { siteId, pageId } = useBuilderStore.getState();
+
+    // ── DB-backed publish ───────────────────────────────────────
+    if (siteId && pageId) {
+      setIsPublishing(true);
+      try {
+        const res = await fetch(
+          `/api/sites/${siteId}/pages/${pageId}/publish`,
+          {
+            method: "POST",
+          },
+        );
+        const result = await res.json();
+        if (result.success) {
+          const open = confirm(`Page published!\n\nOpen preview in new tab?`);
+          if (open) window.open(result.previewUrl, "_blank");
+        } else {
+          alert(`Publish failed: ${result.error}`);
+        }
+      } catch (err) {
+        console.error("Publish error:", err);
+        alert("Failed to publish — check the console for details.");
+      } finally {
+        setIsPublishing(false);
+      }
+      return;
+    }
+
+    // ── Legacy monolithic publish (demo mode) ──────────────────
     const layoutJSON = getLayoutJSON();
     setIsPublishing(true);
     try {
@@ -74,14 +145,12 @@ export default function Toolbar() {
         const open = confirm(
           `${result.message}\n\nOpen the published site in a new tab?`,
         );
-        if (open) {
-          window.open(result.previewUrl, "_blank");
-        }
+        if (open) window.open(result.previewUrl, "_blank");
       } else {
         alert(`Publish failed: ${result.error}`);
       }
-    } catch (error) {
-      console.error("Publish error:", error);
+    } catch (err) {
+      console.error("Publish error:", err);
       alert("Failed to publish — check the console for details.");
     } finally {
       setIsPublishing(false);
@@ -171,10 +240,23 @@ export default function Toolbar() {
 
         <button
           onClick={handleSave}
-          className="flex items-center gap-1.5 px-4 py-1.5 bg-slate-600 text-white text-xs font-medium rounded-md hover:bg-slate-500 transition-colors"
+          disabled={isSaving}
+          className={clsx(
+            "flex items-center gap-1.5 px-4 py-1.5 text-xs font-medium rounded-md transition-colors",
+            saveStatus === "saved"
+              ? "bg-emerald-600 text-white"
+              : "bg-slate-600 text-white hover:bg-slate-500",
+            isSaving && "opacity-70 cursor-wait",
+          )}
         >
-          <Save size={14} />
-          Save
+          {isSaving ? (
+            <Loader2 size={14} className="animate-spin" />
+          ) : saveStatus === "saved" ? (
+            <CheckCircle2 size={14} />
+          ) : (
+            <Save size={14} />
+          )}
+          {isSaving ? "Saving…" : saveStatus === "saved" ? "Saved!" : "Save"}
         </button>
 
         <button

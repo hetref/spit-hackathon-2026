@@ -45,8 +45,22 @@ export default function InvitationPage({ params }) {
 
   const handleAccept = async () => {
     if (!session) {
-      // Redirect to sign in with return URL
-      router.push(`/auth/signin?redirect=/invitations/${token}`)
+      // Check if user is registered
+      try {
+        const checkResponse = await fetch(`/api/check-user?email=${invitation.email}`)
+        const checkData = await checkResponse.json()
+        
+        if (checkData.exists) {
+          // User is registered, redirect to signin
+          router.push(`/auth/signin?redirect=/invitations/${token}`)
+        } else {
+          // User not registered, redirect to signup
+          router.push(`/auth/signup?redirect=/invitations/${token}&email=${encodeURIComponent(invitation.email)}`)
+        }
+      } catch (err) {
+        // Default to signin page
+        router.push(`/auth/signin?redirect=/invitations/${token}`)
+      }
       return
     }
 
@@ -63,7 +77,7 @@ export default function InvitationPage({ params }) {
         throw new Error(data.error || 'Failed to accept invitation')
       }
 
-      router.push(`/tenants/${data.tenantId}`)
+      router.push(`/dashboard`)
     } catch (err) {
       setError(err.message)
     } finally {
@@ -137,7 +151,15 @@ export default function InvitationPage({ params }) {
           {!session && (
             <div className="bg-blue-50 border border-blue-200 rounded p-4 mb-6">
               <p className="text-sm text-blue-800">
-                You need to sign in to accept this invitation
+                You need to sign in or create an account to accept this invitation
+              </p>
+            </div>
+          )}
+
+          {session && !session.user.emailVerified && (
+            <div className="bg-yellow-50 border border-yellow-200 rounded p-4 mb-6">
+              <p className="text-sm text-yellow-800">
+                Please verify your email address before accepting invitations. Check your inbox for a verification link.
               </p>
             </div>
           )}
@@ -160,13 +182,14 @@ export default function InvitationPage({ params }) {
           <div className="flex gap-4">
             <button
               onClick={handleDecline}
-              className="flex-1 px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
+              disabled={accepting}
+              className="flex-1 px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Decline
             </button>
             <button
               onClick={handleAccept}
-              disabled={accepting || (session && session.user.email !== invitation.email)}
+              disabled={accepting || (session && !session.user.emailVerified) || (session && session.user.email !== invitation.email)}
               className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {!session ? 'Sign In to Accept' : accepting ? 'Accepting...' : 'Accept Invitation'}

@@ -13,7 +13,7 @@ export async function GET(request, { params }) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const { tenantId } = await params
+    const { tenantId, formId } = await params
 
     // Check if user has access to this tenant
     const tenantUser = await prisma.tenantUser.findUnique({
@@ -29,42 +29,30 @@ export async function GET(request, { params }) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 
-    const tenant = await prisma.tenant.findUnique({
-      where: { id: tenantId },
+    const form = await prisma.form.findUnique({
+      where: { id: formId },
       include: {
-        owner: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-            image: true
-          }
-        },
-        _count: {
-          select: {
-            tenantUsers: true,
-            sites: true,
-            forms: true
-          }
+        versions: {
+          orderBy: { versionNumber: 'desc' }
         }
       }
     })
 
-    if (!tenant) {
-      return NextResponse.json({ error: 'Tenant not found' }, { status: 404 })
+    if (!form || form.tenantId !== tenantId) {
+      return NextResponse.json({ error: 'Form not found' }, { status: 404 })
     }
 
-    return NextResponse.json({ tenant, userRole: tenantUser.role })
+    return NextResponse.json({ form })
   } catch (error) {
-    console.error('Error fetching tenant:', error)
+    console.error('Error fetching form:', error)
     return NextResponse.json(
-      { error: 'Failed to fetch tenant' },
+      { error: 'Failed to fetch form' },
       { status: 500 }
     )
   }
 }
 
-export async function PATCH(request, { params }) {
+export async function DELETE(request, { params }) {
   try {
     const session = await auth.api.getSession({
       headers: await headers()
@@ -74,28 +62,39 @@ export async function PATCH(request, { params }) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const { tenantId } = await params
-    const updates = await request.json()
+    const { tenantId, formId } = await params
 
-    // Check if user is owner
-    const tenant = await prisma.tenant.findUnique({
-      where: { id: tenantId }
+    // Check if user has access to this tenant
+    const tenantUser = await prisma.tenantUser.findUnique({
+      where: {
+        userId_tenantId: {
+          userId: session.user.id,
+          tenantId
+        }
+      }
     })
 
-    if (!tenant || tenant.ownerId !== session.user.id) {
+    if (!tenantUser) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 
-    const updatedTenant = await prisma.tenant.update({
-      where: { id: tenantId },
-      data: updates
+    const form = await prisma.form.findUnique({
+      where: { id: formId }
     })
 
-    return NextResponse.json({ tenant: updatedTenant })
+    if (!form || form.tenantId !== tenantId) {
+      return NextResponse.json({ error: 'Form not found' }, { status: 404 })
+    }
+
+    await prisma.form.delete({
+      where: { id: formId }
+    })
+
+    return NextResponse.json({ success: true })
   } catch (error) {
-    console.error('Error updating tenant:', error)
+    console.error('Error deleting form:', error)
     return NextResponse.json(
-      { error: 'Failed to update tenant' },
+      { error: 'Failed to delete form' },
       { status: 500 }
     )
   }

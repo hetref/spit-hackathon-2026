@@ -338,6 +338,46 @@ export default function DashboardPage() {
           )}
 
         </div>
+
+        {/* Shared Workspaces Section */}
+        {sharedTenants.length > 0 && (
+          <div className="bg-white shadow rounded-lg p-6">
+            <h2 className="text-xl font-semibold text-gray-900 mb-6">Shared Workspaces</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {sharedTenants.map((tenant) => (
+                <div
+                  key={tenant.id}
+                  onClick={() => router.push(`/${tenant.id}`)}
+                  className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow cursor-pointer"
+                >
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      <h3 className="text-lg font-semibold text-gray-900">{tenant.name}</h3>
+                      <p className="text-sm text-gray-500">/{tenant.slug}</p>
+                    </div>
+                    <span className="px-2 py-1 text-xs font-semibold rounded bg-blue-100 text-blue-800">
+                      {tenant.userRole}
+                    </span>
+                  </div>
+                  <div className="mt-4 flex items-center text-sm text-gray-600">
+                    <svg className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                    </svg>
+                    {tenant._count.tenantUsers} members
+                    <span className="mx-2">•</span>
+                    <svg className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                    {tenant._count.sites} sites
+                  </div>
+                  <div className="mt-2 text-xs text-gray-500">
+                    Plan: <span className="font-semibold">{tenant.plan}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </main>
     </div>
   )

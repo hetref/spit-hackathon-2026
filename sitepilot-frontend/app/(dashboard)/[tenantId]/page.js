@@ -32,6 +32,7 @@ export default function TenantDashboardPage() {
   const [addMemberLoading, setAddMemberLoading] = useState(false)
   const [error, setError] = useState('')
   const [successMessage, setSuccessMessage] = useState('')
+  const [copiedId, setCopiedId] = useState(null)
 
   useEffect(() => {
     if (!isPending && !session) {
@@ -105,7 +106,13 @@ export default function TenantDashboardPage() {
         throw new Error(data.error || 'Failed to send invitation')
       }
 
-      setSuccessMessage('Invitation sent successfully!')
+      // Show success message with invitation URL if email wasn't sent
+      if (data.invitationUrl) {
+        setSuccessMessage(`Invitation created! Share this link: ${data.invitationUrl}`)
+      } else {
+        setSuccessMessage('Invitation sent successfully!')
+      }
+      
       setMemberEmail('')
       setMemberRole('EDITOR')
       setShowAddMember(false)
@@ -131,6 +138,17 @@ export default function TenantDashboardPage() {
       }
     } catch (err) {
       console.error('Error removing member:', err)
+    }
+  }
+
+  const copyInvitationLink = async (token) => {
+    const invitationUrl = `${window.location.origin}/invitations/${token}`
+    try {
+      await navigator.clipboard.writeText(invitationUrl)
+      setCopiedId(token)
+      setTimeout(() => setCopiedId(null), 2000)
+    } catch (err) {
+      console.error('Failed to copy:', err)
     }
   }
 
@@ -217,6 +235,47 @@ export default function TenantDashboardPage() {
               <p className="text-sm font-medium text-gray-500 mb-1">Active Sites</p>
               <h3 className="text-2xl font-bold">{tenant._count.sites}</h3>
             </div>
+          </div>
+        </div>
+
+        {/* Quick Actions */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+          <div className="bg-white rounded-lg shadow p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-gray-900">Sites</h3>
+              <button
+                onClick={() => router.push(`/${params.tenantId}/sites`)}
+                className="text-blue-600 hover:text-blue-700 text-sm font-medium"
+              >
+                View All →
+              </button>
+            </div>
+            <p className="text-gray-600 text-sm mb-4">Create and manage your websites</p>
+            <button
+              onClick={() => router.push(`/${params.tenantId}/sites`)}
+              className="w-full px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+            >
+              Manage Sites
+            </button>
+          </div>
+
+          <div className="bg-white rounded-lg shadow p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-gray-900">Forms</h3>
+              <button
+                onClick={() => router.push(`/${params.tenantId}/forms`)}
+                className="text-blue-600 hover:text-blue-700 text-sm font-medium"
+              >
+                View All →
+              </button>
+            </div>
+            <p className="text-gray-600 text-sm mb-4">Build custom forms with our form builder</p>
+            <button
+              onClick={() => router.push(`/${params.tenantId}/forms`)}
+              className="w-full px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
+            >
+              Manage Forms
+            </button>
           </div>
         </div>
 
@@ -359,6 +418,37 @@ export default function TenantDashboardPage() {
           </div>
         </div>
 
+        {/* Pending Invitations */}
+        {invitations.length > 0 && (
+          <div className="bg-white rounded-lg shadow">
+            <div className="px-6 py-4 border-b border-gray-200">
+              <h2 className="text-lg font-semibold text-gray-900">Pending Invitations</h2>
+            </div>
+            <div className="divide-y divide-gray-200">
+              {invitations.map((invitation) => (
+                <div key={invitation.id} className="px-6 py-4">
+                  <div className="flex justify-between items-start">
+                    <div className="flex-1">
+                      <p className="text-sm font-medium text-gray-900">{invitation.email}</p>
+                      <p className="text-sm text-gray-500 mt-1">
+                        Invited {new Date(invitation.createdAt).toLocaleDateString()} • Expires {new Date(invitation.expiresAt).toLocaleDateString()}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <span className="px-3 py-1 rounded-full text-xs font-semibold bg-yellow-100 text-yellow-800">
+                        {invitation.role} • PENDING
+                      </span>
+                      <button
+                        onClick={() => copyInvitationLink(invitation.token)}
+                        className="px-3 py-1 text-xs font-medium text-blue-600 hover:text-blue-800 border border-blue-300 rounded hover:bg-blue-50"
+                        title="Copy invitation link"
+                      >
+                        {copiedId === invitation.token ? '✓ Copied!' : 'Copy Link'}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
         {/* Pending Invitations Section */}
         {userRole === 'OWNER' && invitations.length > 0 && (
           <div>

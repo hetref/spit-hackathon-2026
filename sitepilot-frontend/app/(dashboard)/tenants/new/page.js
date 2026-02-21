@@ -161,24 +161,24 @@ export default function NewTenantPage() {
               </div>
 
               {/* Description Field */}
-              <div>
-                <label htmlFor="description" className="block text-sm font-medium text-gray-900 mb-2">
-                  Description <span className="text-gray-400 font-normal">(optional)</span>
-                </label>
+                <div>
+                  <label htmlFor="description" className="block text-sm font-medium text-gray-900 mb-2">
+                    Description <span className="text-gray-400 font-normal">(optional)</span>
+                  </label>
                 <div className="relative">
                   <div className="absolute top-3.5 left-3.5 flex items-start pointer-events-none">
                     <Type className="h-5 w-5 text-gray-400" />
                   </div>
-                  <textarea
-                    id="description"
-                    value={formData.description}
-                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                    placeholder="Brief description of your collaborative workspace"
-                    rows={3}
-                    className="block w-full pl-11 pr-4 py-3 bg-white border border-gray-300 rounded-xl text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-900/10 focus:border-gray-900 transition-colors text-base resize-y"
-                  />
+                    <textarea
+                      id="description"
+                      value={formData.description}
+                      onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                      placeholder="Brief description of your collaborative workspace"
+                      rows={3}
+                      className="block w-full pl-11 pr-4 py-3 bg-white border border-gray-300 rounded-xl text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-900/10 focus:border-gray-900 transition-colors text-base resize-y"
+                    />
                 </div>
-              </div>
+                </div>
 
               {/* Logo Field */}
               <div>

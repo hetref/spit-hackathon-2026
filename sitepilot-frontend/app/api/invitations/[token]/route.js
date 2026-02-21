@@ -107,6 +107,14 @@ export async function POST(request, { params }) {
       )
     }
 
+    // Check if user email is verified (only add members who are verified)
+    if (!session.user.emailVerified) {
+      return NextResponse.json(
+        { error: 'Please verify your email before accepting invitations' },
+        { status: 400 }
+      )
+    }
+
     // Check if user is already a member
     const existingMember = await prisma.tenantUser.findUnique({
       where: {
@@ -124,10 +132,10 @@ export async function POST(request, { params }) {
         data: { status: 'ACCEPTED' }
       })
 
-      return NextResponse.json(
-        { error: 'You are already a member of this workspace' },
-        { status: 400 }
-      )
+      return NextResponse.json({
+        message: 'You are already a member of this workspace',
+        tenantId: invitation.tenantId
+      })
     }
 
     // Add user to tenant
