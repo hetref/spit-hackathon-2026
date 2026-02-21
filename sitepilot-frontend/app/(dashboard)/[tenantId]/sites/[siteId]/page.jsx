@@ -19,6 +19,17 @@ import {
   History,
   Zap,
   Copy,
+  ArrowLeft,
+  Plus,
+  Trash2,
+  Calendar,
+  Link as LinkIcon,
+  Monitor,
+  Users,
+  Timer,
+  MousePointerClick,
+  MonitorOff,
+  LayoutTemplate
 } from "lucide-react";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -204,24 +215,6 @@ function DeploymentRow({ siteId, siteSlug, deployment, onRollback, onRenamed }) 
 }
 
 // ─── Page Component ───────────────────────────────────────────────────────────
-import {
-  ArrowLeft,
-  Globe,
-  Plus,
-  Loader2,
-  ExternalLink,
-  Trash2,
-  Calendar,
-  Clock,
-  History,
-  Link as LinkIcon,
-  Monitor,
-  Users,
-  Timer,
-  MousePointerClick,
-  MonitorOff,
-  LayoutTemplate
-} from 'lucide-react'
 
 export default function SiteDetailPage() {
   const params = useParams();
@@ -234,6 +227,9 @@ export default function SiteDetailPage() {
   const [error, setError] = useState("");
   const [rollbackMsg, setRollbackMsg] = useState(null); // { type: 'success'|'error', text }
   const [copied, setCopied] = useState(false);
+  const [showAddDomain, setShowAddDomain] = useState(false);
+  const [domainInput, setDomainInput] = useState('');
+  const [domains, setDomains] = useState([]);
 
   const siteUrl = site ? `https://${site.slug}.sitepilot.devally.in` : null;
 
@@ -312,6 +308,26 @@ export default function SiteDetailPage() {
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
+
+  // ── Domain management ─────────────────────────────────────────────────────
+  const handleAddDomain = () => {
+    if (domainInput.trim() && !domains.includes(domainInput.trim())) {
+      setDomains([...domains, domainInput.trim()]);
+      setDomainInput('');
+      setShowAddDomain(false);
+    }
+  };
+
+  const handleRemoveDomain = (domain) => {
+    setDomains(domains.filter(d => d !== domain));
+  };
+
+  // Initialize domains from site data
+  useEffect(() => {
+    if (site?.domain) {
+      setDomains([site.domain]);
+    }
+  }, [site]);
 
   // ─── Render: Loading ──────────────────────────────────────────────────────
   if (isPending || loading) {
