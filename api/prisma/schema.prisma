@@ -196,22 +196,29 @@ model TenantUser {
 // ============================================
 
 model Site {
-  id          String   @id @default(uuid())
-  name        String
-  slug        String
-  description String?
-  domain      String?  @unique
-  favicon     String?
-  
+  id             String   @id @default(uuid())
+  name           String
+  slug           String
+  description    String?
+  domain         String?  @unique
+  favicon        String?
+
+  // Shared theme applied to all pages (primaryColor, fontFamily, etc.)
+  theme          Json     @default("{}")
+
+  // Global settings (analytics, custom head/body scripts, etc.)
+  globalSettings Json     @default("{}")
+
   // Foreign keys
-  tenantId    String
-  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  tenantId       String
+  tenant         Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 
   // Relations
-  versions    SiteVersion[]
+  pages          Page[]
+  versions       SiteVersion[]
 
   @@unique([tenantId, slug]) // Unique slug per tenant
   @@index([tenantId])
@@ -220,30 +227,62 @@ model Site {
 }
 
 // ============================================
-// SITE VERSION MODEL
+// PAGE MODEL  (per-page JSON — optimal for large sites)
+// ============================================
+
+model Page {
+  id          String    @id @default(uuid())
+  name        String
+  slug        String    @default("/")
+
+  // SEO metadata for this individual page
+  seo         Json      @default("{}")
+
+  // The builder layout — just the containers array for this page
+  layout      Json      @default("[]")
+
+  sortOrder   Int       @default(0)
+  isPublished Boolean   @default(false)
+  publishedAt DateTime?
+
+  // Foreign keys
+  siteId      String
+  site        Site      @relation(fields: [siteId], references: [id], onDelete: Cascade)
+
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@unique([siteId, slug]) // Unique slug per site
+  @@index([siteId])
+  @@index([isPublished])
+  @@map("pages")
+}
+
+// ============================================
+// SITE VERSION MODEL  (kept for version history / rollback)
 // ============================================
 
 model SiteVersion {
   id            String        @id @default(uuid())
   versionNumber Int           @default(1)
   status        VersionStatus @default(DRAFT)
-  
-  // JSON builder state
-  builderData   Json          // Stores the entire state of the AI builder
-  
+
+  // JSON builder state snapshot (for rollback purposes)
+  builderData   Json
+
   // Metadata
-  name          String?       // Optional version name like "Homepage Redesign"
+  name          String?
   description   String?
   publishedAt   DateTime?
-  
+
   // Foreign keys
   siteId        String
   site          Site          @relation(fields: [siteId], references: [id], onDelete: Cascade)
-  
+
   createdAt     DateTime      @default(now())
   updatedAt     DateTime      @updatedAt
 
-  @@unique([siteId, versionNumber]) // Ensure version numbers are unique per site
+  @@unique([siteId, versionNumber])
   @@index([siteId])
   @@index([status])
   @@index([publishedAt])

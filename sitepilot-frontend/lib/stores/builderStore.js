@@ -66,7 +66,12 @@ const useBuilderStore = create((set, get) => ({
   hoveredNodeId: null,
   currentPageId: null,
 
-  // INITIALIZATION
+  // DB-backed identifiers (null while in demo/localStorage mode)
+  siteId: null,
+  pageId: null,
+  theme: null,
+
+  // INITIALIZATION  (demo / localStorage fallback — keeps backward compat)
   initializeBuilder: (layoutJSON) => {
     const saved = loadFromLocalStorage();
     const dataToUse = saved || layoutJSON;
@@ -75,7 +80,43 @@ const useBuilderStore = create((set, get) => ({
       currentPageId: dataToUse.pages[0]?.id || null,
       selectedNodeId: null,
       hoveredNodeId: null,
+      siteId: null,
+      pageId: null,
+      theme: dataToUse.theme || null,
     });
+  },
+
+  // INITIALIZATION  (DB-backed — called from the builder page after API fetch)
+  initializeFromAPI: ({ siteId, pageId, theme, page }) => {
+    // Wrap the per-page layout in the monolithic shape so all existing ops work
+    const layoutJSON = {
+      site: { id: siteId, name: page.name },
+      theme: theme || {},
+      pages: [
+        {
+          id: pageId,
+          name: page.name,
+          slug: page.slug,
+          seo: page.seo || {},
+          layout: page.layout || [],
+        },
+      ],
+    };
+    set({
+      siteId,
+      pageId,
+      theme,
+      layoutJSON,
+      currentPageId: pageId,
+      selectedNodeId: null,
+      hoveredNodeId: null,
+    });
+  },
+
+  // Returns only the containers array for the current page (for DB save)
+  getPageLayout: () => {
+    const { layoutJSON, currentPageId } = get();
+    return layoutJSON?.pages?.find((p) => p.id === currentPageId)?.layout || [];
   },
 
   // SELECTION
