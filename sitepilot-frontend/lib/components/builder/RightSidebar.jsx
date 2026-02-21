@@ -13,6 +13,7 @@ import useHistoryStore from "@/lib/stores/historyStore";
 import { Trash2, Copy, Plus, Minus, Settings2, Paintbrush, Lock } from "lucide-react";
 import { clsx } from "clsx";
 import FormSelector from "./FormSelector";
+import { useOthers } from "@/lib/liveblocks-client";
 
 export default function RightSidebar() {
   const store = useBuilderStore();
