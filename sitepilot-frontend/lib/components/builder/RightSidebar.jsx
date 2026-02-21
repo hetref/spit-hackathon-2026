@@ -3,14 +3,16 @@
 /**
  * RIGHT SIDEBAR
  *
- * Properties and styles editor for selected component
+ * Properties and styles editor for selected component.
+ * Shows a "locked" message when the selected node is being edited by another user.
  */
 
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import useBuilderStore from "@/lib/stores/builderStore";
 import useHistoryStore from "@/lib/stores/historyStore";
-import { Trash2, Copy, Plus, Minus, Settings2, Paintbrush } from "lucide-react";
+import { Trash2, Copy, Plus, Minus, Settings2, Paintbrush, Lock } from "lucide-react";
 import { clsx } from "clsx";
+import { useOthers } from "@/lib/liveblocks-client";
 
 export default function RightSidebar() {
   const {
@@ -32,6 +34,21 @@ export default function RightSidebar() {
   } = useBuilderStore();
   const { pushState } = useHistoryStore();
   const [activeTab, setActiveTab] = useState("properties");
+
+  // ── Check if the selected node is locked by another user ──────────────
+  const others = useOthers();
+  const selectedNodeLock = useMemo(() => {
+    if (!selectedNodeId) return null;
+    for (const other of others) {
+      if (other.presence?.lockedBlockId === selectedNodeId) {
+        return {
+          username: other.presence?.username || other.info?.name || "Anonymous",
+          color: other.presence?.color || other.info?.color || "#999",
+        };
+      }
+    }
+    return null;
+  }, [selectedNodeId, others]);
 
   // ✅ Find selected node from current layout state
   const selectedNode = React.useMemo(() => {
@@ -64,6 +81,35 @@ export default function RightSidebar() {
           <p className="text-sm text-gray-500">Select an element to edit</p>
           <p className="text-xs text-gray-400 mt-1">
             Click on any component or container on the canvas
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  // ── If the selected node is locked by another user ─────────────────────
+  if (selectedNodeLock) {
+    return (
+      <div className="w-80 bg-white border-l border-gray-200 overflow-y-auto builder-sidebar">
+        <div className="p-8 flex flex-col items-center justify-center text-center">
+          <div
+            className="w-12 h-12 rounded-xl flex items-center justify-center mb-3"
+            style={{ backgroundColor: `${selectedNodeLock.color}20` }}
+          >
+            <Lock size={20} style={{ color: selectedNodeLock.color }} />
+          </div>
+          <p className="text-sm font-medium text-gray-700">Element Locked</p>
+          <p className="text-xs text-gray-500 mt-1">
+            <span
+              className="font-semibold"
+              style={{ color: selectedNodeLock.color }}
+            >
+              {selectedNodeLock.username}
+            </span>{" "}
+            is currently editing this element.
+          </p>
+          <p className="text-xs text-gray-400 mt-2">
+            You can view real-time changes but cannot edit until they finish.
           </p>
         </div>
       </div>

@@ -1,25 +1,14 @@
 /**
  * CollaborativeCanvas – the root component for real-time collaborative editing.
  *
- * Wraps children in a Liveblocks RoomProvider, initializes storage from
- * page layout data, manages cursor presence, block locking,
- * and autosave.
- *
- * Usage:
- *   <CollaborativeCanvas
- *     tenantId="..."
- *     siteId="..."
- *     pageId="..."
- *     userName="John"
- *     userColor="#E57373"
- *   >
- *     {children}
- *   </CollaborativeCanvas>
+ * Wraps children in a Liveblocks RoomProvider.
+ * Cursors are tracked only inside CanvasArea (not toolbar/sidebars).
+ * Block locking is handled at the CanvasRenderer level.
  */
 
 'use client'
 
-import { useCallback, useEffect, useMemo, memo } from 'react'
+import { useEffect, useMemo, memo } from 'react'
 import {
   RoomProvider,
   useUpdateMyPresence,
@@ -27,45 +16,20 @@ import {
   useSelf,
   useStatus,
 } from '@/lib/liveblocks-client'
-import CursorLayer from './CursorLayer'
 import AvatarStack from './AvatarStack'
+import useBuilderSync from '@/lib/hooks/useBuilderSync'
 import { Loader2, Wifi, WifiOff } from 'lucide-react'
 
-// ─── Inner canvas (must be inside RoomProvider) ──────────────────────────────
+// ─── Inner wrapper (must be inside RoomProvider) ─────────────────────────────
 
-function CanvasInner({ children }) {
+function RoomInner({ children }) {
   const updatePresence = useUpdateMyPresence()
   const status = useStatus()
-  const self = useSelf()
-  const others = useOthers()
 
-  // ── Cursor tracking ─────────────────────────────────────────────────────
-  const handlePointerMove = useCallback(
-    (e) => {
-      updatePresence({ cursor: { x: e.clientX, y: e.clientY } })
-    },
-    [updatePresence]
-  )
+  // ── Real-time builder state sync via broadcast events ───────────────────
+  useBuilderSync()
 
-  const handlePointerLeave = useCallback(() => {
-    updatePresence({ cursor: null })
-  }, [updatePresence])
-
-  // ── Deselect / unlock block on canvas background click ──────────────────
-  const handleCanvasClick = useCallback(
-    (e) => {
-      // Only deselect if clicking on the canvas background itself
-      if (e.target === e.currentTarget) {
-        updatePresence({
-          selectedBlockId: null,
-          lockedBlockId: null,
-        })
-      }
-    },
-    [updatePresence]
-  )
-
-  // ── Clear locks on unmount / disconnect ─────────────────────────────────
+  // ── Clear presence on unmount / disconnect ──────────────────────────────
   useEffect(() => {
     return () => {
       updatePresence({
@@ -76,30 +40,10 @@ function CanvasInner({ children }) {
     }
   }, [updatePresence])
 
-  // ── Collect all locked blocks from others ───────────────────────────────
-  const lockedBlocks = useMemo(() => {
-    const map = {}
-    for (const other of others) {
-      const lockedId = other.presence?.lockedBlockId
-      if (lockedId) {
-        map[lockedId] = {
-          userId: other.connectionId,
-          username: other.presence?.username || other.info?.name || 'Anonymous',
-          color: other.presence?.color || other.info?.color || '#999',
-        }
-      }
-    }
-    return map
-  }, [others])
-
   return (
-    <div
-      className="relative h-full w-full"
-      onPointerMove={handlePointerMove}
-      onPointerLeave={handlePointerLeave}
-    >
-      {/* Status bar */}
-      <div className="absolute top-3 right-3 z-50 flex items-center gap-3">
+    <div className="relative h-full w-full">
+      {/* Status bar — floats over Toolbar area */}
+      <div className="absolute top-2 right-72 z-50 flex items-center gap-3">
         {/* Connection status */}
         <div className="flex items-center gap-1.5 text-xs text-gray-500">
           {status === 'connected' ? (
@@ -124,16 +68,13 @@ function CanvasInner({ children }) {
         <AvatarStack />
       </div>
 
-      {/* Remote cursors */}
-      <CursorLayer />
-
-      {/* Builder content (existing Toolbar, Sidebars, CanvasArea) */}
+      {/* Builder content (Toolbar, Sidebars, CanvasArea) */}
       {children}
     </div>
   )
 }
 
-const MemoizedCanvasInner = memo(CanvasInner)
+const MemoizedRoomInner = memo(RoomInner)
 
 // ─── Outer wrapper with RoomProvider ─────────────────────────────────────────
 
@@ -145,7 +86,6 @@ export default function CollaborativeCanvas({
   userColor = '#6366f1',
   children,
 }) {
-  // Room ID: both users editing the same page share this room
   const roomId = `tenant:${tenantId}:site:${siteId}:page:${pageId}`
 
   const initialPresence = useMemo(
@@ -164,9 +104,9 @@ export default function CollaborativeCanvas({
       id={roomId}
       initialPresence={initialPresence}
     >
-      <MemoizedCanvasInner>
+      <MemoizedRoomInner>
         {children}
-      </MemoizedCanvasInner>
+      </MemoizedRoomInner>
     </RoomProvider>
   )
 }

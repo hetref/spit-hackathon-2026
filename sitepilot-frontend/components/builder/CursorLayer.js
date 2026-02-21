@@ -1,8 +1,9 @@
 /**
  * CursorLayer – renders all remote users' cursors on the canvas.
  *
- * Each cursor is a colored dot + username label with smooth CSS transitions.
- * Cursors automatically disappear when users disconnect (presence is removed).
+ * Uses absolute positioning relative to the canvas container.
+ * Each cursor is a colored arrow + username label with smooth CSS transitions.
+ * Cursors automatically disappear when users disconnect.
  */
 
 'use client'
@@ -13,14 +14,13 @@ import { useOthers } from '@/lib/liveblocks-client'
 function Cursor({ x, y, color, name }) {
   return (
     <div
-      className="pointer-events-none fixed z-[9999] transition-all duration-150 ease-out"
+      className="pointer-events-none absolute z-[9999] transition-all duration-100 ease-out"
       style={{
         left: x,
         top: y,
-        transform: 'translate(-50%, -50%)',
       }}
     >
-      {/* Cursor dot */}
+      {/* Cursor arrow */}
       <svg
         width="24"
         height="36"
