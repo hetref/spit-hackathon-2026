@@ -219,11 +219,98 @@ model Site {
   // Relations
   pages          Page[]
   versions       SiteVersion[]
+  forms          Form[]
 
   @@unique([tenantId, slug]) // Unique slug per tenant
   @@index([tenantId])
   @@index([slug])
   @@map("sites")
+}
+
+// ============================================
+// FORM MODEL (site-specific forms)
+// ============================================
+
+model Form {
+  id          String   @id @default(uuid())
+  name        String
+  description String?
+  
+  // Form configuration (fields, validation, etc.)
+  schema      Json     @default("[]")
+  
+  // Form settings (submit action, email notifications, etc.)
+  settings    Json     @default("{}")
+  
+  isPublished Boolean  @default(false)
+  publishedAt DateTime?
+  
+  // Foreign keys
+  siteId      String
+  site        Site     @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  // Relations
+  versions    FormVersion[]
+  submissions FormSubmission[]
+  
+  @@index([siteId])
+  @@index([isPublished])
+  @@map("forms")
+}
+
+// ============================================
+// FORM VERSION MODEL (version history)
+// ============================================
+
+model FormVersion {
+  id            String   @id @default(uuid())
+  versionNumber Int      @default(1)
+  
+  // Snapshot of form schema at this version
+  schema        Json
+  settings      Json     @default("{}")
+  
+  // Metadata
+  name          String?
+  description   String?
+  
+  // Foreign keys
+  formId        String
+  form          Form     @relation(fields: [formId], references: [id], onDelete: Cascade)
+  
+  createdAt     DateTime @default(now())
+  
+  @@unique([formId, versionNumber])
+  @@index([formId])
+  @@map("form_versions")
+}
+
+// ============================================
+// FORM SUBMISSION MODEL (responses)
+// ============================================
+
+model FormSubmission {
+  id        String   @id @default(uuid())
+  
+  // Submitted data (JSON)
+  data      Json
+  
+  // Metadata
+  ipAddress String?
+  userAgent String?
+  
+  // Foreign keys
+  formId    String
+  form      Form     @relation(fields: [formId], references: [id], onDelete: Cascade)
+  
+  createdAt DateTime @default(now())
+  
+  @@index([formId])
+  @@index([createdAt])
+  @@map("form_submissions")
 }
 
 // ============================================
