@@ -82,15 +82,16 @@ export default function FormSubmissionsPage() {
   function handleExportCSV() {
     if (!submissions.length) return;
 
-    // Get all unique field names
-    const fieldNames = new Set();
+    // Get all unique field IDs
+    const fieldIds = new Set();
     submissions.forEach(sub => {
-      Object.keys(sub.data).forEach(key => fieldNames.add(key));
+      Object.keys(sub.data).forEach(key => fieldIds.add(key));
     });
-    const fields = Array.from(fieldNames);
+    const fields = Array.from(fieldIds);
 
-    // Create CSV header
-    const header = ['Submission Date', ...fields].join(',');
+    // Create CSV header with field labels instead of IDs
+    const fieldLabels = fields.map(fieldId => getFieldLabel(fieldId));
+    const header = ['Submission Date', ...fieldLabels].join(',');
 
     // Create CSV rows
     const rows = submissions.map(sub => {
