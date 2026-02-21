@@ -10,7 +10,11 @@
     "format": "biome format --write"
   },
   "dependencies": {
+    "@better-auth/passkey": "^1.0.0",
+    "@prisma/client": "^6.1.0",
+    "better-auth": "^1.0.0",
     "next": "16.1.6",
+    "nodemailer": "^6.10.1",
     "react": "19.2.3",
     "react-dom": "19.2.3"
   },
@@ -18,6 +22,7 @@
     "@biomejs/biome": "2.2.0",
     "@tailwindcss/postcss": "^4",
     "babel-plugin-react-compiler": "1.0.0",
+    "prisma": "^6.1.0",
     "tailwindcss": "^4"
   }
 }
