@@ -27,11 +27,11 @@ export default function FormsListPage() {
   }, [session, isPending, router])
 
   useEffect(() => {
-    if (session && params.tenantId) {
+    if (session && params.siteId) {
       fetchForms()
       fetchUserRole()
     }
-  }, [session, params.tenantId])
+  }, [session, params.siteId])
 
   const fetchUserRole = async () => {
     try {
@@ -47,7 +47,7 @@ export default function FormsListPage() {
 
   const fetchForms = async () => {
     try {
-      const response = await fetch(`/api/tenants/${params.tenantId}/forms`)
+      const response = await fetch(`/api/sites/${params.siteId}/forms`)
       if (response.ok) {
         const data = await response.json()
         setForms(data.forms)
@@ -64,7 +64,7 @@ export default function FormsListPage() {
     setCreating(true)
 
     try {
-      const response = await fetch(`/api/tenants/${params.tenantId}/forms`, {
+      const response = await fetch(`/api/sites/${params.siteId}/forms`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -75,7 +75,7 @@ export default function FormsListPage() {
 
       if (response.ok) {
         const data = await response.json()
-        router.push(`/${params.tenantId}/forms/${data.form.id}/builder`)
+        router.push(`/${params.tenantId}/sites/${params.siteId}/forms/${data.form.id}/builder`)
       }
     } catch (error) {
       console.error('Error creating form:', error)
@@ -88,7 +88,7 @@ export default function FormsListPage() {
     if (!confirm('Are you sure you want to delete this form?')) return
 
     try {
-      const response = await fetch(`/api/tenants/${params.tenantId}/forms/${formId}`, {
+      const response = await fetch(`/api/sites/${params.siteId}/forms/${formId}`, {
         method: 'DELETE'
       })
 
@@ -234,14 +234,14 @@ export default function FormsListPage() {
                   <div className="flex gap-2">
                     {canEdit ? (
                       <button
-                        onClick={() => router.push(`/${params.tenantId}/forms/${form.id}/builder`)}
+                        onClick={() => router.push(`/${params.tenantId}/sites/${params.siteId}/forms/${form.id}/builder`)}
                         className="flex-1 px-3 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
                       >
                         Edit
                       </button>
                     ) : (
                       <button
-                        onClick={() => router.push(`/${params.tenantId}/forms/${form.id}`)}
+                        onClick={() => router.push(`/${params.tenantId}/sites/${params.siteId}/forms/${form.id}`)}
                         className="flex-1 px-3 py-2 bg-gray-100 text-gray-700 rounded hover:bg-gray-200"
                       >
                         View

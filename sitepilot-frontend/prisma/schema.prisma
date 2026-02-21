@@ -118,9 +118,9 @@ model Tenant {
   createdAt   DateTime     @default(now())
   updatedAt   DateTime     @updatedAt
   sites       Site[]
-  forms       Form[]
   tenantUsers TenantUser[]
   invitations Invitation[]
+  forms       Form[]           // Temporary for migration
   owner       User         @relation("TenantOwner", fields: [ownerId], references: [id], onDelete: Cascade)
 
   @@index([slug])
@@ -193,6 +193,7 @@ model Site {
   pages          Page[]
   versions       SiteVersion[]
   deployments    Deployment[]
+  forms          Form[]        // Site-specific forms
   tenant         Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
   @@index([tenantId])
@@ -291,27 +292,69 @@ enum InvitationStatus {
 }
 
 model Form {
-  id          String        @id @default(uuid())
+  id          String           @id @default(uuid())
   name        String
   slug        String
   description String?
-  tenantId    String
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
+  
+  // Form configuration (fields, validation, etc.)
+  schema      Json             @default("[]")
+  
+  // Form settings (submit action, email notifications, etc.)
+  settings    Json             @default("{}")
+  
+  isPublished Boolean          @default(false)
+  publishedAt DateTime?
+  
+  // Foreign keys - NOW BELONGS TO SITE
+  siteId      String?
+  site        Site?            @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  
+  // Temporary for migration - will be removed
+  tenantId    String?
+  tenant      Tenant?          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
   versions    FormVersion[]
-  tenant      Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  submissions FormSubmission[]
 
-  @@unique([tenantId, slug])
-  @@index([tenantId])
+  @@unique([siteId, slug])
+  @@index([siteId])
   @@index([slug])
   @@map("forms")
+}
+
+model FormSubmission {
+  id        String   @id @default(uuid())
+  
+  // Submitted data (JSON)
+  data      Json
+  
+  // Metadata
+  ipAddress String?
+  userAgent String?
+  
+  // Foreign keys
+  formId    String
+  form      Form     @relation(fields: [formId], references: [id], onDelete: Cascade)
+  
+  createdAt DateTime @default(now())
+  
+  @@index([formId])
+  @@index([createdAt])
+  @@map("form_submissions")
 }
 
 model FormVersion {
   id            String        @id @default(uuid())
   versionNumber Int           @default(1)
   status        VersionStatus @default(DRAFT)
-  builderData   Json
+  
+  // Snapshot of form schema at this version
+  schema        Json          @default("[]")
+  settings      Json          @default("{}")
+  
   name          String?
   description   String?
   publishedAt   DateTime?

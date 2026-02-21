@@ -11,6 +11,7 @@
   },
   "dependencies": {
     "@aws-crypto/sha256-js": "latest",
+    "@aws-sdk/client-cloudfront": "^3.995.0",
     "@aws-sdk/client-cloudfront-keyvaluestore": "latest",
     "@aws-sdk/client-s3": "latest",
     "@aws-sdk/signature-v4-multi-region": "latest",

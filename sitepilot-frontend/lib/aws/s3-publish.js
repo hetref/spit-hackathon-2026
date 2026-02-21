@@ -140,26 +140,52 @@ export async function uploadDeploymentToS3({
  */
 export async function updateKVS(siteSlug, s3Prefix) {
     if (!KVS_ARN) {
-        console.warn("CLOUDFRONT_KVS_ARN not set — skipping KVS update");
+        console.warn("[KVS] CLOUDFRONT_KVS_ARN not set — skipping KVS update");
         return { skipped: true };
     }
 
-    // Step 1: Get the current ETag of the KV store (required for optimistic locking)
-    const describeCmd = new DescribeKeyValueStoreCommand({ KvsARN: KVS_ARN });
-    const describeResult = await kvsClient.send(describeCmd);
-    const etag = describeResult.ETag;
+    console.log(`[KVS] Updating Key-Value Store: "${siteSlug}" -> "${s3Prefix}"`);
+    console.log(`[KVS] Using KVS ARN: ${KVS_ARN}`);
 
-    // Step 2: Put the key
-    const putCmd = new PutKeyCommand({
-        KvsARN: KVS_ARN,
-        Key: siteSlug,
-        Value: s3Prefix,
-        IfMatch: etag, // Optimistic locking to prevent race conditions
-    });
+    try {
+        // Step 1: Get the current ETag of the KV store (required for optimistic locking)
+        console.log("[KVS] Step 1: Fetching current ETag for optimistic locking");
+        const describeCmd = new DescribeKeyValueStoreCommand({ KvsARN: KVS_ARN });
+        const describeResult = await kvsClient.send(describeCmd);
+        const etag = describeResult.ETag;
+        console.log(`[KVS] Current ETag: ${etag}`);
 
-    await kvsClient.send(putCmd);
+        // Step 2: Put the key
+        console.log("[KVS] Step 2: Updating key-value pair");
+        const putCmd = new PutKeyCommand({
+            KvsARN: KVS_ARN,
+            Key: siteSlug,
+            Value: s3Prefix,
+            IfMatch: etag, // Optimistic locking to prevent race conditions
+        });
 
-    return { updated: true, key: siteSlug, value: s3Prefix };
+        const putResult = await kvsClient.send(putCmd);
+
+        console.log(`[KVS] ✓ Successfully updated KVS`);
+        console.log(`[KVS] New ETag: ${putResult.ETag}`);
+        console.log(`[KVS] Site ${siteSlug} is now routed to: ${s3Prefix}`);
+
+        return {
+            updated: true,
+            key: siteSlug,
+            value: s3Prefix,
+            etag: putResult.ETag,
+        };
+    } catch (error) {
+        console.error("[KVS] Failed to update Key-Value Store:", {
+            slug: siteSlug,
+            prefix: s3Prefix,
+            error: error.message,
+            code: error.name,
+            stack: error.stack,
+        });
+        throw error;
+    }
 }
 
 // ─── Verify deployment exists in S3 ─────────────────────────────────────────
