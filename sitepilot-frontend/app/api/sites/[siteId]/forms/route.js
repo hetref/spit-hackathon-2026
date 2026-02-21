@@ -110,10 +110,32 @@ export async function POST(request, { params }) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 
+    // Generate slug from name
+    const baseSlug = name
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/(^-|-$)/g, '')
+    
+    // Ensure unique slug for this site
+    let slug = baseSlug
+    let counter = 1
+    while (true) {
+      const existing = await prisma.form.findFirst({
+        where: {
+          siteId,
+          slug
+        }
+      })
+      if (!existing) break
+      slug = `${baseSlug}-${counter}`
+      counter++
+    }
+
     // Create form with initial version
     const form = await prisma.form.create({
       data: {
         name,
+        slug,
         description,
         siteId,
         schema: [],

@@ -65,8 +65,8 @@ export async function POST(request, { params }) {
     const cssPath = join(siteDir, cssFilename);
     const jsPath = join(siteDir, jsFilename);
 
-    // Convert page to HTML with page-specific asset links
-    const { html, css, js } = convertPageToHtml(site.theme, page, site.name, {
+    // Convert page to HTML with page-specific asset links (async now)
+    const { html, css, js } = await convertPageToHtml(site.theme, page, site.name, {
       stylesHref: cssFilename,
       scriptSrc: jsFilename,
     });

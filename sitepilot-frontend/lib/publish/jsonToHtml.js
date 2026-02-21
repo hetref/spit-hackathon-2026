@@ -5,6 +5,9 @@
  * Mirrors the rendering logic of each registry component into plain HTML+inline styles.
  */
 
+import prisma from '@/lib/prisma';
+import { generateFormHTML, generateFormJS, generateFormCSS } from '@/lib/form-renderer';
+
 // ============================================================================
 // HELPERS
 // ============================================================================
@@ -619,6 +622,13 @@ const componentRenderers = {
   ${radios}
 </div>`;
   },
+
+  // ── FormEmbed ─────────────────────────────────────────────────
+  FormEmbed: (props, styles) => {
+    // This is a placeholder that will be replaced during async rendering
+    // The actual form HTML will be injected by the convertPageToHtml function
+    return `<!-- FORM_EMBED:${props.formId || 'NO_FORM_ID'} -->`;
+  },
 };
 
 // ============================================================================
@@ -833,9 +843,9 @@ document.addEventListener('DOMContentLoaded', function() {
  * @param {object} page     – Page record from the DB (name, slug, seo, layout)
  * @param {string} siteName – Human-readable site name used as fallback <title>
  * @param {object} [opts]   – { stylesHref, scriptSrc } for asset path control
- * @returns {{ html: string, css: string, js: string }}
+ * @returns {Promise<{ html: string, css: string, js: string }>}
  */
-export function convertPageToHtml(
+export async function convertPageToHtml(
   theme,
   page,
   siteName = "SitePilot Site",
@@ -847,13 +857,76 @@ export function convertPageToHtml(
   const seo = page.seo || {};
 
   // `layout` is stored as the raw containers array in the DB
-  const bodyContent = (page.layout || [])
+  let bodyContent = (page.layout || [])
     .map(renderContainer)
     .filter(Boolean)
     .join("\n\n");
 
-  const css = generateCSS(theme || {});
-  const js = generateJS();
+  // Collect all form IDs from FormEmbed components
+  const formIds = [];
+  const formPlaceholderRegex = /<!-- FORM_EMBED:([a-zA-Z0-9-]+) -->/g;
+  let match;
+  while ((match = formPlaceholderRegex.exec(bodyContent)) !== null) {
+    const formId = match[1];
+    if (formId !== 'NO_FORM_ID') {
+      formIds.push(formId);
+    }
+  }
+
+  // Fetch all forms and generate their HTML/CSS/JS
+  const formData = {};
+  let additionalCSS = '';
+  let additionalJS = '';
+
+  if (formIds.length > 0) {
+    const forms = await prisma.form.findMany({
+      where: {
+        id: { in: formIds },
+      },
+      include: {
+        currentVersion: true,
+      },
+    });
+
+    for (const form of forms) {
+      if (form.currentVersion) {
+        const formHTML = generateFormHTML({
+          id: form.id,
+          schema: form.currentVersion.schema,
+          settings: form.currentVersion.settings,
+          styling: form.currentVersion.styling || {},
+        });
+        
+        const formCSS = generateFormCSS({
+          id: form.id,
+          styling: form.currentVersion.styling || {},
+        });
+        
+        const formJS = generateFormJS({
+          id: form.id,
+        });
+
+        formData[form.id] = formHTML;
+        additionalCSS += '\n' + formCSS;
+        additionalJS += '\n' + formJS;
+
+        // Replace placeholder with actual form HTML
+        bodyContent = bodyContent.replace(
+          `<!-- FORM_EMBED:${form.id} -->`,
+          formHTML
+        );
+      }
+    }
+  }
+
+  // Remove any remaining placeholders (forms not found)
+  bodyContent = bodyContent.replace(
+    /<!-- FORM_EMBED:[a-zA-Z0-9-]+ -->/g,
+    '<div style="padding: 2rem; text-align: center; background-color: #fee; border: 2px dashed #f00; border-radius: 0.5rem;"><p style="color: #c00;">Form not found or not published</p></div>'
+  );
+
+  const css = generateCSS(theme || {}) + additionalCSS;
+  const js = generateJS() + additionalJS;
 
   const html = `<!DOCTYPE html>
 <html lang="en">

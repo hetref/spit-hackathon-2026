@@ -247,6 +247,12 @@ export default function FormsListPage() {
                         View
                       </button>
                     )}
+                    <button
+                      onClick={() => router.push(`/${params.tenantId}/sites/${params.siteId}/forms/${form.id}/submissions`)}
+                      className="flex-1 px-3 py-2 bg-green-600 text-white rounded hover:bg-green-700"
+                    >
+                      Submissions
+                    </button>
                     {canDelete && (
                       <button
                         onClick={() => handleDeleteForm(form.id)}
