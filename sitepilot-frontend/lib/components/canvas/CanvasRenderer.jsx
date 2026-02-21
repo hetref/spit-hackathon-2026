@@ -73,25 +73,28 @@ export default function CanvasRenderer({ page, onDrop, onDragOver }) {
       className="w-full min-h-full bg-white"
       onClick={() => setSelectedNode(null)}
     >
-      {page.layout.map((container) => (
-        <ContainerBlock
-          key={container.id}
-          container={container}
-          isSelected={selectedNodeId === container.id}
-          isHovered={hoveredNodeId === container.id}
-          onClick={(e) => {
-            e.stopPropagation();
-            setSelectedNode(container.id);
-          }}
-          onMouseEnter={(e) => {
-            e.stopPropagation();
-            setHoveredNode(container.id);
-          }}
-          onMouseLeave={() => setHoveredNode(null)}
-          onDrop={onDrop}
-          onDragOver={onDragOver}
-        />
-      ))}
+      {page.layout.map(
+        (container) =>
+          !container.hidden && (
+            <ContainerBlock
+              key={container.id}
+              container={container}
+              isSelected={selectedNodeId === container.id}
+              isHovered={hoveredNodeId === container.id}
+              onClick={(e) => {
+                e.stopPropagation();
+                setSelectedNode(container.id);
+              }}
+              onMouseEnter={(e) => {
+                e.stopPropagation();
+                setHoveredNode(container.id);
+              }}
+              onMouseLeave={() => setHoveredNode(null)}
+              onDrop={onDrop}
+              onDragOver={onDragOver}
+            />
+          ),
+      )}
     </div>
   );
 }
@@ -270,9 +273,12 @@ function Column({
             isDragOver && "bg-blue-50/60 rounded-lg p-1",
           )}
         >
-          {column.components.map((component) => (
-            <ComponentRenderer key={component.id} component={component} />
-          ))}
+          {column.components.map(
+            (component) =>
+              !component.hidden && (
+                <ComponentRenderer key={component.id} component={component} />
+              ),
+          )}
           {isDragOver && (
             <div className="absolute inset-0 border-2 border-dashed border-blue-400 rounded-lg pointer-events-none">
               <div className="absolute bottom-2 left-1/2 -translate-x-1/2 bg-blue-600 text-white px-3 py-1 rounded-full shadow-lg text-xs font-medium">

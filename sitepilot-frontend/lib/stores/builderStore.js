@@ -439,6 +439,137 @@ const useBuilderStore = create((set, get) => ({
     set({ layoutJSON });
     saveToLocalStorage(layoutJSON);
   },
+
+  // ============================================================================
+  // TREE/LAYER OPERATIONS — move, reorder, rename components
+  // ============================================================================
+
+  /**
+   * Move a component from one column to another.
+   */
+  moveComponent: (
+    componentId,
+    targetContainerId,
+    targetColumnIndex,
+    targetIndex,
+  ) => {
+    set(
+      produce((state) => {
+        const page = state.layoutJSON.pages.find(
+          (p) => p.id === state.currentPageId,
+        );
+        if (!page) return;
+
+        // Find and remove the component from its current location
+        let removed = null;
+        for (const container of page.layout) {
+          for (const column of container.columns) {
+            const idx = column.components.findIndex(
+              (c) => c.id === componentId,
+            );
+            if (idx !== -1) {
+              [removed] = column.components.splice(idx, 1);
+              break;
+            }
+          }
+          if (removed) break;
+        }
+        if (!removed) return;
+
+        // Insert into target
+        const targetContainer = page.layout.find(
+          (c) => c.id === targetContainerId,
+        );
+        if (!targetContainer || !targetContainer.columns[targetColumnIndex])
+          return;
+        const targetCol = targetContainer.columns[targetColumnIndex];
+        const insertIdx =
+          targetIndex != null
+            ? Math.min(targetIndex, targetCol.components.length)
+            : targetCol.components.length;
+        targetCol.components.splice(insertIdx, 0, removed);
+      }),
+    );
+    saveToLocalStorage(get().layoutJSON);
+  },
+
+  /**
+   * Reorder a component within the same column.
+   */
+  reorderComponent: (containerId, columnIndex, fromIndex, toIndex) => {
+    set(
+      produce((state) => {
+        const page = state.layoutJSON.pages.find(
+          (p) => p.id === state.currentPageId,
+        );
+        if (!page) return;
+        const container = page.layout.find((c) => c.id === containerId);
+        if (!container || !container.columns[columnIndex]) return;
+        const comps = container.columns[columnIndex].components;
+        const [moved] = comps.splice(fromIndex, 1);
+        comps.splice(toIndex, 0, moved);
+      }),
+    );
+    saveToLocalStorage(get().layoutJSON);
+  },
+
+  /**
+   * Rename a container (store display name).
+   */
+  renameContainer: (containerId, name) => {
+    set(
+      produce((state) => {
+        const page = state.layoutJSON.pages.find(
+          (p) => p.id === state.currentPageId,
+        );
+        if (!page) return;
+        const container = page.layout.find((c) => c.id === containerId);
+        if (container) container.name = name;
+      }),
+    );
+    saveToLocalStorage(get().layoutJSON);
+  },
+
+  /**
+   * Toggle container visibility (for layers panel).
+   */
+  toggleContainerVisibility: (containerId) => {
+    set(
+      produce((state) => {
+        const page = state.layoutJSON.pages.find(
+          (p) => p.id === state.currentPageId,
+        );
+        if (!page) return;
+        const container = page.layout.find((c) => c.id === containerId);
+        if (container) container.hidden = !container.hidden;
+      }),
+    );
+    saveToLocalStorage(get().layoutJSON);
+  },
+
+  /**
+   * Toggle component visibility.
+   */
+  toggleComponentVisibility: (componentId) => {
+    set(
+      produce((state) => {
+        const page = state.layoutJSON.pages.find(
+          (p) => p.id === state.currentPageId,
+        );
+        if (!page) return;
+        for (const container of page.layout) {
+          for (const column of container.columns) {
+            const comp = column.components.find((c) => c.id === componentId);
+            if (comp) {
+              comp.hidden = !comp.hidden;
+              return;
+            }
+          }
+        }
+      }),
+    );
+    saveToLocalStorage(get().layoutJSON);
+  },
 }));
 
 export default useBuilderStore;

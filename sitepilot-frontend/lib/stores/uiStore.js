@@ -14,7 +14,7 @@ const useUIStore = create((set) => ({
   devicePreview: "desktop",
   leftSidebarOpen: true,
   rightSidebarOpen: true,
-  activeLeftTab: "components", // 'components' | 'sections'
+  activeLeftTab: "elements", // 'elements' | 'layers'
   activeRightTab: "properties", // 'properties' | 'styles'
 
   // ============================================================================

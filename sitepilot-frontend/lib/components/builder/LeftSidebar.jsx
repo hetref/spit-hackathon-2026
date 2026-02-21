@@ -4,7 +4,7 @@
  * LEFT SIDEBAR
  *
  * Elementor-style layout presets + draggable component elements.
- * Dark-themed sidebar with search, container presets, and draggable widgets.
+ * Dark-themed sidebar with tabbed view: Elements (drag widgets) / Layers (tree panel).
  */
 
 import { useState, useMemo } from "react";
@@ -33,9 +33,13 @@ import {
   Search,
   LayoutGrid,
   GripVertical,
+  Layers,
+  Plus,
 } from "lucide-react";
 import useBuilderStore from "@/lib/stores/builderStore";
 import useHistoryStore from "@/lib/stores/historyStore";
+import useUIStore from "@/lib/stores/uiStore";
+import TreePanel from "@/lib/components/builder/TreePanel";
 import { clsx } from "clsx";
 
 // ─── Layout presets ──────────────────────────────────────────────────────────
@@ -107,6 +111,7 @@ function PresetIcon({ widths }) {
 export default function LeftSidebar() {
   const { addContainer, getLayoutJSON } = useBuilderStore();
   const { pushState } = useHistoryStore();
+  const { activeLeftTab, setActiveLeftTab } = useUIStore();
 
   const [expandedCategories, setExpandedCategories] = useState(
     Object.keys(elementLibrary),
@@ -153,110 +158,146 @@ export default function LeftSidebar() {
   }, [searchQuery]);
 
   return (
-    <div className="w-72 bg-[#1E293B] border-r border-slate-700 overflow-y-auto builder-sidebar flex flex-col">
-      {/* Search */}
-      <div className="p-3 border-b border-slate-700">
-        <div className="relative">
-          <Search
-            size={14}
-            className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-500"
-          />
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search elements..."
-            className="w-full pl-8 pr-3 py-2 bg-slate-800 border border-slate-600 rounded-lg text-xs text-slate-200 placeholder:text-slate-500 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
-          />
-        </div>
+    <div className="w-72 bg-[#1E293B] border-r border-slate-700 overflow-hidden builder-sidebar flex flex-col">
+      {/* ── Tab Switcher ──────────────────────────────────────── */}
+      <div className="flex border-b border-slate-700">
+        <button
+          onClick={() => setActiveLeftTab("elements")}
+          className={clsx(
+            "flex-1 flex items-center justify-center gap-1.5 py-2.5 text-xs font-medium transition-colors",
+            activeLeftTab === "elements"
+              ? "text-blue-400 border-b-2 border-blue-400 bg-slate-800/30"
+              : "text-slate-500 hover:text-slate-300 hover:bg-slate-800/20",
+          )}
+        >
+          <Plus size={13} />
+          Elements
+        </button>
+        <button
+          onClick={() => setActiveLeftTab("layers")}
+          className={clsx(
+            "flex-1 flex items-center justify-center gap-1.5 py-2.5 text-xs font-medium transition-colors",
+            activeLeftTab === "layers"
+              ? "text-blue-400 border-b-2 border-blue-400 bg-slate-800/30"
+              : "text-slate-500 hover:text-slate-300 hover:bg-slate-800/20",
+          )}
+        >
+          <Layers size={13} />
+          Layers
+        </button>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-3 space-y-4">
-        {/* ── Layout Presets ──────────────────────────────────────── */}
-        {!searchQuery && (
-          <div>
-            <div className="flex items-center gap-1.5 mb-2.5">
-              <LayoutGrid size={12} className="text-slate-500" />
-              <h3 className="text-[10px] font-semibold text-slate-500 uppercase tracking-widest">
-                Containers
-              </h3>
-            </div>
-            <div className="grid grid-cols-3 gap-1.5">
-              {layoutPresets.map((preset) => (
-                <button
-                  key={preset.label}
-                  onClick={() => handleAddContainer(preset.widths)}
-                  className="p-2 bg-slate-800 border border-slate-600 rounded-lg hover:border-blue-400 hover:bg-slate-700 transition-all duration-200 flex flex-col items-center gap-1.5 group"
-                  title={preset.label}
-                >
-                  <PresetIcon widths={preset.widths} />
-                  <span className="text-[9px] text-slate-500 group-hover:text-slate-300 leading-none">
-                    {preset.label}
-                  </span>
-                </button>
-              ))}
+      {/* ── Elements Tab Content ──────────────────────────────── */}
+      {activeLeftTab === "elements" && (
+        <>
+          {/* Search */}
+          <div className="p-3 border-b border-slate-700">
+            <div className="relative">
+              <Search
+                size={14}
+                className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-500"
+              />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search elements..."
+                className="w-full pl-8 pr-3 py-2 bg-slate-800 border border-slate-600 rounded-lg text-xs text-slate-200 placeholder:text-slate-500 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+              />
             </div>
           </div>
-        )}
 
-        {/* ── Draggable Elements ──────────────────────────────────── */}
-        <div>
-          <div className="flex items-center gap-1.5 mb-2.5">
-            <GripVertical size={12} className="text-slate-500" />
-            <h3 className="text-[10px] font-semibold text-slate-500 uppercase tracking-widest">
-              Elements
-            </h3>
-          </div>
-
-          <div className="space-y-2">
-            {Object.entries(filteredLibrary).map(([category, elements]) => (
-              <div
-                key={category}
-                className="bg-slate-800/50 rounded-lg border border-slate-700 overflow-hidden"
-              >
-                <button
-                  onClick={() => toggleCategory(category)}
-                  className="w-full flex items-center justify-between px-3 py-2 hover:bg-slate-700/50 transition-colors"
-                >
-                  <span className="text-xs font-medium text-slate-300">
-                    {category}
-                  </span>
-                  {expandedCategories.includes(category) ? (
-                    <ChevronDown size={14} className="text-slate-500" />
-                  ) : (
-                    <ChevronRight size={14} className="text-slate-500" />
-                  )}
-                </button>
-
-                {expandedCategories.includes(category) && (
-                  <div className="px-1.5 pb-1.5 grid grid-cols-3 gap-1">
-                    {elements.map((item) => {
-                      const Icon = item.icon;
-                      return (
-                        <div
-                          key={item.type}
-                          draggable
-                          onDragStart={(e) => handleDragStart(e, item.type)}
-                          onDragEnd={handleDragEnd}
-                          className="flex flex-col items-center gap-1 p-2 rounded-md cursor-grab active:cursor-grabbing hover:bg-blue-600/20 hover:border-blue-500/40 transition-all duration-150 border border-transparent text-center"
-                        >
-                          <Icon
-                            size={18}
-                            className="text-slate-400 group-hover:text-blue-400 shrink-0"
-                          />
-                          <span className="text-[10px] text-slate-400 leading-tight">
-                            {item.label}
-                          </span>
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
+          <div className="flex-1 overflow-y-auto p-3 space-y-4">
+            {/* ── Layout Presets ──────────────────────────────────────── */}
+            {!searchQuery && (
+              <div>
+                <div className="flex items-center gap-1.5 mb-2.5">
+                  <LayoutGrid size={12} className="text-slate-500" />
+                  <h3 className="text-[10px] font-semibold text-slate-500 uppercase tracking-widest">
+                    Containers
+                  </h3>
+                </div>
+                <div className="grid grid-cols-3 gap-1.5">
+                  {layoutPresets.map((preset) => (
+                    <button
+                      key={preset.label}
+                      onClick={() => handleAddContainer(preset.widths)}
+                      className="p-2 bg-slate-800 border border-slate-600 rounded-lg hover:border-blue-400 hover:bg-slate-700 transition-all duration-200 flex flex-col items-center gap-1.5 group"
+                      title={preset.label}
+                    >
+                      <PresetIcon widths={preset.widths} />
+                      <span className="text-[9px] text-slate-500 group-hover:text-slate-300 leading-none">
+                        {preset.label}
+                      </span>
+                    </button>
+                  ))}
+                </div>
               </div>
-            ))}
+            )}
+
+            {/* ── Draggable Elements ──────────────────────────────────── */}
+            <div>
+              <div className="flex items-center gap-1.5 mb-2.5">
+                <GripVertical size={12} className="text-slate-500" />
+                <h3 className="text-[10px] font-semibold text-slate-500 uppercase tracking-widest">
+                  Elements
+                </h3>
+              </div>
+
+              <div className="space-y-2">
+                {Object.entries(filteredLibrary).map(([category, elements]) => (
+                  <div
+                    key={category}
+                    className="bg-slate-800/50 rounded-lg border border-slate-700 overflow-hidden"
+                  >
+                    <button
+                      onClick={() => toggleCategory(category)}
+                      className="w-full flex items-center justify-between px-3 py-2 hover:bg-slate-700/50 transition-colors"
+                    >
+                      <span className="text-xs font-medium text-slate-300">
+                        {category}
+                      </span>
+                      {expandedCategories.includes(category) ? (
+                        <ChevronDown size={14} className="text-slate-500" />
+                      ) : (
+                        <ChevronRight size={14} className="text-slate-500" />
+                      )}
+                    </button>
+
+                    {expandedCategories.includes(category) && (
+                      <div className="px-1.5 pb-1.5 grid grid-cols-3 gap-1">
+                        {elements.map((item) => {
+                          const Icon = item.icon;
+                          return (
+                            <div
+                              key={item.type}
+                              draggable
+                              onDragStart={(e) => handleDragStart(e, item.type)}
+                              onDragEnd={handleDragEnd}
+                              className="flex flex-col items-center gap-1 p-2 rounded-md cursor-grab active:cursor-grabbing hover:bg-blue-600/20 hover:border-blue-500/40 transition-all duration-150 border border-transparent text-center"
+                            >
+                              <Icon
+                                size={18}
+                                className="text-slate-400 group-hover:text-blue-400 shrink-0"
+                              />
+                              <span className="text-[10px] text-slate-400 leading-tight">
+                                {item.label}
+                              </span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
-        </div>
-      </div>
+        </>
+      )}
+
+      {/* ── Layers Tab Content ────────────────────────────────── */}
+      {activeLeftTab === "layers" && <TreePanel />}
     </div>
   );
 }
