@@ -7,18 +7,11 @@ import {
   Globe,
   ExternalLink,
   Loader2,
-  ChevronLeft,
-  Rocket,
-  RotateCcw,
-  CheckCircle2,
-  Clock,
   Pencil,
   X,
   Check,
   AlertCircle,
   History,
-  Zap,
-  Copy,
   ArrowLeft,
   Plus,
   Trash2,
@@ -29,7 +22,10 @@ import {
   Timer,
   MousePointerClick,
   MonitorOff,
-  LayoutTemplate
+  LayoutTemplate,
+  Clock,
+  CheckCircle2,
+  RotateCcw
 } from "lucide-react";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -225,8 +221,6 @@ export default function SiteDetailPage() {
   const [deployments, setDeployments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [rollbackMsg, setRollbackMsg] = useState(null); // { type: 'success'|'error', text }
-  const [copied, setCopied] = useState(false);
   const [showAddDomain, setShowAddDomain] = useState(false);
   const [domainInput, setDomainInput] = useState('');
   const [domains, setDomains] = useState([]);
@@ -268,7 +262,6 @@ export default function SiteDetailPage() {
 
   // ── Rollback ──────────────────────────────────────────────────────────────
   const handleRollback = async (siteSlug, deploymentId) => {
-    setRollbackMsg(null);
     try {
       const res = await fetch("/api/sites/rollback", {
         method: "POST",
@@ -286,11 +279,8 @@ export default function SiteDetailPage() {
           kvsUpdated: d.deploymentId === deploymentId ? true : d.kvsUpdated,
         }))
       );
-      setRollbackMsg({ type: "success", text: data.message });
-      setTimeout(() => setRollbackMsg(null), 5000);
     } catch (err) {
-      setRollbackMsg({ type: "error", text: err.message });
-      setTimeout(() => setRollbackMsg(null), 6000);
+      alert(`Rollback failed: ${err.message}`);
     }
   };
 
@@ -299,14 +289,6 @@ export default function SiteDetailPage() {
     setDeployments((prev) =>
       prev.map((d) => (d.deploymentId === updatedDep.deploymentId ? updatedDep : d))
     );
-  };
-
-  // ── Copy URL ──────────────────────────────────────────────────────────────
-  const handleCopyUrl = () => {
-    if (!siteUrl) return;
-    navigator.clipboard.writeText(siteUrl);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
   };
 
   // ── Domain management ─────────────────────────────────────────────────────
@@ -655,11 +637,11 @@ export default function SiteDetailPage() {
               </span>
             </h2>
             <button
-              onClick={() => router.push(`/${params.tenantId}/sites/${params.siteId}/builder`)}
+              onClick={() => router.push(`/${params.tenantId}/sites/${params.siteId}/pages`)}
               className="flex items-center gap-1.5 text-xs text-indigo-600 hover:text-indigo-700 font-medium"
             >
-              <Rocket size={12} />
-              Publish new version
+              <Pencil size={12} />
+              Manage Pages
             </button>
           </div>
 
@@ -671,11 +653,11 @@ export default function SiteDetailPage() {
                 Open the builder and click &ldquo;Publish&rdquo; to create your first deployment.
               </p>
               <button
-                onClick={() => router.push(`/${params.tenantId}/sites/${params.siteId}/builder`)}
+                onClick={() => router.push(`/${params.tenantId}/sites/${params.siteId}/pages`)}
                 className="mt-4 inline-flex items-center gap-1.5 px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-xl hover:bg-indigo-700 transition-colors"
               >
                 <Pencil size={13} />
-                Open Builder
+                Manage Pages
               </button>
             </div>
           ) : (
