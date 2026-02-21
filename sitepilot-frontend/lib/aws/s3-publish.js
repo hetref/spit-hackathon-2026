@@ -2,7 +2,11 @@ import {
     S3Client,
     PutObjectCommand,
     HeadObjectCommand,
+    GetObjectCommand,
+    ListObjectsV2Command,
+    DeleteObjectsCommand,
 } from "@aws-sdk/client-s3";
+import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import {
     CloudFrontKeyValueStoreClient,
     PutKeyCommand,
@@ -67,7 +71,7 @@ export function buildSiteUrl(siteSlug) {
  * @param {Buffer|string} body - File content
  * @param {string} contentType - MIME type
  */
-async function uploadFile(key, body, contentType) {
+export async function uploadFile(key, body, contentType) {
     if (!BUCKET) throw new Error("AWS_S3_BUCKET env var is not set");
 
     const cmd = new PutObjectCommand({
@@ -80,6 +84,40 @@ async function uploadFile(key, body, contentType) {
 
     await s3.send(cmd);
     return key;
+}
+
+/**
+ * Generate a presigned URL for a secure media download from S3.
+ *
+ * @param {string} key - S3 Key
+ * @param {number} expiresIn - Expiration in seconds
+ */
+export async function getPresignedMediaUrl(key, expiresIn = 3600) {
+    if (!BUCKET) throw new Error("AWS_S3_BUCKET env var is not set");
+
+    const cmd = new GetObjectCommand({
+        Bucket: BUCKET,
+        Key: key,
+    });
+
+    return await getSignedUrl(s3, cmd, { expiresIn });
+}
+
+/**
+ * List items from S3 directly via a prefix
+ * 
+ * @param {string} prefix
+ */
+export async function listMediaFromS3(prefix) {
+    if (!BUCKET) throw new Error("AWS_S3_BUCKET env var is not set");
+
+    const cmd = new ListObjectsV2Command({
+        Bucket: BUCKET,
+        Prefix: prefix,
+    });
+
+    const result = await s3.send(cmd);
+    return result.Contents || [];
 }
 
 /**
@@ -206,7 +244,6 @@ export async function verifyDeploymentExists(s3Prefix) {
 
 // ─── Delete deployment from S3 ────────────────────────────────────────────────
 
-import { ListObjectsV2Command, DeleteObjectsCommand } from "@aws-sdk/client-s3";
 
 /**
  * Delete all files for a deployment from S3.
