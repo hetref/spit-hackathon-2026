@@ -10,6 +10,13 @@
     "format": "biome format --write"
   },
   "dependencies": {
+    "@dnd-kit/core": "^6.3.1",
+    "@dnd-kit/sortable": "^10.0.0",
+    "@dnd-kit/utilities": "^3.2.2",
+    "clsx": "^2.1.1",
+    "immer": "^11.1.4",
+    "lucide-react": "^0.575.0",
+    "nanoid": "^5.1.6",
     "@better-auth/passkey": "^1.0.0",
     "@prisma/client": "^6.1.0",
     "better-auth": "^1.0.0",
@@ -17,7 +24,8 @@
     "next": "16.1.6",
     "nodemailer": "^6.10.1",
     "react": "19.2.3",
-    "react-dom": "19.2.3"
+    "react-dom": "19.2.3",
+    "zustand": "^5.0.11"
   },
   "devDependencies": {
     "@biomejs/biome": "2.2.0",
