@@ -25,11 +25,14 @@ import {
   Rocket,
   Globe,
   ExternalLink,
+  Sparkles,
 } from "lucide-react";
 import useUIStore from "@/lib/stores/uiStore";
 import useHistoryStore from "@/lib/stores/historyStore";
 import useBuilderStore, { clearSavedState } from "@/lib/stores/builderStore";
 import { clsx } from "clsx";
+import AIPageGenerator from "./AIPageGenerator";
+// import { clsx } from "clsx";
 
 // ─── Publish Modal Removed (now handled in Site Dashboard) ────────────────────────────────────────────────────────────
 
@@ -83,6 +86,7 @@ export default function Toolbar({ saving: autoSaving, lastSaved, saveError }) {
   const [saveStatus, setSaveStatus] = useState(null); // "saved" | "error" | null
   const [isPublishing, setIsPublishing] = useState(false);
   const [publishResult, setPublishResult] = useState(null);
+  const [showAIGenerator, setShowAIGenerator] = useState(false);
 
   const handleUndo = () => {
     if (canUndo) {
@@ -251,6 +255,16 @@ export default function Toolbar({ saving: autoSaving, lastSaved, saveError }) {
 
         {/* Right Side — Actions */}
         <div className="flex items-center gap-2">
+          {/* AI Generate Button */}
+          <button
+            onClick={() => setShowAIGenerator(true)}
+            className="flex items-center gap-2 px-3 py-1.5 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-md hover:from-purple-600 hover:to-pink-600 transition-all shadow-md hover:shadow-lg text-xs font-medium"
+            title="Generate with AI"
+          >
+            <Sparkles size={14} />
+            <span className="hidden sm:inline">AI Generate</span>
+          </button>
+
           <button
             onClick={() => {
               if (confirm("Reset to demo data? All changes will be lost.")) {
@@ -318,6 +332,28 @@ export default function Toolbar({ saving: autoSaving, lastSaved, saveError }) {
         </div>
       </div>
 
+
+      {/* AI Page Generator Modal */}
+      <AIPageGenerator
+        isOpen={showAIGenerator}
+        onClose={() => setShowAIGenerator(false)}
+        onGenerate={(containers) => {
+          const currentLayout = getLayoutJSON();
+          const currentPage = currentLayout.pages.find(p => p.id === currentLayout.pages[0].id);
+          
+          // Replace current page layout with AI-generated containers
+          const updatedLayout = {
+            ...currentLayout,
+            pages: currentLayout.pages.map(p => 
+              p.id === currentPage.id 
+                ? { ...p, layout: containers }
+                : p
+            )
+          };
+          
+          updateLayoutJSON(updatedLayout);
+        }}
+      />
 
       {/* Success Banner */}
       {publishResult && (

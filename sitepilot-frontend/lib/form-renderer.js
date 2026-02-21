@@ -165,7 +165,13 @@ export function generateFormHTML(form) {
 }
 
 // Generate JavaScript for form submission
-export function generateFormJS(form) {
+export function generateFormJS(form, apiBaseUrl) {
+  // Ensure apiBaseUrl is provided and doesn't end with slash
+  if (!apiBaseUrl) {
+    throw new Error('apiBaseUrl is required for form submission');
+  }
+  const cleanApiBaseUrl = apiBaseUrl.replace(/\/$/, '');
+  
   return `
     (function() {
       const form = document.getElementById('form-${form.id}');
@@ -206,7 +212,11 @@ export function generateFormJS(form) {
         submitBtn.textContent = 'Submitting...';
         
         try {
-          const response = await fetch('/api/forms/${form.id}/submit', {
+          // Always use the full API URL (never relative)
+          const apiUrl = '${cleanApiBaseUrl}/api/forms/${form.id}/submit';
+          console.log('Submitting to:', apiUrl);
+          
+          const response = await fetch(apiUrl, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',

@@ -104,7 +104,7 @@ export async function POST(request, { params }) {
             const jsFilename = `${baseFilename}.js`;
 
             // Compile the page
-            const { html, css, js } = convertPageToHtml(
+            const { html, css, js } = await convertPageToHtml(
                 site.theme,
                 page,
                 site.name,
