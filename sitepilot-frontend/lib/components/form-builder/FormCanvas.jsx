@@ -105,17 +105,17 @@ export default function FormCanvas() {
             console.log('Field clicked:', field.id, field.label);
             selectField(field.id);
           }}
-          className={`relative p-4 border-2 rounded-lg cursor-pointer transition-all ${
+          className={`relative p-6 border-2 rounded-2xl cursor-pointer transition-all duration-300 hover:-translate-y-1 ${
             isSelected
-              ? 'border-blue-500 bg-blue-50'
+              ? 'border-[#8bc4b1] bg-[#f2f4f2] shadow-md'
               : isDragOver
-              ? 'border-green-500 bg-green-50'
-              : 'border-gray-200 bg-white hover:border-gray-300'
-          } ${isDragging ? 'opacity-50' : 'opacity-100'}`}
+              ? 'border-[#d3ff4a] bg-[#fcfdfc]'
+              : 'border-gray-100 bg-white shadow-sm hover:shadow-md hover:border-gray-200'
+          } ${isDragging ? 'opacity-40 scale-95' : 'opacity-100'}`}
         >
           {/* Drag Handle */}
-          <div className="absolute left-2 top-2 text-gray-400 cursor-move hover:text-gray-600">
-            <GripVertical size={16} />
+          <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-300 cursor-move hover:text-[#8bc4b1] transition-colors p-2">
+            <GripVertical size={20} />
           </div>
 
           {/* Delete Button */}
@@ -124,27 +124,27 @@ export default function FormCanvas() {
               e.stopPropagation();
               removeField(field.id);
             }}
-            className="absolute right-2 top-2 p-1 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors"
+            className={`absolute right-4 top-4 p-2 rounded-xl transition-all ${isSelected ? 'bg-white text-red-500 shadow-sm hover:bg-red-50 hover:text-red-700' : 'text-gray-300 hover:text-red-500'}`}
           >
-            <Trash2 size={14} />
+            <Trash2 size={16} />
           </button>
 
           {/* Field Label */}
-          <div className="mb-2 pl-6">
-            <label className="block text-sm font-medium text-gray-700">
+          <div className="mb-3 pl-8">
+            <label className="block text-sm font-black text-[#1d2321] tracking-tight uppercase">
               {field.label}
-              {field.required && <span className="text-red-500 ml-1">*</span>}
+              {field.required && <span className="text-[#8bc4b1] ml-1">*</span>}
             </label>
           </div>
 
           {/* Field Input Preview */}
-          <div className="pl-6">
+          <div className="pl-8 pointer-events-none opacity-80">
             {renderInputPreview(field)}
           </div>
 
           {/* Field Type Badge */}
-          <div className="absolute bottom-2 right-2">
-            <span className="text-xs px-2 py-0.5 bg-gray-100 text-gray-600 rounded">
+          <div className="absolute bottom-4 right-4">
+            <span className="text-[10px] uppercase tracking-widest font-bold px-3 py-1 bg-[#0b1411] text-[#d3ff4a] rounded-lg shadow-sm">
               {field.type}
             </span>
           </div>
@@ -224,22 +224,23 @@ export default function FormCanvas() {
   };
 
   return (
-    <div className="flex-1 bg-gray-50 overflow-y-auto">
-      <div className="max-w-4xl mx-auto p-8">
+    <div className="flex-1 bg-[#fcfdfc] overflow-y-auto relative">
+      <div className="absolute inset-0 bg-[#fefefe] bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] [background-size:20px_20px] opacity-60 z-0 pointer-events-none" />
+      <div className="max-w-4xl mx-auto p-6 sm:p-10 relative z-10 my-4 sm:my-8">
         {/* Form Container */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-8">
+        <div className="bg-white rounded-[2rem] shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-gray-100 p-8 sm:p-14">
           {/* Form Title */}
-          <div className="mb-6 pb-6 border-b border-gray-200">
-            <h1 className="text-2xl font-bold text-gray-900">{formData.name}</h1>
-            <p className="text-sm text-gray-500 mt-1">
-              {formData.fields.length} field{formData.fields.length !== 1 ? 's' : ''}
+          <div className="mb-10 pb-8 border-b border-gray-100">
+            <h1 className="text-4xl font-black text-[#1d2321] tracking-tighter uppercase">{formData.name}</h1>
+            <p className="text-[10px] font-bold uppercase tracking-widest text-[#8bc4b1] mt-2">
+              {formData.fields.length} component{formData.fields.length !== 1 ? 's' : ''} mapped
             </p>
           </div>
 
           {/* Fields */}
           {formData.fields.length === 0 ? (
-            <div className="text-center py-16">
-              <div className="text-gray-400 mb-4">
+            <div className="text-center py-20 bg-[#fcfdfc] border-2 border-dashed border-gray-200 rounded-[2rem] shadow-inner">
+              <div className="text-gray-300 mb-6 flex justify-center opacity-50">
                 <svg
                   className="mx-auto h-12 w-12"
                   fill="none"
@@ -254,10 +255,10 @@ export default function FormCanvas() {
                   />
                 </svg>
               </div>
-              <h3 className="text-lg font-medium text-gray-900 mb-2">
-                No fields yet
+              <h3 className="text-xl font-black text-[#1d2321] tracking-tight mb-2 uppercase">
+                No fields mapped
               </h3>
-              <p className="text-gray-500">
+              <p className="text-xs font-bold uppercase tracking-widest text-gray-400">
                 Click a field type from the left sidebar to add it to your form
               </p>
             </div>

@@ -12,6 +12,7 @@ import useHistoryStore from "@/lib/stores/historyStore";
 import { useAutosave } from "@/lib/hooks/useAutosave";
 import { useSession } from "@/lib/auth-client";
 import { getCursorColor } from "@/liveblocks.config";
+import { Loader2 } from "lucide-react";
 
 export default function PageBuilderPage() {
   const params = useParams();
@@ -74,10 +75,10 @@ export default function PageBuilderPage() {
 
   if (isLoading) {
     return (
-      <div className="h-screen flex items-center justify-center bg-gray-50">
+      <div className="h-screen flex items-center justify-center bg-[#fcfdfc]">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4" />
-          <p className="text-gray-600">Loading Page Builder…</p>
+          <Loader2 className="animate-spin h-12 w-12 text-[#0b1411] mx-auto mb-4" />
+          <p className="text-gray-500 font-bold uppercase tracking-widest text-xs">Loading Page Builder…</p>
         </div>
       </div>
     );
@@ -85,13 +86,13 @@ export default function PageBuilderPage() {
 
   if (loadError) {
     return (
-      <div className="h-screen flex items-center justify-center bg-gray-50">
+      <div className="h-screen flex items-center justify-center bg-[#fcfdfc]">
         <div className="text-center">
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">Failed to Load Page</h2>
-          <p className="text-gray-600 mb-4">{loadError}</p>
+          <h2 className="text-3xl font-black text-[#1d2321] uppercase tracking-tighter mb-2">Failed to Load Page</h2>
+          <p className="text-sm font-medium text-gray-500 mb-6 leading-relaxed">{loadError}</p>
           <button
             onClick={() => window.history.back()}
-            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+            className="px-6 py-4 bg-[#0b1411] text-[#d3ff4a] text-xs font-black uppercase tracking-widest rounded-full hover:bg-[#1d2321] shadow-lg hover:scale-105 active:scale-95 transition-all focus:outline-none"
           >
             Go Back
           </button>
@@ -114,7 +115,7 @@ export default function PageBuilderPage() {
       userName={userName}
       userColor={userColor}
     >
-      <div className="h-screen flex flex-col bg-white">
+      <div className="h-screen flex flex-col bg-[#fcfdfc] font-sans text-gray-900 overflow-hidden text-base">
         <Toolbar saving={saving} lastSaved={lastSaved} saveError={saveError} />
         <div className="flex-1 flex overflow-hidden">
           <LeftSidebar />
