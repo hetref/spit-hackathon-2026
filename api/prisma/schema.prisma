@@ -1,0 +1,251 @@
+// Prisma Schema for Multi-Tenant AI Website Builder SaaS
+// Database: PostgreSQL (Neon)
+// Generated: 2026-02-21
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================
+// ENUMS
+// ============================================
+
+enum Role {
+  OWNER
+  EDITOR
+}
+
+enum PlanType {
+  FREE
+  STARTER
+  PRO
+  ENTERPRISE
+}
+
+enum VersionStatus {
+  DRAFT
+  PUBLISHED
+}
+
+// ============================================
+// BETTER AUTH MODELS
+// ============================================
+
+model User {
+  id               String        @id
+  email            String        @unique
+  emailVerified    Boolean
+  name             String?
+  image            String?
+  createdAt        DateTime
+  updatedAt        DateTime
+  twoFactorEnabled Boolean?
+
+  // Better Auth relations
+  sessions      Session[]
+  accounts      Account[]
+  twoFactors    TwoFactor[]
+  passkeys      Passkey[]
+
+  // Your app relations
+  tenantUsers   TenantUser[]
+  ownedTenants  Tenant[]      @relation("TenantOwner")
+
+  @@index([email])
+  @@map("user")
+}
+
+model Session {
+  id        String   @id
+  expiresAt DateTime
+  ipAddress String?
+  userAgent String?
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+  @@map("session")
+}
+
+model Account {
+  id           String   @id
+  accountId    String
+  providerId   String
+  userId       String
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accessToken  String?
+  refreshToken String?
+  idToken      String?
+  expiresAt    DateTime?
+  password     String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([userId])
+  @@map("account")
+}
+
+model Verification {
+  id         String   @id
+  identifier String
+  value      String
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@map("verification")
+}
+
+model TwoFactor {
+  id        String   @id
+  secret    String
+  backupCodes String
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+  @@map("twoFactor")
+}
+
+model Passkey {
+  id                   String   @id
+  name                 String?
+  publicKey            String
+  userId               String
+  user                 User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  webauthnUserID       String
+  counter              Int
+  deviceType           String
+  backedUp             Boolean
+  transports           String?
+  credentialDeviceType String?
+  credentialBackedUp   Boolean?
+  createdAt            DateTime @default(now())
+
+  @@index([userId])
+  @@map("passkey")
+}
+
+// ============================================
+// TENANT (WORKSPACE/ORGANIZATION) MODEL
+// ============================================
+
+model Tenant {
+  id          String    @id @default(uuid())
+  name        String
+  slug        String    @unique
+  logo        String?
+  plan        PlanType  @default(FREE)
+  
+  // Token management
+  tokenUsage  Int       @default(0)
+  tokenLimit  Int       @default(10000) // Default for FREE plan
+  
+  // Owner reference
+  ownerId     String
+  owner       User      @relation("TenantOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+  
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  // Relations
+  tenantUsers TenantUser[]
+  sites       Site[]
+
+  @@index([slug])
+  @@index([ownerId])
+  @@map("tenants")
+}
+
+// ============================================
+// TENANT USER (RBAC / MANY-TO-MANY)
+// ============================================
+
+model TenantUser {
+  id        String   @id @default(uuid())
+  role      Role     @default(EDITOR)
+  
+  // Foreign keys
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  tenantId  String
+  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, tenantId]) // One user can only have one role per tenant
+  @@index([userId])
+  @@index([tenantId])
+  @@index([role])
+  @@map("tenant_users")
+}
+
+// ============================================
+// SITE MODEL
+// ============================================
+
+model Site {
+  id          String   @id @default(uuid())
+  name        String
+  slug        String
+  description String?
+  domain      String?  @unique
+  favicon     String?
+  
+  // Foreign keys
+  tenantId    String
+  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  versions    SiteVersion[]
+
+  @@unique([tenantId, slug]) // Unique slug per tenant
+  @@index([tenantId])
+  @@index([slug])
+  @@map("sites")
+}
+
+// ============================================
+// SITE VERSION MODEL
+// ============================================
+
+model SiteVersion {
+  id            String        @id @default(uuid())
+  versionNumber Int           @default(1)
+  status        VersionStatus @default(DRAFT)
+  
+  // JSON builder state
+  builderData   Json          // Stores the entire state of the AI builder
+  
+  // Metadata
+  name          String?       // Optional version name like "Homepage Redesign"
+  description   String?
+  publishedAt   DateTime?
+  
+  // Foreign keys
+  siteId        String
+  site          Site          @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  @@unique([siteId, versionNumber]) // Ensure version numbers are unique per site
+  @@index([siteId])
+  @@index([status])
+  @@index([publishedAt])
+  @@map("site_versions")
+}
