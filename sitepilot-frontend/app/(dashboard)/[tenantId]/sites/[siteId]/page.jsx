@@ -19,6 +19,17 @@ import {
   History,
   Zap,
   Copy,
+  ArrowLeft,
+  Plus,
+  Trash2,
+  Calendar,
+  Link as LinkIcon,
+  Monitor,
+  Users,
+  Timer,
+  MousePointerClick,
+  MonitorOff,
+  LayoutTemplate
 } from "lucide-react";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -204,24 +215,6 @@ function DeploymentRow({ siteId, siteSlug, deployment, onRollback, onRenamed }) 
 }
 
 // ─── Page Component ───────────────────────────────────────────────────────────
-import {
-  ArrowLeft,
-  Globe,
-  Plus,
-  Loader2,
-  ExternalLink,
-  Trash2,
-  Calendar,
-  Clock,
-  History,
-  Link as LinkIcon,
-  Monitor,
-  Users,
-  Timer,
-  MousePointerClick,
-  MonitorOff,
-  LayoutTemplate
-} from 'lucide-react'
 
 export default function SiteDetailPage() {
   const params = useParams();
@@ -234,6 +227,9 @@ export default function SiteDetailPage() {
   const [error, setError] = useState("");
   const [rollbackMsg, setRollbackMsg] = useState(null); // { type: 'success'|'error', text }
   const [copied, setCopied] = useState(false);
+  const [showAddDomain, setShowAddDomain] = useState(false);
+  const [domainInput, setDomainInput] = useState('');
+  const [domains, setDomains] = useState([]);
 
   const siteUrl = site ? `https://${site.slug}.sitepilot.devally.in` : null;
 
@@ -250,6 +246,10 @@ export default function SiteDetailPage() {
       if (!siteRes.ok) throw new Error((await siteRes.json()).error || "Failed to load site");
       const { site: siteData } = await siteRes.json();
       setSite(siteData);
+      
+      if (siteData.domain) {
+        setDomains([siteData.domain]);
+      }
 
       if (depRes.ok) {
         const { deployments: deps } = await depRes.json();
@@ -269,6 +269,18 @@ export default function SiteDetailPage() {
   useEffect(() => {
     if (session && params.siteId) fetchData();
   }, [session, params.siteId, fetchData]);
+
+  const handleAddDomain = () => {
+    if (domainInput.trim() && !domains.includes(domainInput.trim())) {
+      setDomains([...domains, domainInput.trim()]);
+      setDomainInput('');
+      setShowAddDomain(false);
+    }
+  };
+
+  const handleRemoveDomain = (domain) => {
+    setDomains(domains.filter(d => d !== domain));
+  };
 
   // ── Rollback ──────────────────────────────────────────────────────────────
   const handleRollback = async (siteSlug, deploymentId) => {
@@ -640,7 +652,7 @@ export default function SiteDetailPage() {
                 </p>
               </div>
             </div>
-          ))}
+          </div>
         </div>
 
         {/* ── Deployment History ────────────────────────────────────────────── */}

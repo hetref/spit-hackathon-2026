@@ -244,7 +244,7 @@ function SiteCard({ site, tenantId, onDelete, router, userRole }) {
 
       {/* Actions Footer */}
       <div className="px-6 py-4 bg-gray-50/50 flex items-center justify-between gap-3">
-          {canEdit ? (
+        {canEdit ? (
           <button
             onClick={openBuilder}
             className="flex-1 inline-flex items-center justify-center gap-2 px-4 py-2 bg-white text-gray-900 text-sm font-medium border border-gray-300 rounded-xl hover:bg-gray-50 transition-colors focus:outline-none focus:ring-2 focus:ring-gray-200"
@@ -252,15 +252,15 @@ function SiteCard({ site, tenantId, onDelete, router, userRole }) {
             <Pencil size={15} className="text-gray-500" />
             Edit Pages
           </button>
-          ) : (
-            <button
-              onClick={() => router.push(`/${tenantId}/sites/${site.id}`)}
-              className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 bg-gray-100 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-200 transition-colors"
-            >
-              <Eye size={14} />
-              View site
-            </button>
-          )}
+        ) : (
+          <button
+            onClick={() => router.push(`/${tenantId}/sites/${site.id}`)}
+            className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 bg-gray-100 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-200 transition-colors"
+          >
+            <Eye size={14} />
+            View site
+          </button>
+        )}
 
         <div className="flex items-center gap-2 shrink-0">
           {site.domain && (
@@ -397,16 +397,16 @@ export default function SitesPage() {
               </div>
             </div>
             {canCreate && (
-            <button
+              <button
                 onClick={() => setShowCreate(true)}
                 className="inline-flex items-center justify-center px-6 py-2.5 bg-gray-900 text-white text-sm font-medium rounded-xl hover:bg-gray-800 transition-colors focus:outline-none focus:ring-2 focus:ring-gray-900 focus:ring-offset-2"
               >
                 <Plus size={16} className="mr-2" />
                 New Site
               </button>
+            )}
           </div>
         </div>
-          )}
       </div>
 
       <div className="max-w-7xl mx-auto px-6 sm:px-10 lg:px-12 py-8 sm:py-12">
