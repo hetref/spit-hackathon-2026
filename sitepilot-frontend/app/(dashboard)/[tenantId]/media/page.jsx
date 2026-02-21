@@ -7,7 +7,9 @@ import {
   Image as ImageIcon,
   Upload,
   Search,
-  FolderOpen
+  FolderOpen,
+  X,
+  Trash2
 } from 'lucide-react'
 
 export default function MediaLibraryPage() {
@@ -18,6 +20,7 @@ export default function MediaLibraryPage() {
   const [images, setImages] = useState([])
   const [searchQuery, setSearchQuery] = useState('')
   const [isUploading, setIsUploading] = useState(false)
+  const [previewImage, setPreviewImage] = useState(null)
   const fileInputRef = useRef(null)
 
   // Initialize and persist mock storage
@@ -70,6 +73,15 @@ export default function MediaLibraryPage() {
   }
 
   const triggerUpload = () => fileInputRef.current?.click()
+
+  const handleDelete = (id, e) => {
+    e.stopPropagation()
+    if (confirm('Are you sure you want to delete this media asset?')) {
+      const nextState = images.filter(img => img.id !== id)
+      setImages(nextState)
+      localStorage.setItem(`sitepilot_media_${params.tenantId}`, JSON.stringify(nextState))
+    }
+  }
 
   const filteredImages = images.filter(img => 
     img.name.toLowerCase().includes(searchQuery.toLowerCase())
@@ -176,7 +188,11 @@ export default function MediaLibraryPage() {
         ) : (
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
             {filteredImages.map((img) => (
-              <div key={img.id} className="group relative bg-white border border-gray-100 rounded-3xl overflow-hidden shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-300">
+              <div 
+                key={img.id} 
+                className="group relative bg-white border border-gray-100 rounded-3xl overflow-hidden shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-300 cursor-pointer"
+                onClick={() => setPreviewImage(img)}
+              >
                  <div className="aspect-square bg-gray-50 flex items-center justify-center overflow-hidden">
                     <img src={img.url} alt={img.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
                  </div>
@@ -184,12 +200,48 @@ export default function MediaLibraryPage() {
                     <h4 className="text-xs font-bold text-gray-900 truncate" title={img.name}>{img.name}</h4>
                     <p className="text-[10px] font-medium text-gray-400 mt-0.5">{img.date}</p>
                  </div>
+                 
+                 <div className="absolute top-3 right-3">
+                    <button
+                      onClick={(e) => handleDelete(img.id, e)}
+                      className="p-2 bg-white/90 backdrop-blur-sm text-red-500 hover:text-red-700 hover:bg-red-50 rounded-xl shadow-sm transition-all focus:outline-none"
+                      title="Delete Image"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                 </div>
               </div>
             ))}
           </div>
         )}
 
       </div>
+
+      {/* Full Screen Image Modal */}
+      {previewImage && (
+        <div 
+           className="fixed inset-0 z-[100] flex items-center justify-center bg-[#0b1411]/90 backdrop-blur-sm p-4 sm:p-8"
+           onClick={() => setPreviewImage(null)}
+        >
+          <div className="relative w-full max-w-5xl max-h-full bg-transparent flex flex-col items-center justify-center">
+            <button 
+              onClick={() => setPreviewImage(null)}
+              className="absolute -top-12 right-0 text-white/60 hover:text-white p-2 transition-colors focus:outline-none"
+            >
+              <X className="w-8 h-8" />
+            </button>
+            <img 
+              src={previewImage.url} 
+              alt={previewImage.name} 
+              className="max-w-full max-h-[80vh] object-contain rounded-xl shadow-2xl"
+              onClick={(e) => e.stopPropagation()}
+            />
+            <div className="mt-6 text-white text-sm font-bold uppercase tracking-widest text-center">
+              {previewImage.name}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

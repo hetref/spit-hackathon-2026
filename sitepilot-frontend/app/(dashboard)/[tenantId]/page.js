@@ -7,7 +7,6 @@ import {
   Users,
   Globe,
   CreditCard,
-  LayoutTemplate,
   ShieldAlert
 } from 'lucide-react'
 import { hasPermission } from '@/lib/permissions'
@@ -117,10 +116,10 @@ export default function TenantDashboardPage() {
 
       <div className="max-w-7xl mx-auto px-6 sm:px-10 lg:px-16 py-12 space-y-16">
 
-        {/* Quick Actions (Sites & Forms) */}
+        {/* Quick Actions */}
         <div>
           <h2 className="text-sm font-black text-gray-400 tracking-[0.15em] uppercase mb-6">Quick Actions</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 gap-6">
             <div className="group bg-white border border-gray-100 rounded-[2rem] shadow-sm p-6 lg:p-8 flex flex-col hover:border-[#8bc4b1] hover:shadow-[0_20px_40px_-15px_rgba(0,0,0,0.1)] hover:-translate-y-1 transition-all duration-500 relative overflow-hidden">
               <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-[#d3ff4a]/0 to-[#8bc4b1]/0 group-hover:from-[#d3ff4a]/5 group-hover:to-[#8bc4b1]/5 rounded-bl-[100px] transition-all duration-500 pointer-events-none" />
               <div className="flex items-center justify-between mb-6 relative z-10">
@@ -139,27 +138,6 @@ export default function TenantDashboardPage() {
                 className="w-full relative z-10 py-3.5 px-6 bg-[#0b1411] text-[#d3ff4a] text-xs font-black uppercase tracking-widest rounded-full group-hover:bg-[#d3ff4a] group-hover:text-[#0b1411] shadow-lg hover:shadow-xl hover:scale-[1.02] active:scale-95 transition-all focus:outline-none"
               >
                 {hasPermission(userRole, 'sites:create') ? 'Manage Sites' : 'View Sites'}
-              </button>
-            </div>
-
-            <div className="group bg-white border border-gray-100 rounded-[2rem] shadow-sm p-6 lg:p-8 flex flex-col hover:border-[#8bc4b1] hover:shadow-[0_20px_40px_-15px_rgba(0,0,0,0.1)] hover:-translate-y-1 transition-all duration-500 relative overflow-hidden">
-              <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-[#00e5ff]/0 to-[#0b1411]/0 group-hover:from-[#00e5ff]/5 group-hover:to-[#0b1411]/5 rounded-bl-[100px] transition-all duration-500 pointer-events-none" />
-              <div className="flex items-center justify-between mb-6 relative z-10">
-                <div className="flex items-center gap-4">
-                  <div className="h-14 w-14 bg-[#f2f4f2] text-[#0b1411] rounded-2xl flex items-center justify-center shadow-inner group-hover:bg-[#00e5ff] transition-colors">
-                    <LayoutTemplate className="h-6 w-6" />
-                  </div>
-                  <h3 className="text-xl font-black text-[#1d2321] tracking-tight group-hover:text-[#00e5ff] transition-colors">Forms</h3>
-                </div>
-              </div>
-              <p className="text-gray-500 text-sm font-medium mb-8 flex-1 relative z-10 leading-relaxed max-w-[90%]">
-                {hasPermission(userRole, 'forms:create') ? 'Build custom forms with the drag-and-drop builder.' : 'View your forms.'}
-              </p>
-              <button
-                onClick={() => router.push(`/${params.tenantId}/forms`)}
-                className="w-full relative z-10 py-3.5 px-6 bg-[#f2f4f2] border border-transparent text-[#0b1411] text-xs font-black uppercase tracking-widest rounded-full group-hover:bg-[#0b1411] group-hover:text-[#00e5ff] shadow-inner group-hover:shadow-xl hover:scale-[1.02] active:scale-95 transition-all focus:outline-none"
-              >
-                {hasPermission(userRole, 'forms:create') ? 'Manage Forms' : 'View Forms'}
               </button>
             </div>
           </div>
