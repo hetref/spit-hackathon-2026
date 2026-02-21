@@ -12,7 +12,58 @@ async function getTenantMembership(userId, tenantId) {
 }
 
 // GET /api/sites?tenantId=xxx  — list all sites for a tenant
-// ... (omitting GET for brevity, keeping it as is)
+export async function GET(request) {
+  try {
+    const session = await auth.api.getSession({ headers: await headers() });
+    if (!session?.user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const { searchParams } = new URL(request.url);
+    const tenantId = searchParams.get("tenantId");
+
+    if (!tenantId) {
+      return NextResponse.json(
+        { error: "tenantId is required" },
+        { status: 400 },
+      );
+    }
+
+    const membership = await getTenantMembership(session.user.id, tenantId);
+    if (!membership) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+
+    const sites = await prisma.site.findMany({
+      where: { tenantId },
+      include: {
+        pages: {
+          select: {
+            id: true,
+            name: true,
+            slug: true,
+            sortOrder: true,
+            isPublished: true,
+            publishedAt: true,
+            createdAt: true,
+            updatedAt: true,
+          },
+          orderBy: { sortOrder: "asc" },
+        },
+        _count: { select: { pages: true } },
+      },
+      orderBy: { createdAt: "desc" },
+    });
+
+    return NextResponse.json({ sites });
+  } catch (error) {
+    console.error("GET /api/sites error:", error);
+    return NextResponse.json(
+      { error: error?.message || "Failed to fetch sites" },
+      { status: 500 },
+    );
+  }
+}
 
 // POST /api/sites  — create a new site
 export async function POST(request) {
