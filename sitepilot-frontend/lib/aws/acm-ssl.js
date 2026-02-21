@@ -3,6 +3,7 @@ import {
   RequestCertificateCommand,
   DescribeCertificateCommand,
   ListCertificatesCommand,
+  DeleteCertificateCommand,
 } from "@aws-sdk/client-acm";
 
 // ACM must be in us-east-1 for CloudFront
@@ -219,5 +220,68 @@ export async function findCertificateByDomain(domain) {
   } catch (error) {
     console.error("[ACM] Failed to find certificate:", error);
     return null;
+  }
+}
+
+/**
+ * Delete an SSL certificate from AWS ACM.
+ * Note: Certificate must not be in use by any CloudFront distribution.
+ * 
+ * @param {string} certificateArn - ACM certificate ARN to delete
+ * @returns {Promise<object>} Deletion result
+ */
+export async function deleteCertificate(certificateArn) {
+  console.log(`[ACM] Deleting certificate: ${certificateArn}`);
+
+  try {
+    // First check if certificate is in use
+    const details = await describeCertificate(certificateArn);
+
+    if (details.inUseBy && details.inUseBy.length > 0) {
+      console.warn(`[ACM] Certificate is in use by: ${details.inUseBy.join(", ")}`);
+      throw new Error("Certificate is currently in use and cannot be deleted. Remove from CloudFront first.");
+    }
+
+    const command = new DeleteCertificateCommand({
+      CertificateArn: certificateArn,
+    });
+
+    await acm.send(command);
+
+    console.log(`[ACM] ✓ Certificate deleted successfully`);
+
+    return {
+      success: true,
+      certificateArn,
+      deleted: true,
+    };
+
+  } catch (error) {
+    console.error("[ACM] Failed to delete certificate:", error);
+
+    // If certificate is in use, that's expected - return a more helpful message
+    if (error.message.includes("in use") || error.name === "ResourceInUseException") {
+      return {
+        success: false,
+        certificateArn,
+        deleted: false,
+        reason: "Certificate is attached to CloudFront distribution",
+        error: error.message,
+      };
+    }
+
+    // If access denied, return gracefully - domain can still be deleted
+    if (error.name === "AccessDeniedException" || error.message.includes("not authorized")) {
+      console.warn("[ACM] ⚠️  Missing ACM delete permission - certificate will remain in AWS");
+      return {
+        success: false,
+        certificateArn,
+        deleted: false,
+        reason: "Missing ACM delete permission (non-critical)",
+        error: error.message,
+      };
+    }
+
+    throw new Error(`Failed to delete certificate: ${error.message}`);
   }
 }

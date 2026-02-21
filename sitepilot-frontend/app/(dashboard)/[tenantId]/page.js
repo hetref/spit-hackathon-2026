@@ -18,6 +18,8 @@ export default function TenantDashboardPage() {
   const [tenant, setTenant] = useState(null)
   const [userRole, setUserRole] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [initialLoadComplete, setInitialLoadComplete] = useState(false)
+  const [fetchedTenantId, setFetchedTenantId] = useState(null)
 
   useEffect(() => {
     if (!isPending && !session) {
@@ -25,11 +27,18 @@ export default function TenantDashboardPage() {
     }
   }, [session, isPending, router])
 
+  // Track when initial session load is complete
   useEffect(() => {
-    if (session && params.tenantId) {
+    if (session && !isPending) {
+      setInitialLoadComplete(true)
+    }
+  }, [session, isPending])
+
+  useEffect(() => {
+    if (session && params.tenantId && fetchedTenantId !== params.tenantId) {
       fetchTenantData()
     }
-  }, [session, params.tenantId])
+  }, [session, params.tenantId, fetchedTenantId])
 
   const fetchTenantData = async () => {
     try {
@@ -38,6 +47,7 @@ export default function TenantDashboardPage() {
         const data = await response.json()
         setTenant(data.tenant)
         setUserRole(data.userRole)
+        setFetchedTenantId(params.tenantId)
       }
     } catch (err) {
       console.error('Error fetching tenant:', err)
@@ -46,7 +56,8 @@ export default function TenantDashboardPage() {
     }
   }
 
-  if (isPending || loading) {
+  // Only show loading spinner on initial load, not on tab refocus
+  if (!initialLoadComplete || loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#fcfdfc]">
         <div className="flex flex-col items-center">

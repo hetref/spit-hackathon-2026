@@ -608,7 +608,7 @@ export default function SiteDetailPage() {
             </div>
 
             {/* Custom Domains Section */}
-            <CustomDomainManager siteId={params.siteId} />
+            <CustomDomainManager siteId={params.siteId} siteSlug={site.slug} />
 
           </div>
         </div>

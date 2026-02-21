@@ -113,13 +113,16 @@ export async function POST(request, { params }) {
     if (!site.cfTenantId || !site.slug) {
       return NextResponse.json(
         {
-          error: "Site CloudFront tenant not configured",
+          error: "Site CloudFront tenant not configured. Please contact support.",
           checks,
         },
         { status: 400 }
       );
     }
     checks.hasTenant = true;
+
+    console.log(`[Domain Activation] Site cfTenantId: ${site.cfTenantId}`);
+    console.log(`[Domain Activation] Site slug: ${site.slug}`);
 
     // Update status to attaching
     await prisma.customDomain.update({
@@ -131,7 +134,7 @@ export async function POST(request, { params }) {
     console.log(`[Domain Activation] Attaching domain to CloudFront tenant`);
 
     const cfResult = await attachDomainToTenant({
-      tenantName: site.slug,
+      cfTenantId: site.cfTenantId,  // Use CloudFront Identifier, NOT slug
       domain: customDomain.domain,
       certificateArn: customDomain.certificateArn,
     });
