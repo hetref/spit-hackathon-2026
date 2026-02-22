@@ -7,9 +7,12 @@
 import { useState } from 'react';
 import { X, Plus, Trash2 } from 'lucide-react';
 import useFormBuilderStore from '@/lib/stores/formBuilderStore';
+import useUIStore from '@/lib/stores/uiStore';
 import { FIELD_WIDTHS } from '@/lib/form-schema';
+import { clsx } from 'clsx';
 
 export default function FormPropertiesSidebar() {
+  const { rightSidebarOpen } = useUIStore();
   // Use individual selectors to ensure re-render on changes
   const selectedFieldId = useFormBuilderStore((state) => state.selectedFieldId);
   const formDataFields = useFormBuilderStore((state) => state.formData.fields);
@@ -29,7 +32,11 @@ export default function FormPropertiesSidebar() {
 
   if (!selectedField) {
     return (
-      <div className="w-80 bg-[#fcfdfc] border-l border-gray-100 flex items-center justify-center p-8 z-10 shrink-0">
+      <div className={clsx(
+        "w-80 bg-[#fcfdfc] border-l border-gray-100 flex items-center justify-center p-8 z-20 shrink-0 absolute right-0 md:relative h-full",
+        rightSidebarOpen ? "translate-x-0" : "translate-x-full md:translate-x-0",
+        !rightSidebarOpen && "max-md:hidden"
+      )}>
         <div className="text-center text-gray-400">
           <svg
             className="mx-auto h-12 w-12 mb-3 opacity-50"
@@ -56,7 +63,11 @@ export default function FormPropertiesSidebar() {
   }
 
   return (
-    <div className="w-80 bg-white/80 backdrop-blur-md border-l border-gray-100 flex flex-col h-full min-h-0 z-10 shadow-sm relative shrink-0">
+    <div className={clsx(
+      "w-80 bg-white/80 backdrop-blur-md border-l border-gray-100 flex flex-col h-full min-h-0 z-20 shadow-sm shrink-0 absolute right-0 md:relative bg-white",
+      rightSidebarOpen ? "translate-x-0" : "translate-x-full md:translate-x-0",
+      !rightSidebarOpen && "max-md:hidden"
+    )}>
       {/* Header */}
       <div className="p-6 border-b border-gray-100 flex items-center justify-between">
         <div>

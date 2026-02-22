@@ -13,6 +13,7 @@ import FormBuilderToolbar from "@/lib/components/form-builder/FormBuilderToolbar
 import FormFieldsSidebar from "@/lib/components/form-builder/FormFieldsSidebar";
 import FormCanvas from "@/lib/components/form-builder/FormCanvas";
 import FormPropertiesSidebar from "@/lib/components/form-builder/FormPropertiesSidebar";
+import useUIStore from "@/lib/stores/uiStore";
 import { Loader2 } from "lucide-react";
 
 export default function FormBuilderPage() {
@@ -20,10 +21,18 @@ export default function FormBuilderPage() {
   const router = useRouter();
   const { data: session, isPending } = useSession();
   const { initializeForm, formData, markAsSaved, isDirty } = useFormBuilderStore();
+  const { setLeftSidebarOpen, setRightSidebarOpen } = useUIStore();
 
   const [isLoading, setIsLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [lastSaved, setLastSaved] = useState(null);
+
+  useEffect(() => {
+    if (window.innerWidth < 768) {
+      setLeftSidebarOpen(false);
+      setRightSidebarOpen(false);
+    }
+  }, [setLeftSidebarOpen, setRightSidebarOpen]);
 
   // Auth guard
   useEffect(() => {

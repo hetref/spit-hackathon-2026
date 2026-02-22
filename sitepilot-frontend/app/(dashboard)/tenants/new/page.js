@@ -16,7 +16,7 @@ export default function NewTenantPage() {
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
 
-  const generateSlug = (name) => {
+  const generateSlug = (name) => {  
     return name
       .toLowerCase()
       .replace(/[^a-z0-9]+/g, '-')

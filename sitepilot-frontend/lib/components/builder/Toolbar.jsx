@@ -26,6 +26,8 @@ import {
   Globe,
   ExternalLink,
   Sparkles,
+  Menu,
+  Settings2,
 } from "lucide-react";
 import useUIStore from "@/lib/stores/uiStore";
 import useHistoryStore from "@/lib/stores/historyStore";
@@ -185,7 +187,7 @@ function PublishSuccessBanner({ result, onClose }) {
 // ─── Main Toolbar ─────────────────────────────────────────────────────────────
 
 export default function Toolbar({ saving: autoSaving, lastSaved, saveError }) {
-  const { devicePreview, setDevicePreview } = useUIStore();
+  const { devicePreview, setDevicePreview, toggleLeftSidebar, toggleRightSidebar } = useUIStore();
   const { canUndo, canRedo, undo, redo } = useHistoryStore();
   const { getLayoutJSON, updateLayoutJSON, siteId, pageId, getPageLayout } =
     useBuilderStore();
@@ -298,10 +300,17 @@ export default function Toolbar({ saving: autoSaving, lastSaved, saveError }) {
   return (
     <>
       <div className="h-20 bg-white/80 backdrop-blur-md border-b border-gray-100 flex items-center justify-between px-6 sm:px-10 z-20 shadow-sm relative shrink-0">
-        {/* Left Side — Logo + Undo/Redo */}
-        <div className="flex items-center gap-6">
+        {/* Left Side — Logo + Menu + Undo/Redo */}
+        <div className="flex items-center gap-2 sm:gap-6">
           <div className="flex items-center gap-2 mr-2">
-            <div className="w-10 h-10 bg-[#0b1411] rounded-xl flex items-center justify-center shadow-inner">
+            <button
+              onClick={toggleLeftSidebar}
+              className="md:hidden p-2 text-gray-500 hover:text-[#0b1411] hover:bg-gray-100 rounded-xl transition-colors"
+              title="Toggle Left Sidebar"
+            >
+              <Menu size={18} />
+            </button>
+            <div className="w-10 h-10 bg-[#0b1411] rounded-xl hidden sm:flex items-center justify-center shadow-inner">
               <Zap size={18} className="text-[#d3ff4a]" />
             </div>
             <div>
@@ -429,6 +438,14 @@ export default function Toolbar({ saving: autoSaving, lastSaved, saveError }) {
           >
             {isPublishing ? <Loader2 size={14} className="animate-spin" /> : <Eye size={14} />}
             {isPublishing ? "Publishing…" : "Publish"}
+          </button>
+
+          <button
+            onClick={toggleRightSidebar}
+            className="md:hidden flex items-center justify-center p-2 text-gray-400 hover:text-[#0b1411] hover:bg-gray-100 rounded-xl transition-colors"
+            title="Toggle Right Sidebar"
+          >
+            <Settings2 size={18} />
           </button>
         </div>
       </div>

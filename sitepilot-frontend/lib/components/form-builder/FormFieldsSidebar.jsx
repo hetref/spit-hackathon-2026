@@ -6,16 +6,24 @@
 
 import { FIELD_TYPES, FIELD_TYPE_METADATA } from '@/lib/form-schema';
 import useFormBuilderStore from '@/lib/stores/formBuilderStore';
+import useUIStore from '@/lib/stores/uiStore';
+import { clsx } from 'clsx';
 
 export default function FormFieldsSidebar() {
   const { addField } = useFormBuilderStore();
+  const { leftSidebarOpen } = useUIStore();
 
   const handleAddField = (fieldType) => {
     addField(fieldType);
   };
 
   return (
-    <div className="w-72 bg-white/80 backdrop-blur-md border-r border-gray-100 flex flex-col h-full min-h-0 z-10 shadow-sm relative shrink-0">
+    <div className={clsx(
+      "w-72 bg-white/80 backdrop-blur-md border-r border-gray-100 flex flex-col h-full min-h-0 z-20 shadow-sm shrink-0",
+      "absolute md:relative left-0 bg-white transition-transform duration-300",
+      leftSidebarOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0",
+      !leftSidebarOpen && "max-md:hidden"
+    )}>
       {/* Header */}
       <div className="p-6 border-b border-gray-100">
         <h2 className="text-[10px] font-bold tracking-[0.2em] uppercase text-[#8bc4b1] mb-1">Components</h2>
