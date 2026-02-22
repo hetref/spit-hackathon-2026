@@ -199,6 +199,8 @@ model Site {
   forms           Form[] // Site-specific forms
   tenant          Tenant           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   customDomains   CustomDomain[]
+  visitorSessions VisitorSession[]
+  pageViews       PageView[]
 
   @@index([tenantId])
   @@index([slug])
@@ -463,4 +465,37 @@ model Media {
 
   @@index([tenantId])
   @@map("media")
+}
+
+model VisitorSession {
+  id        String   @id @default(uuid())
+  siteId    String
+  ipHash    String
+  userAgent String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  site      Site     @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  pageViews PageView[]
+
+  @@index([siteId])
+  @@map("visitor_sessions")
+}
+
+model PageView {
+  id        String   @id @default(uuid())
+  sessionId String
+  siteId    String
+  pageSlug  String
+  duration  Int      @default(0) // seconds
+  enteredAt DateTime @default(now())
+  exitedAt  DateTime?
+
+  session   VisitorSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  site      Site           @relation(fields: [siteId], references: [id], onDelete: Cascade)
+
+  @@index([sessionId])
+  @@index([siteId])
+  @@index([pageSlug])
+  @@map("page_views")
 }

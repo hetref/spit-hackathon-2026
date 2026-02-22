@@ -45,6 +45,9 @@ export async function POST(request, { params }) {
                 pages: {
                     where: { isPublished: true },
                 },
+                customDomains: {
+                    where: { attachedToCF: true },
+                },
                 tenant: { select: { id: true, ownerId: true } },
             },
         });
@@ -152,11 +155,16 @@ export async function POST(request, { params }) {
         });
 
         // ── 7. Update CloudFront KVS ──────────────────────────────────────────────
-        const kvsKey = site.slug;
+        const keysToUpdate = [site.slug];
+        if (site.customDomains?.length > 0) {
+            site.customDomains.forEach(cd => keysToUpdate.push(cd.domain));
+        }
 
         let kvsUpdated = false;
         try {
-            await updateKVS(kvsKey, s3Prefix);
+            for (const key of keysToUpdate) {
+                await updateKVS(key, s3Prefix);
+            }
             kvsUpdated = true;
         } catch (kvsError) {
             console.error("KVS update failed (non-fatal):", kvsError.message);

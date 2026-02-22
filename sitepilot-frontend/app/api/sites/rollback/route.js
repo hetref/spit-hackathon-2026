@@ -43,6 +43,7 @@ export async function POST(request) {
         // ── 1. Find the site by slug ───────────────────────────────────────────────
         const site = await prisma.site.findFirst({
             where: { slug: siteSlug },
+            include: { customDomains: { where: { attachedToCF: true } } },
         });
 
         if (!site) {
@@ -89,11 +90,16 @@ export async function POST(request) {
         });
 
         // ── 5. Update CloudFront KVS ──────────────────────────────────────────────
-        const kvsKey = site.slug;
+        const keysToUpdate = [site.slug];
+        if (site.customDomains?.length > 0) {
+            site.customDomains.forEach(cd => keysToUpdate.push(cd.domain));
+        }
 
         let kvsUpdated = false;
         try {
-            await updateKVS(kvsKey, deployment.s3Key);
+            for (const key of keysToUpdate) {
+                await updateKVS(key, deployment.s3Key);
+            }
             kvsUpdated = true;
         } catch (kvsError) {
             console.error("KVS rollback update failed:", kvsError.message);

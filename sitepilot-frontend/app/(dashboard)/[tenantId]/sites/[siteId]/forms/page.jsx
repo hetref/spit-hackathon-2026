@@ -3,15 +3,15 @@ import { useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { useSession } from '@/lib/auth-client'
 import { hasPermission } from '@/lib/permissions'
-import { 
-  Loader2, 
-  ArrowLeft, 
-  Plus, 
-  FileText, 
-  X, 
-  AlertCircle, 
-  Edit, 
-  List, 
+import {
+  Loader2,
+  ArrowLeft,
+  Plus,
+  FileText,
+  X,
+  AlertCircle,
+  Edit,
+  List,
   Trash2,
   Calendar,
   Layers
@@ -29,6 +29,8 @@ export default function FormsListPage() {
   const [creating, setCreating] = useState(false)
   const [userRole, setUserRole] = useState(null)
 
+  const [fetchedSiteId, setFetchedSiteId] = useState(null)
+
   const canCreate = hasPermission(userRole, 'forms:create')
   const canEdit = hasPermission(userRole, 'forms:edit')
   const canDelete = hasPermission(userRole, 'forms:delete')
@@ -40,11 +42,12 @@ export default function FormsListPage() {
   }, [session, isPending, router])
 
   useEffect(() => {
-    if (session && params.siteId) {
+    if (session && params.siteId && fetchedSiteId !== params.siteId) {
       fetchForms()
       fetchUserRole()
+      setFetchedSiteId(params.siteId)
     }
-  }, [session, params.siteId])
+  }, [session, params.siteId, fetchedSiteId])
 
   const fetchUserRole = async () => {
     try {
@@ -147,7 +150,7 @@ export default function FormsListPage() {
                 </p>
               </div>
             </div>
-            
+
             {canCreate && (
               <div className="flex items-center gap-3 w-full sm:w-auto mt-4 sm:mt-0">
                 <button
@@ -181,7 +184,7 @@ export default function FormsListPage() {
                   <X size={18} />
                 </button>
               </div>
-              
+
               <form onSubmit={handleCreateForm} className="px-8 py-8 space-y-6">
                 <div>
                   <label className="block text-xs font-black tracking-[0.15em] uppercase text-gray-400 mb-3">
@@ -207,7 +210,7 @@ export default function FormsListPage() {
                     placeholder="Brief description about this form..."
                   />
                 </div>
-                
+
                 <div className="flex items-center justify-end gap-4 pt-6 mt-8 border-t border-gray-100">
                   <button
                     type="button"
@@ -265,63 +268,63 @@ export default function FormsListPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {forms.map((form) => (
               <div key={form.id} className="group bg-white border border-gray-100 rounded-[2rem] overflow-hidden hover:border-[#8bc4b1] hover:-translate-y-1 hover:shadow-[0_20px_40px_-15px_rgba(0,0,0,0.1)] transition-all duration-300 flex flex-col h-auto min-h-[280px]">
-                
+
                 {/* Info Area */}
                 <div className="p-6 lg:p-8 flex-1 flex flex-col relative bg-white">
                   <div className="flex items-start justify-between gap-3 mb-2">
-                     <div className="min-w-0 flex-1">
-                        <h3 className="text-[1.2rem] font-black text-[#1d2321] tracking-tight uppercase truncate transition-colors mb-2">
-                          {form.name}
-                        </h3>
-                        {form.description && (
-                          <p className="text-xs font-bold text-gray-400 line-clamp-2 leading-relaxed">
-                            {form.description}
-                          </p>
-                         )}
-                     </div>
+                    <div className="min-w-0 flex-1">
+                      <h3 className="text-[1.2rem] font-black text-[#1d2321] tracking-tight uppercase truncate transition-colors mb-2">
+                        {form.name}
+                      </h3>
+                      {form.description && (
+                        <p className="text-xs font-bold text-gray-400 line-clamp-2 leading-relaxed">
+                          {form.description}
+                        </p>
+                      )}
+                    </div>
                   </div>
 
                   <div className="flex flex-wrap items-center gap-2 mt-6">
-                     <span className="inline-flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-[#0b1411] bg-[#f2f4f2] rounded-full px-3 py-1.5 shadow-sm">
-                       <Calendar size={12} />
-                       {new Date(form.createdAt).toLocaleDateString()}
-                     </span>
-                     <span className="inline-flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-gray-500 bg-[#f2f4f2] rounded-full px-3 py-1.5">
-                       <Layers size={12} />
-                       {form._count?.versions || 0} Versions
-                     </span>
+                    <span className="inline-flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-[#0b1411] bg-[#f2f4f2] rounded-full px-3 py-1.5 shadow-sm">
+                      <Calendar size={12} />
+                      {new Date(form.createdAt).toLocaleDateString()}
+                    </span>
+                    <span className="inline-flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-gray-500 bg-[#f2f4f2] rounded-full px-3 py-1.5">
+                      <Layers size={12} />
+                      {form._count?.versions || 0} Versions
+                    </span>
                   </div>
                 </div>
-                
+
                 {/* Actions Footer */}
                 <div className="px-6 py-4 bg-[#fcfdfc] border-t border-gray-100 flex items-center justify-between gap-2 z-20">
+                  <button
+                    onClick={() => router.push(`/${params.tenantId}/sites/${params.siteId}/forms/${form.id}${canEdit ? '/builder' : ''}`)}
+                    className="flex-1 inline-flex items-center justify-center gap-2 h-10 px-4 bg-[#f2f4f2] text-[#0b1411] text-xs font-black uppercase tracking-widest rounded-full hover:bg-[#0b1411] hover:text-[#d3ff4a] transition-all focus:outline-none focus:ring-2 focus:ring-[#0b1411]/20 group"
+                  >
+                    <Edit size={12} className="text-[#0b1411] group-hover:text-[#d3ff4a]" />
+                    {canEdit ? 'Builder' : 'View'}
+                  </button>
+
+                  <div className="flex items-center gap-2 shrink-0">
                     <button
-                      onClick={() => router.push(`/${params.tenantId}/sites/${params.siteId}/forms/${form.id}${canEdit ? '/builder' : ''}`)}
-                      className="flex-1 inline-flex items-center justify-center gap-2 h-10 px-4 bg-[#f2f4f2] text-[#0b1411] text-xs font-black uppercase tracking-widest rounded-full hover:bg-[#0b1411] hover:text-[#d3ff4a] transition-all focus:outline-none focus:ring-2 focus:ring-[#0b1411]/20 group"
+                      onClick={() => router.push(`/${params.tenantId}/sites/${params.siteId}/forms/${form.id}/submissions`)}
+                      className="px-4 h-10 flex items-center justify-center text-[10px] gap-1.5 font-black uppercase tracking-widest text-[#0b1411] bg-[#d3ff4a] hover:bg-[#c0eb3f] transition-all rounded-full shadow-sm hover:scale-105"
+                      title="View Submissions"
                     >
-                      <Edit size={12} className="text-[#0b1411] group-hover:text-[#d3ff4a]" />
-                      {canEdit ? 'Builder' : 'View'}
+                      <List size={12} />
+                      Data
                     </button>
-                    
-                    <div className="flex items-center gap-2 shrink-0">
+                    {canDelete && (
                       <button
-                        onClick={() => router.push(`/${params.tenantId}/sites/${params.siteId}/forms/${form.id}/submissions`)}
-                        className="px-4 h-10 flex items-center justify-center text-[10px] gap-1.5 font-black uppercase tracking-widest text-[#0b1411] bg-[#d3ff4a] hover:bg-[#c0eb3f] transition-all rounded-full shadow-sm hover:scale-105"
-                        title="View Submissions"
+                        onClick={() => handleDeleteForm(form.id)}
+                        className="h-10 w-10 flex items-center justify-center text-red-400 bg-red-50 rounded-full hover:bg-red-500 hover:text-white transition-colors shadow-sm"
+                        title="Delete Form"
                       >
-                        <List size={12} />
-                        Data
+                        <Trash2 size={14} />
                       </button>
-                      {canDelete && (
-                        <button
-                          onClick={() => handleDeleteForm(form.id)}
-                          className="h-10 w-10 flex items-center justify-center text-red-400 bg-red-50 rounded-full hover:bg-red-500 hover:text-white transition-colors shadow-sm"
-                          title="Delete Form"
-                        >
-                          <Trash2 size={14} />
-                        </button>
-                      )}
-                    </div>
+                    )}
+                  </div>
                 </div>
 
               </div>
