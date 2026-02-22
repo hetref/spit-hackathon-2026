@@ -84,6 +84,21 @@ export default function TenantLayout({ children }) {
         return null
     }
 
+    // ── Onboarding guard ─────────────────────────────────────────────────
+    // If tenant hasn't completed onboarding, redirect to settings page
+    // (except if we're already on /settings or in the /builder)
+    const isSettingsPage = pathname === `/${tenantId}/settings`
+    const isBuilderPage = pathname.includes('/builder')
+
+    if (tenant && !tenant.onboardingComplete && !isSettingsPage && !isBuilderPage) {
+        router.replace(`/${tenantId}/settings`)
+        return (
+            <div className="min-h-screen flex items-center justify-center bg-[#fcfdfc]">
+                <div className="animate-spin rounded-full h-10 w-10 border-[4px] border-gray-100 border-t-[#0b1411] mb-4" />
+            </div>
+        )
+    }
+
     const SIDEBAR_ITEMS = [
         { label: 'Overview', icon: LayoutDashboard, href: `/${tenantId}` },
         { label: 'Sites', icon: Globe, href: `/${tenantId}/sites` },

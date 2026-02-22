@@ -16,6 +16,9 @@ import {
   Type,
   User,
   Mail,
+  Building2,
+  UserCog,
+  Rocket,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -35,7 +38,11 @@ export default function TenantSettingsPage() {
     name: '',
     slug: '',
     description: '',
+    workspaceType: '',
+    defaultMemberRole: 'EDITOR',
   });
+
+  const isOnboarding = tenant && !tenant.onboardingComplete;
 
   const [logoFile, setLogoFile] = useState(null);
   const [logoPreview, setLogoPreview] = useState('');
@@ -66,6 +73,8 @@ export default function TenantSettingsPage() {
           name: data.tenant.name || '',
           slug: data.tenant.slug || '',
           description: data.tenant.description || '',
+          workspaceType: data.tenant.workspaceType || '',
+          defaultMemberRole: data.tenant.defaultMemberRole || 'EDITOR',
         });
         // Use presigned URL if available
         if (data.tenant.logoUrl) {
@@ -195,6 +204,17 @@ export default function TenantSettingsPage() {
     e.preventDefault();
     setError('');
     setSuccess('');
+
+    // Validate mandatory onboarding fields
+    if (!formData.name.trim()) {
+      setError('Workspace name is required.');
+      return;
+    }
+    if (!formData.workspaceType) {
+      setError('Please select a workspace type.');
+      return;
+    }
+
     setSaving(true);
 
     try {
@@ -204,7 +224,9 @@ export default function TenantSettingsPage() {
         body: JSON.stringify({
           name: formData.name,
           description: formData.description,
-          // Note: slug cannot be changed after creation for stability
+          workspaceType: formData.workspaceType,
+          defaultMemberRole: formData.defaultMemberRole,
+          onboardingComplete: true,
         }),
       });
 
@@ -215,6 +237,13 @@ export default function TenantSettingsPage() {
 
       const data = await response.json();
       setTenant(data.tenant);
+
+      if (isOnboarding) {
+        toast.success('Workspace setup complete!');
+        router.push(`/${params.tenantId}`);
+        return;
+      }
+
       setSuccess('Workspace settings updated successfully!');
       toast.success('Settings saved!');
     } catch (err) {
@@ -264,19 +293,21 @@ export default function TenantSettingsPage() {
       <div className="bg-white/80 backdrop-blur-md border-b border-gray-100 sticky top-0 z-20">
         <div className="max-w-5xl mx-auto px-6 sm:px-10 py-6">
           <div className="flex items-center gap-6">
-            <button
-              onClick={() => router.push(`/${params.tenantId}`)}
-              className="p-3 bg-white border border-gray-200 text-gray-400 hover:text-[#0b1411] hover:border-[#0b1411]/20 rounded-2xl transition-all shadow-sm hover:shadow-md"
-              title="Back to Workspace"
-            >
-              <ArrowLeft className="h-6 w-6" />
-            </button>
+            {!isOnboarding && (
+              <button
+                onClick={() => router.push(`/${params.tenantId}`)}
+                className="p-3 bg-white border border-gray-200 text-gray-400 hover:text-[#0b1411] hover:border-[#0b1411]/20 rounded-2xl transition-all shadow-sm hover:shadow-md"
+                title="Back to Workspace"
+              >
+                <ArrowLeft className="h-6 w-6" />
+              </button>
+            )}
             <div>
               <p className="text-[#8bc4b1] text-[10px] font-bold tracking-[0.2em] uppercase mb-1">
-                WORKSPACE SETTINGS
+                {isOnboarding ? 'WORKSPACE SETUP' : 'WORKSPACE SETTINGS'}
               </p>
               <h1 className="text-3xl sm:text-4xl font-black text-[#1d2321] uppercase tracking-tighter">
-                {tenant.name}
+                {isOnboarding ? 'Complete Your Setup' : tenant.name}
               </h1>
             </div>
           </div>
@@ -297,6 +328,24 @@ export default function TenantSettingsPage() {
             <div className="bg-emerald-50 border border-emerald-200 text-emerald-700 px-6 py-4 rounded-2xl flex items-start gap-3">
               <CheckCircle2 className="h-5 w-5 flex-shrink-0 mt-0.5" />
               <p className="text-sm font-medium">{success}</p>
+            </div>
+          )}
+
+          {/* Onboarding Banner */}
+          {isOnboarding && (
+            <div className="bg-gradient-to-r from-[#0b1411] to-[#1d2321] text-white px-8 py-6 rounded-[2rem] shadow-lg">
+              <div className="flex items-start gap-4">
+                <div className="h-12 w-12 bg-[#d3ff4a] text-[#0b1411] rounded-2xl flex items-center justify-center flex-shrink-0">
+                  <Rocket className="h-6 w-6" />
+                </div>
+                <div>
+                  <h2 className="text-lg font-black uppercase tracking-tight mb-1">Welcome to Your New Workspace!</h2>
+                  <p className="text-sm text-gray-300 font-medium leading-relaxed">
+                    Let's get your workspace set up. Fill in the required details below to start building your sites.
+                    Fields marked with <span className="text-[#d3ff4a] font-bold">*</span> are mandatory.
+                  </p>
+                </div>
+              </div>
             </div>
           )}
 
@@ -498,6 +547,99 @@ export default function TenantSettingsPage() {
             </div>
           </div>
 
+          {/* Workspace Type */}
+          <div className="bg-white border border-gray-100 rounded-[2rem] shadow-sm overflow-hidden">
+            <div className="px-8 py-6 border-b border-gray-100 bg-gray-50">
+              <h2 className="text-sm font-black text-gray-900 tracking-[0.15em] uppercase">
+                Workspace Type <span className="text-red-500">*</span>
+              </h2>
+              <p className="text-xs text-gray-500 mt-1 font-medium">
+                What kind of workspace is this?
+              </p>
+            </div>
+
+            <div className="p-8">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {[
+                  { value: 'AGENCY', label: 'Agency', desc: 'Managing multiple client websites', icon: '🏢' },
+                  { value: 'BUSINESS', label: 'Business', desc: 'Company or corporate website', icon: '💼' },
+                  { value: 'PERSONAL', label: 'Personal', desc: 'Portfolio or personal brand', icon: '👤' },
+                  { value: 'STARTUP', label: 'Startup', desc: 'Early-stage product or service', icon: '🚀' },
+                ].map((option) => (
+                  <button
+                    key={option.value}
+                    type="button"
+                    onClick={() => setFormData({ ...formData, workspaceType: option.value })}
+                    className={`p-5 rounded-2xl border-2 text-left transition-all duration-200 ${
+                      formData.workspaceType === option.value
+                        ? 'border-[#0b1411] bg-[#0b1411]/5 shadow-sm'
+                        : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
+                    }`}
+                  >
+                    <div className="flex items-center gap-3 mb-2">
+                      <span className="text-2xl">{option.icon}</span>
+                      <span className={`text-sm font-black uppercase tracking-widest ${
+                        formData.workspaceType === option.value ? 'text-[#0b1411]' : 'text-gray-700'
+                      }`}>
+                        {option.label}
+                      </span>
+                    </div>
+                    <p className="text-xs text-gray-500 font-medium pl-10">{option.desc}</p>
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Default Member Role */}
+          <div className="bg-white border border-gray-100 rounded-[2rem] shadow-sm overflow-hidden">
+            <div className="px-8 py-6 border-b border-gray-100 bg-gray-50">
+              <h2 className="text-sm font-black text-gray-900 tracking-[0.15em] uppercase">
+                Default Role for Invited Members
+              </h2>
+              <p className="text-xs text-gray-500 mt-1 font-medium">
+                New members will get this role by default when invited
+              </p>
+            </div>
+
+            <div className="p-8">
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                  <UserCog className="h-5 w-5 text-gray-400" />
+                </div>
+                <select
+                  value={formData.defaultMemberRole}
+                  onChange={(e) => setFormData({ ...formData, defaultMemberRole: e.target.value })}
+                  className="block w-full pl-12 pr-4 py-3.5 bg-white border border-gray-300 rounded-xl text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#0b1411]/10 focus:border-[#0b1411] transition-colors font-medium appearance-none"
+                >
+                  <option value="EDITOR">Editor — Can create and edit sites</option>
+                  <option value="VIEWER">Viewer — Read-only access</option>
+                </select>
+                <div className="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none">
+                  <svg className="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </div>
+              </div>
+              <div className="mt-4 space-y-2">
+                <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-xl">
+                  <div className="w-2 h-2 rounded-full bg-blue-500 mt-1.5 flex-shrink-0" />
+                  <div>
+                    <p className="text-xs font-bold text-gray-700">Editor</p>
+                    <p className="text-[11px] text-gray-500">Can create, edit, and publish sites. Cannot manage members or billing.</p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-xl">
+                  <div className="w-2 h-2 rounded-full bg-gray-400 mt-1.5 flex-shrink-0" />
+                  <div>
+                    <p className="text-xs font-bold text-gray-700">Viewer</p>
+                    <p className="text-[11px] text-gray-500">Can view sites and pages. Cannot make any changes.</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
           {/* Workspace Owner Info (Read-only) */}
           <div className="bg-white border border-gray-100 rounded-[2rem] shadow-sm overflow-hidden">
             <div className="px-8 py-6 border-b border-gray-100 bg-gray-50">
@@ -535,13 +677,15 @@ export default function TenantSettingsPage() {
 
           {/* Action Buttons */}
           <div className="flex justify-end gap-4 pt-6 border-t border-gray-100">
-            <button
-              type="button"
-              onClick={() => router.push(`/${params.tenantId}`)}
-              className="px-8 py-3.5 bg-white border-2 border-gray-300 text-gray-700 text-sm font-black uppercase tracking-widest rounded-full hover:bg-gray-50 transition-all"
-            >
-              Cancel
-            </button>
+            {!isOnboarding && (
+              <button
+                type="button"
+                onClick={() => router.push(`/${params.tenantId}`)}
+                className="px-8 py-3.5 bg-white border-2 border-gray-300 text-gray-700 text-sm font-black uppercase tracking-widest rounded-full hover:bg-gray-50 transition-all"
+              >
+                Cancel
+              </button>
+            )}
             <button
               type="submit"
               disabled={saving || uploadingLogo}
@@ -550,12 +694,21 @@ export default function TenantSettingsPage() {
               {saving ? (
                 <>
                   <Loader2 className="h-5 w-5 mr-2 animate-spin" />
-                  Saving...
+                  {isOnboarding ? 'Setting Up...' : 'Saving...'}
                 </>
               ) : (
                 <>
-                  <Save className="h-5 w-5 mr-2" />
-                  Save Settings
+                  {isOnboarding ? (
+                    <>
+                      <Rocket className="h-5 w-5 mr-2" />
+                      Complete Setup & Continue
+                    </>
+                  ) : (
+                    <>
+                      <Save className="h-5 w-5 mr-2" />
+                      Save Settings
+                    </>
+                  )}
                 </>
               )}
             </button>

@@ -106,24 +106,27 @@ model Passkey {
 }
 
 model Tenant {
-  id          String       @id @default(uuid())
-  name        String
-  slug        String       @unique
-  description String?
-  logo        String?
-  plan        PlanType     @default(FREE)
-  tokenUsage  Int          @default(0)
-  tokenLimit  Int          @default(10000)
-  ownerId     String
-  brandKit    Json?        @default("{}")
-  createdAt   DateTime     @default(now())
-  updatedAt   DateTime     @updatedAt
-  sites       Site[]
-  tenantUsers TenantUser[]
-  invitations Invitation[]
-  forms       Form[] // Temporary for migration
-  owner       User         @relation("TenantOwner", fields: [ownerId], references: [id], onDelete: Cascade)
-  media       Media[]
+  id                 String        @id @default(uuid())
+  name               String
+  slug               String        @unique
+  description        String?
+  logo               String?
+  plan               PlanType      @default(FREE)
+  tokenUsage         Int           @default(0)
+  tokenLimit         Int           @default(10000)
+  ownerId            String
+  brandKit           Json?         @default("{}")
+  workspaceType      WorkspaceType?
+  defaultMemberRole  Role          @default(EDITOR)
+  onboardingComplete Boolean       @default(false)
+  createdAt          DateTime      @default(now())
+  updatedAt          DateTime      @updatedAt
+  sites              Site[]
+  tenantUsers        TenantUser[]
+  invitations        Invitation[]
+  forms              Form[] // Temporary for migration
+  owner              User          @relation("TenantOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+  media              Media[]
 
   @@index([slug])
   @@index([ownerId])
@@ -351,6 +354,13 @@ enum Role {
   OWNER
   EDITOR
   VIEWER
+}
+
+enum WorkspaceType {
+  AGENCY
+  BUSINESS
+  PERSONAL
+  STARTUP
 }
 
 enum PlanType {
