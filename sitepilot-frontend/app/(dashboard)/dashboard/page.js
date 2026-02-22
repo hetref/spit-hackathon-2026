@@ -404,8 +404,10 @@ function WorkspaceCard({ tenant, isOwner, onClick }) {
   )
 }
 
+import { Suspense } from 'react'
+
 // ─── Main page ────────────────────────────────────────────────────────────────
-export default function DashboardPage() {
+function DashboardContent() {
   const { data: session, isPending } = useSession()
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -852,5 +854,17 @@ export default function DashboardPage() {
         </div>
       </main>
     </div>
+  )
+}
+
+export default function DashboardPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center bg-[#fcfdfc]">
+        <div className="animate-spin rounded-full h-10 w-10 border-[4px] border-gray-100 border-t-[#0b1411]" />
+      </div>
+    }>
+      <DashboardContent />
+    </Suspense>
   )
 }

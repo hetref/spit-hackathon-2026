@@ -11,7 +11,9 @@ const IconGoogle = (props) => (
   </svg>
 );
 
-export default function SignInPage() {
+import { Suspense } from 'react'
+
+function SignInContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const redirectUrl = searchParams.get('redirect')
@@ -250,5 +252,17 @@ export default function SignInPage() {
         </div>
       </div>
     </div>
+  )
+}
+
+export default function SignInPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#0b1411] via-[#0f211d] to-[#0c1a16]">
+        <div className="animate-spin rounded-full h-10 w-10 border-[4px] border-white/10 border-t-white" />
+      </div>
+    }>
+      <SignInContent />
+    </Suspense>
   )
 }

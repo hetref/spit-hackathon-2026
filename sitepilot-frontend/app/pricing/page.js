@@ -209,7 +209,7 @@ function PlanCard({ plan, currentPlan, subscription, onSelectPlan, loading, tena
     );
 }
 
-export default function PricingPage() {
+function PricingContent() {
     const { data: session } = useSession();
     const searchParams = useSearchParams();
     const tenantId = searchParams.get("tenantId");
@@ -383,5 +383,17 @@ export default function PricingPage() {
 
             <AppFooter />
         </div>
+    );
+}
+
+export default function PricingPage() {
+    return (
+        <Suspense fallback={
+            <div className="min-h-screen flex items-center justify-center bg-white">
+                <div className="animate-spin rounded-full h-10 w-10 border-[4px] border-gray-100 border-t-[#0b1411]" />
+            </div>
+        }>
+            <PricingContent />
+        </Suspense>
     );
 }
