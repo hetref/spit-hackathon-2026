@@ -124,6 +124,64 @@ const useBuilderStore = create((set, get) => ({
   setHoveredNode: (nodeId) => set({ hoveredNodeId: nodeId }),
   clearSelection: () => set({ selectedNodeId: null }),
 
+  // THEME
+  updateTheme: (themeUpdates) => {
+    set(
+      produce((state) => {
+        state.theme = { ...(state.theme || {}), ...themeUpdates };
+        if (state.layoutJSON) {
+          state.layoutJSON.theme = state.theme;
+        }
+      }),
+    );
+    saveToLocalStorage(get().layoutJSON);
+  },
+
+  // Replace full theme (used when importing a preset)
+  importTheme: (newTheme) => {
+    set(
+      produce((state) => {
+        state.theme = { ...newTheme };
+        if (state.layoutJSON) {
+          state.layoutJSON.theme = state.theme;
+        }
+      }),
+    );
+    saveToLocalStorage(get().layoutJSON);
+  },
+
+  // TEMPLATE IMPORT
+  // Replaces the current page layout with the template's containers (re-keyed)
+  importTemplate: (templateLayout) => {
+    set(
+      produce((state) => {
+        const page = state.layoutJSON.pages.find(
+          (p) => p.id === state.currentPageId,
+        );
+        if (!page) return;
+
+        // Deep-clone and assign fresh IDs so each import is unique
+        const rekey = (layout) =>
+          layout.map((container) => ({
+            ...container,
+            id: nanoid(),
+            columns: container.columns.map((col) => ({
+              ...col,
+              id: nanoid(),
+              components: col.components.map((comp) => ({
+                ...comp,
+                id: nanoid(),
+              })),
+            })),
+          }));
+
+        page.layout = rekey(JSON.parse(JSON.stringify(templateLayout)));
+        state.selectedNodeId = null;
+      }),
+    );
+    saveToLocalStorage(get().layoutJSON);
+  },
+
   // PAGE
   setCurrentPage: (pageId) => set({ currentPageId: pageId }),
   getCurrentPage: () => {
