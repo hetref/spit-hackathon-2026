@@ -2,43 +2,65 @@ import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import crypto from "crypto";
 
+const CORS_HEADERS = {
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Methods': 'POST, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type',
+};
+
+// IP hashing salt — falls back to a static value when env var is absent
+const IP_SALT = process.env.ANALYTICS_SALT || process.env.BETTER_AUTH_SECRET || "sp-analytics-salt";
+
+export async function OPTIONS() {
+    return new NextResponse(null, { status: 204, headers: CORS_HEADERS });
+}
+
 export async function POST(request) {
     try {
         const body = await request.json();
-        const { siteId, pageSlug, userAgent } = body;
+        const { siteId, pageSlug, userAgent, referrer } = body;
         let { sessionId } = body;
 
         if (!siteId || !pageSlug) {
-            return NextResponse.json({ error: "Missing parameters" }, { status: 400 });
+            return NextResponse.json({ error: "Missing parameters" }, { status: 400, headers: CORS_HEADERS });
         }
 
-        // IP Hashing (pseudonymization)
-        const ip = request.headers.get("x-forwarded-for") || request.headers.get("remote-addr") || "unknown";
-        const ipHash = crypto.createHash('sha256').update(ip + process.env.NEXTAUTH_SECRET).digest('hex');
+        // Verify the site exists before recording analytics
+        const siteExists = await prisma.site.findUnique({
+            where: { id: siteId },
+            select: { id: true },
+        });
+        if (!siteExists) {
+            return NextResponse.json({ error: "Invalid site" }, { status: 404, headers: CORS_HEADERS });
+        }
 
-        // Make sure session exists or create it
-        let visitorSession;
+        // IP Hashing (pseudonymization — never store raw IPs)
+        const forwarded = request.headers.get("x-forwarded-for");
+        const ip = forwarded ? forwarded.split(",")[0].trim() : "unknown";
+        const ipHash = crypto.createHash('sha256').update(ip + IP_SALT).digest('hex');
+
+        // Resolve or create session
+        let visitorSession = null;
         if (sessionId) {
             visitorSession = await prisma.visitorSession.findUnique({
-                where: { id: sessionId }
+                where: { id: sessionId },
             });
         }
 
         if (!visitorSession) {
-            // Create new session
             visitorSession = await prisma.visitorSession.create({
                 data: {
                     siteId,
                     ipHash,
-                    userAgent: userAgent || "Unknown",
-                }
+                    userAgent: userAgent ? String(userAgent).slice(0, 512) : "Unknown",
+                },
             });
             sessionId = visitorSession.id;
         } else {
-            // Update updatedAt so session lives on
+            // Touch updatedAt to keep the session alive
             await prisma.visitorSession.update({
                 where: { id: sessionId },
-                data: { updatedAt: new Date() }
+                data: { updatedAt: new Date() },
             });
         }
 
@@ -47,30 +69,18 @@ export async function POST(request) {
             data: {
                 sessionId: visitorSession.id,
                 siteId,
-                pageSlug,
+                pageSlug: String(pageSlug).slice(0, 512),
                 enteredAt: new Date(),
-            }
+            },
         });
 
-        // Provide permissive CORS headers since styles/scripts run on third-party domains
-        const response = NextResponse.json({ success: true, pageViewId: pageView.id, sessionId });
-
-        response.headers.set('Access-Control-Allow-Origin', '*');
-        response.headers.set('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-        response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-
+        const response = NextResponse.json(
+            { success: true, pageViewId: pageView.id, sessionId },
+            { headers: CORS_HEADERS }
+        );
         return response;
-
     } catch (error) {
-        console.error("Analytics enter logic error:", error);
-        return NextResponse.json({ error: "Internal Error" }, { status: 500 });
+        console.error("Analytics enter error:", error);
+        return NextResponse.json({ error: "Internal Error" }, { status: 500, headers: CORS_HEADERS });
     }
-}
-
-export async function OPTIONS(request) {
-    const response = new NextResponse(null, { status: 204 });
-    response.headers.set('Access-Control-Allow-Origin', '*');
-    response.headers.set('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-    response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-    return response;
 }

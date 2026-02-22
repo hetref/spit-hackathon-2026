@@ -9,7 +9,7 @@
  * Cursors are tracked ONLY inside this area (not toolbar / sidebars).
  */
 
-import { useState, useRef, useCallback, useMemo } from "react";
+import { useState, useRef, useCallback, useMemo, useEffect } from "react";
 import CanvasRenderer from "../canvas/CanvasRenderer";
 import CursorLayer from "@/components/builder/CursorLayer";
 import useBuilderStore from "@/lib/stores/builderStore";
@@ -32,9 +32,68 @@ export default function CanvasArea() {
     selectedNodeId,
     setSelectedNode,
   } = useBuilderStore();
+  const siteId = useBuilderStore((s) => s.siteId);
   const { devicePreview } = useUIStore();
   const { pushState } = useHistoryStore();
   const canvasRef = useRef(null);
+
+  // ── Global settings (colors/fonts) for the entire site ──────────────────
+  const [globalFontFamily, setGlobalFontFamily] = useState('Inter, sans-serif');
+  const [globalColors, setGlobalColors] = useState({});
+
+  useEffect(() => {
+    if (!siteId) return;
+    let cancelled = false;
+
+    (async () => {
+      try {
+        const siteRes = await fetch(`/api/sites/${siteId}`);
+        if (!siteRes.ok || cancelled) return;
+        const { site } = await siteRes.json();
+        const gs = site?.globalSettings || {};
+
+        let effectiveFonts = { heading: 'Poppins', body: 'Inter' };
+        let effectiveColors = { primary: '#3B82F6', secondary: '#8B5CF6', tertiary: '#EC4899' };
+
+        // Try to fetch brand kit if in brandkit mode
+        if (gs.fontMode !== 'custom' || gs.colorMode !== 'custom') {
+          try {
+            const bkRes = await fetch(`/api/tenants/${site.tenantId}/brand-kit`);
+            if (bkRes.ok && !cancelled) {
+              const bk = await bkRes.json();
+              if (gs.fontMode !== 'custom' && bk.brandKit?.fonts) {
+                effectiveFonts = bk.brandKit.fonts;
+              }
+              if (gs.colorMode !== 'custom' && bk.brandKit?.colors) {
+                effectiveColors = bk.brandKit.colors;
+              }
+            }
+          } catch (e) { /* ignore */ }
+        }
+
+        if (gs.fontMode === 'custom' && gs.globalFonts) effectiveFonts = gs.globalFonts;
+        if (gs.colorMode === 'custom' && gs.globalColors) effectiveColors = gs.globalColors;
+
+        if (!cancelled) {
+          setGlobalFontFamily(`${effectiveFonts.body}, sans-serif`);
+          setGlobalColors(effectiveColors);
+
+          // Load Google Fonts
+          [effectiveFonts.heading, effectiveFonts.body].forEach(font => {
+            if (!font) return;
+            const existingLink = document.querySelector(`link[href*="${font.replace(/\s+/g, '+')}"]`);
+            if (existingLink) return;
+            const link = document.createElement('link');
+            link.href = `https://fonts.googleapis.com/css2?family=${font.replace(/\s+/g, '+')}:wght@300;400;500;600;700;800;900&display=swap`;
+            link.rel = 'stylesheet';
+            document.head.appendChild(link);
+          });
+        }
+      } catch (e) { /* ignore */ }
+    })();
+
+    return () => { cancelled = true; };
+  }, [siteId]);
 
   // ── Liveblocks presence for cursor tracking ─────────────────────────────
   const updatePresence = useUpdateMyPresence();
@@ -169,6 +228,10 @@ export default function CanvasArea() {
           style={{
             width: getCanvasWidth(),
             minHeight: "100vh",
+            fontFamily: globalFontFamily,
+            '--global-primary': globalColors.primary || '#3B82F6',
+            '--global-secondary': globalColors.secondary || '#8B5CF6',
+            '--global-tertiary': globalColors.tertiary || '#EC4899',
           }}
         >
           <CanvasWithDropZones

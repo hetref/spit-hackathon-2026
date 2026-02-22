@@ -25,6 +25,7 @@ export default function Button({ props, styles, isSelected, onClick }) {
         paddingBottom: styles?.paddingBottom
           ? `${styles.paddingBottom}px`
           : undefined,
+        fontFamily: styles?.fontFamily || undefined,
       }}
     >
       <a

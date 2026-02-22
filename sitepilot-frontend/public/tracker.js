@@ -1,83 +1,143 @@
 (function () {
-    // This tells the tracker exactly where your Next.js application is hosted, 
-    // so it knows where to send the analytics data.
-    const BACKEND_URL = "https://jeanene-unexposed-ingrid.ngrok-free.dev";
+    "use strict";
+
+    // ── Logging ─────────────────────────────────────────────────────────────
+    var PREFIX = "[SitePilot Analytics]";
+    function log() { var a = [PREFIX]; for (var i = 0; i < arguments.length; i++) a.push(arguments[i]); console.log.apply(console, a); }
+    function warn() { var a = [PREFIX]; for (var i = 0; i < arguments.length; i++) a.push(arguments[i]); console.warn.apply(console, a); }
+    function err() { var a = [PREFIX]; for (var i = 0; i < arguments.length; i++) a.push(arguments[i]); console.error.apply(console, a); }
 
     function init() {
-        const scriptTag = document.currentScript || document.querySelector('script[src*="tracker.js"]');
-        if (!scriptTag) return;
+        log("Tracker script loaded");
 
-        const siteId = scriptTag.getAttribute('data-site');
-        const pageSlug = scriptTag.getAttribute('data-page') || window.location.pathname;
+        // Resolve the script tag — document.currentScript works reliably for defer scripts
+        var scriptTag = document.currentScript || document.querySelector('script[data-site]');
+        if (!scriptTag) {
+            warn("Could not find tracker script tag — aborting");
+            return;
+        }
 
-        if (!siteId) return;
+        var siteId = scriptTag.getAttribute('data-site');
+        var pageSlug = scriptTag.getAttribute('data-page') || window.location.pathname;
 
-        let pageViewId = null;
-        let sessionId = getCookie('_sp_session');
+        // Hardcoded API base URL
+        var apiBase = 'https://jeanene-unexposed-ingrid.ngrok-free.dev';
 
-        // Fire enter event
-        fetch(`${BACKEND_URL}/api/analytics/enter`, {
+        if (!siteId) {
+            warn("Missing data-site attribute — aborting");
+            return;
+        }
+        log("Initialized", { siteId: siteId, pageSlug: pageSlug, apiBase: apiBase });
+
+        var pageViewId = null;
+        var sessionId = getCookie('_sp_sid');
+
+        if (sessionId) {
+            log("Existing session found:", sessionId);
+        } else {
+            log("No existing session — will create new one");
+        }
+
+        // ── Enter event ─────────────────────────────────────────────────────
+        var enterUrl = apiBase + '/api/analytics/enter';
+        log("Sending enter event →", enterUrl);
+
+        fetch(enterUrl, {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
+            mode: 'cors',
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-                siteId,
-                pageSlug,
-                sessionId,
-                userAgent: navigator.userAgent
+                siteId: siteId,
+                pageSlug: pageSlug,
+                sessionId: sessionId,
+                userAgent: navigator.userAgent,
+                referrer: document.referrer || null
             }),
             keepalive: true
         })
-            .then(res => res.json())
-            .then(data => {
+            .then(function (res) {
+                log("Enter response status:", res.status);
+                return res.json();
+            })
+            .then(function (data) {
+                if (data.error) {
+                    warn("Enter API returned error:", data.error);
+                    return;
+                }
                 if (data.sessionId) {
-                    setCookie('_sp_session', data.sessionId, 30); // 30 mins session
+                    setCookie('_sp_sid', data.sessionId, 30);
                     sessionId = data.sessionId;
+                    log("Session ID set:", sessionId);
                 }
                 if (data.pageViewId) {
                     pageViewId = data.pageViewId;
+                    log("✅ User visited — pageViewId:", pageViewId);
                 }
             })
-            .catch(err => console.error('SitePilot Analytics Error:', err));
+            .catch(function (e) {
+                err("Enter request failed:", e.message || e);
+            });
 
-        // Fire exit event
-        window.addEventListener('pagehide', function () {
-            if (!pageViewId) return;
-            const data = JSON.stringify({ pageViewId });
+        // ── Exit event ──────────────────────────────────────────────────────
+        var exitUrl = apiBase + '/api/analytics/exit';
+        var exitSent = false;
 
-            // Use sendBeacon for reliable delivery during page unload
+        function sendExit() {
+            if (!pageViewId || exitSent) return;
+            exitSent = true;
+
+            log("Sending exit event → pageViewId:", pageViewId);
+            var payload = JSON.stringify({ pageViewId: pageViewId });
+
             if (navigator.sendBeacon) {
-                navigator.sendBeacon(`${BACKEND_URL}/api/analytics/exit`, new Blob([data], { type: 'application/json' }));
+                var sent = navigator.sendBeacon(exitUrl, new Blob([payload], { type: 'application/json' }));
+                log("Exit sent via sendBeacon:", sent ? "success" : "failed");
             } else {
-                fetch(`${BACKEND_URL}/api/analytics/exit`, {
+                log("sendBeacon unavailable — using fetch for exit");
+                fetch(exitUrl, {
                     method: 'POST',
+                    mode: 'cors',
                     headers: { 'Content-Type': 'application/json' },
-                    body: data,
+                    body: payload,
                     keepalive: true
                 });
             }
+            pageViewId = null;
+        }
+
+        // pagehide is the most reliable unload event for modern browsers
+        window.addEventListener('pagehide', function () {
+            log("pagehide fired");
+            sendExit();
         });
+        // visibilitychange covers mobile tab switches and app backgrounding
+        document.addEventListener('visibilitychange', function () {
+            if (document.visibilityState === 'hidden') {
+                log("visibilitychange → hidden");
+                sendExit();
+            }
+        });
+
+        log("Event listeners attached (pagehide, visibilitychange)");
     }
 
-    // Basic cookie utils
+    // ── Cookie helpers ──────────────────────────────────────────────────────
     function setCookie(name, value, minutes) {
-        let expires = "";
+        var expires = '';
         if (minutes) {
-            const date = new Date();
-            date.setTime(date.getTime() + (minutes * 60 * 1000));
-            expires = "; expires=" + date.toUTCString();
+            var d = new Date();
+            d.setTime(d.getTime() + minutes * 60000);
+            expires = '; expires=' + d.toUTCString();
         }
-        document.cookie = name + "=" + (value || "") + expires + "; path=/; SameSite=Lax; Secure";
+        document.cookie = name + '=' + (value || '') + expires + '; path=/; SameSite=Lax; Secure';
     }
 
     function getCookie(name) {
-        const nameEQ = name + "=";
-        const ca = document.cookie.split(';');
-        for (let i = 0; i < ca.length; i++) {
-            let c = ca[i];
-            while (c.charAt(0) == ' ') c = c.substring(1, c.length);
-            if (c.indexOf(nameEQ) == 0) return c.substring(nameEQ.length, c.length);
+        var eq = name + '=';
+        var parts = document.cookie.split(';');
+        for (var i = 0; i < parts.length; i++) {
+            var c = parts[i].replace(/^ +/, '');
+            if (c.indexOf(eq) === 0) return c.substring(eq.length);
         }
         return null;
     }
@@ -86,5 +146,7 @@
     if (!window._spTrackerInitialized) {
         window._spTrackerInitialized = true;
         init();
+    } else {
+        log("Already initialized — skipping duplicate");
     }
 })();

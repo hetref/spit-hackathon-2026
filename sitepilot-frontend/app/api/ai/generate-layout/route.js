@@ -15,7 +15,7 @@ export async function POST(request) {
     }
 
     const body = await request.json();
-    const { description, businessType, pageType } = body;
+    const { description, businessType, pageType, brandKit } = body;
 
     if (!description || !businessType) {
       return NextResponse.json(
@@ -24,11 +24,12 @@ export async function POST(request) {
       );
     }
 
-    // Generate layout with Gemini
+    // Generate layout with Gemini (now with brand kit!)
     const result = await generateLayout({
       description,
       businessType,
-      pageType: pageType || 'home'
+      pageType: pageType || 'home',
+      brandKit  // Pass brand kit to AI
     });
 
     if (!result.success) {

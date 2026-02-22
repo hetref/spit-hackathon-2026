@@ -27,7 +27,8 @@ import {
   Clock,
   CheckCircle2,
   RotateCcw,
-  Rocket
+  Rocket,
+  Settings
 } from "lucide-react";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -505,6 +506,13 @@ export default function SiteDetailPage() {
               >
                 <LayoutTemplate size={16} className="mr-2" />
                 Manage Pages
+              </button>
+              <button
+                onClick={() => router.push(`/${params.tenantId}/sites/${params.siteId}/settings`)}
+                className="inline-flex items-center justify-center px-5 py-2.5 bg-white border border-gray-200 text-[#0b1411] text-sm font-medium rounded-xl hover:bg-gray-50 transition-colors focus:outline-none shadow-sm"
+              >
+                <Settings size={16} className="mr-2" />
+                Settings
               </button>
               <button
                 onClick={() => setShowPublishModal(true)}

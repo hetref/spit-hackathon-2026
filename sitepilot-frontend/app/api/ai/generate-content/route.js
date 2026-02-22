@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server';
 import { generateComponentContent } from '@/lib/ai/gemini';
 import { auth } from '@/lib/auth';
 import { headers } from 'next/headers';
+import prisma from '@/lib/prisma';
+import { getPlanGuard, PlanGuardError, planGuardErrorResponse } from '@/lib/plan-guard';
 
 export async function POST(request) {
   try {
@@ -15,13 +17,31 @@ export async function POST(request) {
     }
 
     const body = await request.json();
-    const { componentType, fieldName, context, businessType } = body;
+    const { componentType, fieldName, context, businessType, tenantId } = body;
 
     if (!componentType || !fieldName) {
       return NextResponse.json(
         { error: 'Component type and field name are required' },
         { status: 400 }
       );
+    }
+
+    // ── PLAN GUARD: Token limit check ─────────────────────────────────────
+    if (tenantId) {
+      try {
+        const guard = await getPlanGuard(prisma, tenantId);
+        const tenant = await prisma.tenant.findUnique({
+          where: { id: tenantId },
+          select: { tokenUsage: true },
+        });
+        guard.requireActive();
+        guard.checkTokenLimit(tenant?.tokenUsage ?? 0, 500); // ~500 tokens per generation
+      } catch (err) {
+        if (err instanceof PlanGuardError) {
+          return NextResponse.json(planGuardErrorResponse(err), { status: err.httpStatus });
+        }
+        throw err;
+      }
     }
 
     // Generate content with Gemini
@@ -40,6 +60,16 @@ export async function POST(request) {
 
     // Extract the specific field value
     const fieldValue = result.content[fieldName] || result.content.content || result.content.text;
+
+    // Track token usage
+    if (tenantId && result.success) {
+      try {
+        await prisma.tenant.update({
+          where: { id: tenantId },
+          data: { tokenUsage: { increment: 500 } }, // Approximate per generation
+        });
+      } catch { /* non-fatal — usage tracking failure shouldn't break the response */ }
+    }
 
     return NextResponse.json({
       success: true,

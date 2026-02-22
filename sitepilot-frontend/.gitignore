@@ -44,3 +44,6 @@ next-env.d.ts
 IMPLEMENTATION_ROADMAP.md
 PHASE_1_COMPLETE.md
 BUILDER_README.md
+
+# Docker deployments (generated per-site backends)
+.docker-deployments/

@@ -41,6 +41,9 @@ export default function Heading({ props, styles, isSelected, onClick }) {
         color: styles?.textColor || "#1f2937",
         textAlign: styles?.textAlign || "left",
         backgroundColor: styles?.backgroundColor,
+        fontFamily: styles?.fontFamily || undefined,
+        fontWeight: styles?.fontWeight || undefined,
+        fontSize: styles?.fontSize ? `${styles.fontSize}px` : undefined,
       }}
     >
       {text || "Heading Text"}

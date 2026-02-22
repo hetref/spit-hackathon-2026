@@ -7,7 +7,7 @@
  * Publish opens a modal to name the deployment before pushing to S3 + CloudFront.
  */
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Undo2,
   Redo2,
@@ -28,6 +28,8 @@ import {
   Sparkles,
   Menu,
   Settings2,
+  ArrowLeft,
+  Search,
 } from "lucide-react";
 import useUIStore from "@/lib/stores/uiStore";
 import AIPageGenerator from "./AIPageGenerator";
@@ -37,6 +39,163 @@ import { clsx } from "clsx";
 import AvatarStack from "@/components/builder/AvatarStack";
 import HtmlImportModal from "./HtmlImportModal";
 import { Code2 } from "lucide-react";
+
+// ─── SEO Modal ────────────────────────────────────────────────────────────────
+
+function SEOModal({ siteId, pageId, onClose }) {
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [seo, setSeo] = useState({
+    title: '',
+    description: '',
+    keywords: '',
+  });
+
+  // Load existing SEO on open
+  useEffect(() => {
+    if (!siteId || !pageId) return;
+    fetch(`/api/sites/${siteId}/pages/${pageId}`)
+      .then(res => res.ok ? res.json() : null)
+      .then(data => {
+        if (data?.page?.seo) {
+          setSeo(prev => ({ ...prev, ...data.page.seo }));
+        }
+        // Pre-fill title from page name if empty
+        if (!data?.page?.seo?.title && data?.page?.name) {
+          setSeo(prev => ({ ...prev, title: data.page.name }));
+        }
+      })
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, [siteId, pageId]);
+
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      const res = await fetch(`/api/sites/${siteId}/pages/${pageId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ seo }),
+      });
+      if (!res.ok) throw new Error('Failed to save SEO');
+      onClose();
+    } catch (error) {
+      console.error('Error saving SEO:', error);
+      alert('Failed to save SEO settings');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-gray-900/60 backdrop-blur-sm">
+      <div className="bg-white border border-gray-200 rounded-2xl shadow-2xl w-full max-w-lg mx-4 overflow-hidden">
+        {/* Header */}
+        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 bg-gray-50/50">
+          <div className="flex items-center gap-2">
+            <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
+              <Search size={16} className="text-blue-600" />
+            </div>
+            <h2 className="text-base font-semibold text-gray-900">Page SEO Settings</h2>
+          </div>
+          <button
+            onClick={onClose}
+            className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-md transition-colors"
+          >
+            <X size={16} />
+          </button>
+        </div>
+
+        {/* Body */}
+        <div className="px-6 py-5 space-y-5">
+          <div>
+            <label className="block text-sm font-bold text-gray-700 mb-1.5 uppercase tracking-wide">
+              Page Title
+            </label>
+            <input
+              type="text"
+              value={seo.title}
+              onChange={(e) => setSeo(prev => ({ ...prev, title: e.target.value }))}
+              className="w-full px-3.5 py-2.5 bg-white border border-gray-300 text-gray-900 text-sm rounded-xl placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors"
+              placeholder="My Page Title"
+            />
+            <p className="text-[11px] text-gray-400 mt-1 font-medium">
+              Appears in browser tabs and search results ({seo.title.length}/60 chars)
+            </p>
+          </div>
+
+          <div>
+            <label className="block text-sm font-bold text-gray-700 mb-1.5 uppercase tracking-wide">
+              Meta Description
+            </label>
+            <textarea
+              value={seo.description}
+              onChange={(e) => setSeo(prev => ({ ...prev, description: e.target.value }))}
+              className="w-full px-3.5 py-2.5 bg-white border border-gray-300 text-gray-900 text-sm rounded-xl placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors resize-none"
+              rows={3}
+              placeholder="A brief description of this page for search engines..."
+            />
+            <p className="text-[11px] text-gray-400 mt-1 font-medium">
+              Recommended: 120-160 characters ({seo.description.length}/160)
+            </p>
+          </div>
+
+          <div>
+            <label className="block text-sm font-bold text-gray-700 mb-1.5 uppercase tracking-wide">
+              Keywords
+            </label>
+            <input
+              type="text"
+              value={seo.keywords}
+              onChange={(e) => setSeo(prev => ({ ...prev, keywords: e.target.value }))}
+              className="w-full px-3.5 py-2.5 bg-white border border-gray-300 text-gray-900 text-sm rounded-xl placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors"
+              placeholder="website, builder, landing page"
+            />
+            <p className="text-[11px] text-gray-400 mt-1 font-medium">
+              Comma-separated keywords for this page
+            </p>
+          </div>
+
+          {/* Google Preview */}
+          <div className="p-4 bg-gray-50 rounded-xl border border-gray-200">
+            <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Search Preview</p>
+            <p className="text-blue-700 text-base font-medium truncate">
+              {seo.title || 'Page Title'}
+            </p>
+            <p className="text-green-700 text-xs truncate mt-0.5">
+              https://yoursite.com/page
+            </p>
+            <p className="text-gray-600 text-xs mt-1 line-clamp-2">
+              {seo.description || 'No description set. Search engines will auto-generate one from your page content.'}
+            </p>
+          </div>
+        </div>
+
+        {/* Footer */}
+        <div className="px-6 pb-5 flex gap-3">
+          <button
+            onClick={onClose}
+            disabled={saving}
+            className="flex-1 px-4 py-2.5 border border-gray-300 text-gray-700 bg-white text-sm font-medium rounded-xl hover:bg-gray-50 transition-colors disabled:opacity-50"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={handleSave}
+            disabled={saving}
+            className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-blue-600 text-white text-sm font-medium rounded-xl hover:bg-blue-700 transition-colors disabled:opacity-60 shadow-sm"
+          >
+            {saving ? (
+              <><Loader2 size={16} className="animate-spin" /> Saving…</>
+            ) : (
+              <>Save SEO</>
+            )}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 // ─── Publish Modal ────────────────────────────────────────────────────────────
 
@@ -188,7 +347,7 @@ function PublishSuccessBanner({ result, onClose }) {
 
 // ─── Main Toolbar ─────────────────────────────────────────────────────────────
 
-export default function Toolbar({ saving: autoSaving, lastSaved, saveError }) {
+export default function Toolbar({ saving: autoSaving, lastSaved, saveError, tenantId }) {
   const { devicePreview, setDevicePreview, toggleLeftSidebar, toggleRightSidebar } = useUIStore();
   const { canUndo, canRedo, undo, redo } = useHistoryStore();
   const { getLayoutJSON, updateLayoutJSON, siteId, pageId, getPageLayout } =
@@ -200,6 +359,7 @@ export default function Toolbar({ saving: autoSaving, lastSaved, saveError }) {
   const [publishResult, setPublishResult] = useState(null);
   const [showAIGenerator, setShowAIGenerator] = useState(false);
   const [showHtmlImport, setShowHtmlImport] = useState(false);
+  const [showSEOModal, setShowSEOModal] = useState(false);
 
   const handleUndo = () => {
     if (canUndo) {
@@ -305,6 +465,14 @@ export default function Toolbar({ saving: autoSaving, lastSaved, saveError }) {
       <div className="h-20 bg-white/80 backdrop-blur-md border-b border-gray-100 flex items-center justify-between px-6 sm:px-10 z-20 shadow-sm relative shrink-0">
         {/* Left Side — Logo + Menu + Undo/Redo */}
         <div className="flex items-center gap-2 sm:gap-6">
+          <button
+            onClick={() => window.history.back()}
+            className="p-2.5 rounded-xl text-gray-400 hover:bg-[#f2f4f2] hover:text-[#0b1411] transition-colors"
+            title="Go back"
+          >
+            <ArrowLeft size={18} />
+          </button>
+
           <div className="flex items-center gap-2 mr-2">
             <button
               onClick={toggleLeftSidebar}
@@ -382,6 +550,16 @@ export default function Toolbar({ saving: autoSaving, lastSaved, saveError }) {
         <div className="flex items-center gap-4">
           <AvatarStack />
 
+
+          {/* SEO Button */}
+          <button
+            onClick={() => setShowSEOModal(true)}
+            className="flex items-center gap-2 px-4 py-2 text-[10px] font-bold uppercase tracking-widest text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-full transition-colors border border-blue-200"
+            title="Page SEO Settings"
+          >
+            <Search size={14} />
+            <span className="hidden sm:inline">SEO</span>
+          </button>
 
           {/* AI Generate Button */}
           <button
@@ -465,6 +643,7 @@ export default function Toolbar({ saving: autoSaving, lastSaved, saveError }) {
 
       {/* AI Page Generator Modal */}
       <AIPageGenerator
+        tenantId={tenantId}
         isOpen={showAIGenerator}
         onClose={() => setShowAIGenerator(false)}
         onGenerate={(containers) => {
@@ -506,6 +685,14 @@ export default function Toolbar({ saving: autoSaving, lastSaved, saveError }) {
           updateLayoutJSON(updatedLayout);
         }}
       />
+
+      {showSEOModal && siteId && pageId && (
+        <SEOModal
+          siteId={siteId}
+          pageId={pageId}
+          onClose={() => setShowSEOModal(false)}
+        />
+      )}
 
       {/* Success Banner */}
       {publishResult && (
