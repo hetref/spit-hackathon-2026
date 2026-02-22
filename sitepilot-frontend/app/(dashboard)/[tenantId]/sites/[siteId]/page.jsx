@@ -345,9 +345,12 @@ export default function SiteDetailPage() {
 
   const [site, setSite] = useState(null);
   const [deployments, setDeployments] = useState([]);
+  const [analytics, setAnalytics] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [showPublishModal, setShowPublishModal] = useState(false);
+
+  const [fetchedSiteId, setFetchedSiteId] = useState(null);
 
   const siteUrl = site ? `https://${site.slug}.sitepilot.devally.in` : null;
 
@@ -356,9 +359,10 @@ export default function SiteDetailPage() {
     if (!params.siteId) return;
     setLoading(true);
     try {
-      const [siteRes, depRes] = await Promise.all([
+      const [siteRes, depRes, analyticsRes] = await Promise.all([
         fetch(`/api/sites/${params.siteId}`),
         fetch(`/api/sites/${params.siteId}/deployments`),
+        fetch(`/api/sites/${params.siteId}/analytics`)
       ]);
 
       if (!siteRes.ok) throw new Error((await siteRes.json()).error || "Failed to load site");
@@ -368,6 +372,13 @@ export default function SiteDetailPage() {
       if (depRes.ok) {
         const { deployments: deps } = await depRes.json();
         setDeployments(deps || []);
+      }
+
+      if (analyticsRes.ok) {
+        const data = await analyticsRes.json();
+        if (data.success) {
+          setAnalytics(data);
+        }
       }
     } catch (err) {
       setError(err.message);
@@ -381,8 +392,11 @@ export default function SiteDetailPage() {
   }, [session, isPending, router]);
 
   useEffect(() => {
-    if (session && params.siteId) fetchData();
-  }, [session, params.siteId, fetchData]);
+    if (session && params.siteId && fetchedSiteId !== params.siteId) {
+      fetchData();
+      setFetchedSiteId(params.siteId);
+    }
+  }, [session, params.siteId, fetchedSiteId, fetchData]);
 
   // ── Rollback ──────────────────────────────────────────────────────────────
   const handleRollback = async (siteSlug, deploymentId) => {
@@ -421,7 +435,7 @@ export default function SiteDetailPage() {
   };
 
   // ─── Render: Loading ──────────────────────────────────────────────────────
-  if (isPending || loading) {
+  if ((isPending || loading) && !site && !error) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#fcfdfc]">
         <div className="animate-spin rounded-full h-10 w-10 border-[4px] border-gray-100 border-t-[#0b1411]" />
@@ -624,30 +638,57 @@ export default function SiteDetailPage() {
                   <span className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-gray-400 mb-4">
                     <Users size={16} /> Visitors
                   </span>
-                  <span className="text-5xl font-black tracking-tighter">0</span>
+                  <span className="text-5xl font-black tracking-tighter">{analytics?.siteStats?.uniqueSessions || 0}</span>
                 </div>
 
                 <div className="flex flex-col">
                   <span className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-gray-400 mb-4">
                     <MousePointerClick size={16} /> Page Views
                   </span>
-                  <span className="text-5xl font-black tracking-tighter">0</span>
+                  <span className="text-5xl font-black tracking-tighter">{analytics?.siteStats?.totalViews || 0}</span>
                 </div>
 
                 <div className="flex flex-col">
                   <span className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-gray-400 mb-4">
                     <Timer size={16} /> Avg. Duration
                   </span>
-                  <span className="text-5xl font-black tracking-tighter">0s</span>
+                  <span className="text-5xl font-black tracking-tighter">{analytics?.siteStats?.avgDuration || 0}s</span>
                 </div>
 
                 <div className="flex flex-col">
                   <span className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-gray-400 mb-4">
-                    <ExternalLink size={16} /> Bounce Rate
+                    <ExternalLink size={16} /> Top Page
                   </span>
-                  <span className="text-5xl font-black tracking-tighter">0%</span>
+                  <span className="text-3xl font-black tracking-tighter truncate max-w-full">
+                    {analytics?.pageStats?.[0]?.slug || "N/A"}
+                  </span>
                 </div>
               </div>
+
+              {analytics?.pageStats?.length > 0 && (
+                <div className="pb-8 overflow-x-auto">
+                  <table className="w-full text-left">
+                    <thead>
+                      <tr className="border-b border-gray-100">
+                        <th className="pb-4 pt-0 font-bold text-xs uppercase tracking-widest text-[#1d2321]">Page Path</th>
+                        <th className="pb-4 pt-0 font-bold text-xs uppercase tracking-widest text-[#1d2321]">Views</th>
+                        <th className="pb-4 pt-0 font-bold text-xs uppercase tracking-widest text-[#1d2321]">Unique Visitors</th>
+                        <th className="pb-4 pt-0 font-bold text-xs uppercase tracking-widest text-[#1d2321]">Avg. Session</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-50">
+                      {analytics.pageStats.map(stat => (
+                        <tr key={stat.slug} className="hover:bg-gray-50/50">
+                          <td className="py-4 font-bold text-sm">{stat.slug}</td>
+                          <td className="py-4 font-bold text-sm text-gray-500">{stat.views}</td>
+                          <td className="py-4 font-bold text-sm text-gray-500">{stat.uniqueSessions}</td>
+                          <td className="py-4 font-bold text-sm text-gray-500">{stat.avgDuration}s</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
 
               <div className="pt-8 border-t border-gray-100">
                 <p className="text-sm font-medium text-gray-500 text-center flex items-center justify-center gap-3">

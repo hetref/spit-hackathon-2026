@@ -311,6 +311,8 @@ export default function SitesPage() {
   const [userRole, setUserRole] = useState(null);
   const [successToast, setSuccessToast] = useState(null); // Added state for toast
 
+  const [fetchedTenantId, setFetchedTenantId] = useState(null);
+
   const canCreate = hasPermission(userRole, 'sites:create');
 
   useEffect(() => {
@@ -318,11 +320,12 @@ export default function SitesPage() {
   }, [session, isPending, router]);
 
   useEffect(() => {
-    if (session && tenantId) {
+    if (session && tenantId && fetchedTenantId !== tenantId) {
       fetchSites();
       fetchUserRole();
+      setFetchedTenantId(tenantId);
     }
-  }, [session, tenantId]);
+  }, [session, tenantId, fetchedTenantId]);
 
   const fetchUserRole = async () => {
     try {
