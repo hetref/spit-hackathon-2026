@@ -77,8 +77,7 @@ export async function attachDomainToTenant({ cfTenantId, domain, certificateArn 
     console.log(`[CloudFront] Tenant Identifier: ${cfTenantId}`);
 
     const getTenantCmd = new GetDistributionTenantCommand({
-      DistributionId: CF_DISTRIBUTION_ID,
-      Id: cfTenantId, // Use CloudFront Identifier, NOT slug/name
+      Identifier: cfTenantId, // Use CloudFront Identifier, NOT slug/name
     });
 
     let tenantConfig;
@@ -123,19 +122,17 @@ export async function attachDomainToTenant({ cfTenantId, domain, certificateArn 
 
     // Step 3: Update tenant configuration
     const updateCmd = new UpdateDistributionTenantCommand({
+      Id: cfTenantId,  // Use CloudFront Id
       DistributionId: CF_DISTRIBUTION_ID,
-      Id: cfTenantId,  // Use CloudFront Identifier
-      DistributionTenantConfig: {
-        Id: tenantConfig.Id,
-        ConnectionGroupId: tenantConfig.ConnectionGroupId,
-        Domains: updatedDomains,
-        // Attach certificate if provided
-        ViewerCertificate: certificateArn ? {
-          ACMCertificateArn: certificateArn,
-          SSLSupportMethod: "sni-only",
-          MinimumProtocolVersion: "TLSv1.2_2021",
-        } : tenantConfig.ViewerCertificate,
-      },
+      ConnectionGroupId: tenantConfig.ConnectionGroupId,
+      Domains: updatedDomains,
+      // Attach certificate if provided preserving existing customizations
+      Customizations: certificateArn ? {
+        ...(tenantConfig.Customizations || {}),
+        Certificate: {
+          Arn: certificateArn,
+        },
+      } : tenantConfig.Customizations,
       IfMatch: currentETag,
     });
 
@@ -181,8 +178,11 @@ async function getConnectionGroupEndpoint() {
     const response = await cloudfront.send(getDistCmd);
     const distribution = response.Distribution;
 
-    // Return the distribution domain name
-    const endpoint = distribution.DomainName;
+    // Return the distribution domain name or format it if multi-tenant distribution returns "-"
+    let endpoint = distribution.DomainName;
+    if (!endpoint || endpoint === "-") {
+      endpoint = `${CF_CONNECTION_GROUP_ID}.cloudfront-tenants.net`;
+    }
 
     console.log(`[CloudFront] Connection endpoint: ${endpoint}`);
 
@@ -192,7 +192,7 @@ async function getConnectionGroupEndpoint() {
     console.error("[CloudFront] Failed to get connection endpoint:", error);
 
     // Fallback: construct endpoint from connection group ID
-    return `${CF_CONNECTION_GROUP_ID}.cloudfront.net`;
+    return `${CF_CONNECTION_GROUP_ID}.cloudfront-tenants.net`;
   }
 }
 
@@ -215,8 +215,7 @@ export async function removeDomainFromTenant({ cfTenantId, domain }) {
 
     // Get current tenant configuration
     const getTenantCmd = new GetDistributionTenantCommand({
-      DistributionId: CF_DISTRIBUTION_ID,
-      Id: cfTenantId,  // Use CloudFront Identifier
+      Identifier: cfTenantId,  // Use CloudFront Identifier
     });
 
     const tenantResponse = await cloudfront.send(getTenantCmd);
@@ -230,14 +229,11 @@ export async function removeDomainFromTenant({ cfTenantId, domain }) {
 
     // Update tenant
     const updateCmd = new UpdateDistributionTenantCommand({
+      Id: cfTenantId,  // Use CloudFront Id
       DistributionId: CF_DISTRIBUTION_ID,
-      Id: cfTenantId,  // Use CloudFront Identifier
-      DistributionTenantConfig: {
-        Id: tenantConfig.Id,
-        ConnectionGroupId: tenantConfig.ConnectionGroupId,
-        Domains: updatedDomains,
-        ViewerCertificate: tenantConfig.ViewerCertificate,
-      },
+      ConnectionGroupId: tenantConfig.ConnectionGroupId,
+      Domains: updatedDomains,
+      Customizations: tenantConfig.Customizations,
       IfMatch: currentETag,
     });
 
@@ -269,8 +265,7 @@ export async function listTenantDomains(cfTenantId) {
     validateCloudFrontConfig();
 
     const getTenantCmd = new GetDistributionTenantCommand({
-      DistributionId: CF_DISTRIBUTION_ID,
-      Id: cfTenantId,  // Use CloudFront Identifier
+      Identifier: cfTenantId,  // Use CloudFront Identifier
     });
 
     const response = await cloudfront.send(getTenantCmd);

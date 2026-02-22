@@ -91,7 +91,7 @@ function DNSInstructions({ instructions, type = "TXT" }) {
       {requiredRecords.length > 0 && (
         <div className="space-y-3 mb-4">
           <div className="text-[10px] font-black uppercase tracking-widest text-red-600 mb-2">
-            ⚠️ Required for SSL Validation
+            ⚠️ Required DNS Records
           </div>
           {requiredRecords.map((record, index) => (
             <div key={`required-${index}`} className="bg-white border border-gray-100 rounded-xl p-3">
@@ -130,6 +130,9 @@ function DNSInstructions({ instructions, type = "TXT" }) {
                   <CopyButton text={record.value} />
                 </div>
               </div>
+              {record.message && (
+                <p className="text-xs text-gray-600 mt-2 italic">{record.message}</p>
+              )}
             </div>
           ))}
         </div>
@@ -194,7 +197,7 @@ function DomainCard({ domain, siteId, onUpdate, onDelete }) {
   const [expanded, setExpanded] = useState(false);
   const [dnsInstructions, setDnsInstructions] = useState(null);
 
-  // Auto-expand and show validation records if SSL is validating
+  // Auto-expand and show validation/routing records if needed
   useEffect(() => {
     if ((domain.status === "SSL_PENDING" || domain.status === "SSL_VALIDATING") && domain.certificateValidation) {
       try {
@@ -229,8 +232,19 @@ function DomainCard({ domain, siteId, onUpdate, onDelete }) {
       } catch (error) {
         console.error("Failed to parse certificate validation records:", error);
       }
+    } else if (domain.status === "DNS_PENDING" && domain.cnameTarget) {
+      setDnsInstructions([
+        {
+          type: "CNAME",
+          name: domain.domain,
+          host: domain.domain,
+          value: domain.cnameTarget,
+          message: "Required: Route your domain to CloudFront to serve your site. DNS propagation may take some time."
+        }
+      ]);
+      setExpanded(true);
     }
-  }, [domain.status, domain.certificateValidation]);
+  }, [domain.status, domain.certificateValidation, domain.cnameTarget, domain.domain]);
 
   const handleVerify = async () => {
     setLoading(true);
