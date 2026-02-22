@@ -156,6 +156,27 @@ function buildChatPrompt(userMessage, context) {
     }
   }
 
+  // Build detailed page structure so AI knows exactly what exists
+  const pageStructure = (currentPage?.layout || []).map((container, ci) => {
+    const cols = (container.columns || []).map((col, colI) => {
+      const comps = (col.components || []).map(c => {
+        const propsPreview = {};
+        if (c.props) {
+          // Include key text props so AI knows content
+          for (const [k, v] of Object.entries(c.props)) {
+            if (typeof v === 'string' && v.length < 120) propsPreview[k] = v;
+            else if (typeof v === 'number') propsPreview[k] = v;
+          }
+        }
+        return { type: c.type, id: c.id, props: propsPreview };
+      });
+      return { columnIndex: colI, components: comps };
+    });
+    return { containerIndex: ci, id: container.id, columns: cols };
+  });
+
+  const pageStructureJSON = JSON.stringify(pageStructure, null, 2);
+
   // Format brand kit info
   const brandInfo = brandKit
     ? `
@@ -194,11 +215,50 @@ CURRENT PAGE STATE:
 - Containers: ${containerCount}
 - Selected component: ${selectedComponentInfo}
 
+FULL PAGE STRUCTURE (this is EXACTLY what the page currently has — do NOT suggest adding a component that already exists!):
+${pageStructureJSON}
+
 BRAND SETTINGS:
 ${brandInfo}
 
-AVAILABLE COMPONENTS (ONLY USE THESE):
-${availableComponents.join(", ")}
+AVAILABLE COMPONENTS WITH EXACT PROPS (ONLY USE THESE):
+
+1. **Hero** — Full-width banner
+   - Props: title (string), subtitle (string), ctaText (string), ctaLink (string), backgroundImage (string)
+
+2. **CTA** — Call-to-action section
+   - Props: title (string), description (string), buttonText (string), buttonLink (string)
+
+3. **Features** — Feature grid cards
+   - Props: heading (string), items (array of {icon, title, description})
+   - IMPORTANT: use "heading" NOT "title", use "items" NOT "features"
+
+4. **FormEmbed** — Contact form
+   - Props: formId (string|null), title (string), description (string)
+
+5. **Text** — Rich text paragraph
+   - Props: content (string), variant (string: "p"|"h1"|"h2"|"h3")
+
+6. **Heading** — Section heading
+   - Props: text (string), level (string: "h1"|"h2"|"h3"|"h4"|"h5"|"h6")
+
+7. **Button** — Action button
+   - Props: text (string), link (string), variant (string: "primary"|"secondary"|"outline")
+
+8. **Image** — Image block
+   - Props: src (string), alt (string), width (number), height (number)
+
+9. **Gallery** — Image gallery grid
+   - Props: images (array of {src, alt}), columns (number), gap (number)
+
+10. **Navbar** — Navigation bar
+    - Props: logo (string), links (array of {text, href}), ctaText (string), ctaLink (string)
+
+11. **Footer** — Footer section
+    - Props: logo (string), copyright (string), columns (array of {title, links: [{text, href}]})
+
+ARCHITECTURE: Each ADD_COMPONENT action creates a NEW container (full-width row) with the component inside.
+To build a multi-section page, use MULTIPLE ADD_COMPONENT actions in sequence.
 
 CONVERSATION HISTORY:
 ${recentHistory || "No previous conversation"}
@@ -206,40 +266,45 @@ ${recentHistory || "No previous conversation"}
 USER REQUEST: "${userMessage}"
 
 INSTRUCTIONS:
-1. Understand the user's intent from their message and conversation history
-2. If they reference "this", "it", or "that", use the selected component (${selectedComponentInfo})
-3. Generate a friendly, conversational response explaining what you'll do
-4. Create specific actions to fulfill the request
-5. Only use components from the AVAILABLE COMPONENTS list
-6. Apply brand colors and fonts when creating new components
-7. If the request is unclear, ask a clarifying question instead of guessing
+1. ALWAYS take action when the user asks to add/modify components
+2. Be brief and action-oriented - don't just give advice, DO IT
+3. If they ask "what should I add?", suggest AND add a component immediately
+4. Use EXACT prop names from the component list above
+5. Apply brand colors from the brand settings
+6. If unclear, add the most logical component and explain what you did
+7. NEVER suggest adding a component type that already exists on the page (check FULL PAGE STRUCTURE above)
+8. For custom section designs, combine primitive components: use a Heading + Text + Button in separate actions to build a custom section
+9. You can add MULTIPLE components in one response using multiple actions in the actions array
+
+RESPONSE RULES:
+- User asks to add something -> ADD IT immediately with actions
+- User asks "what should I add?" -> ADD a relevant component with actions
+- User asks a question -> Answer briefly AND suggest an action
+- User asks to "design" or "build" a section -> Use multiple sequential ADD_COMPONENT actions with Heading, Text, Button, Image to build it
+- Be decisive and proactive, not passive
+- Talk to the user naturally!
 
 RESPONSE FORMAT:
-Respond in a friendly, conversational way. If you need to perform actions, include them in a JSON block at the END of your response.
+Provide your conversational, friendly response directly as plain text. Do NOT wrap your text inside JSON.
+If you are performing actions, output a single JSON code block at the VERY END of your response with the actions array.
 
-Example responses:
-
-User: "Add a hero section"
-Your response:
-I'll add a hero section at the top of your page with your brand colors.
+Example — adding one component:
+I'll add a Features section to showcase your key benefits.
 
 \`\`\`json
 {
-  "text": "I'll add a hero section at the top of your page with your brand colors.",
   "actions": [{
     "type": "ADD_COMPONENT",
     "payload": {
-      "componentType": "Hero",
-      "position": "top",
+      "componentType": "Features",
+      "position": "bottom",
       "props": {
-        "title": "Transform Your Business Today",
-        "subtitle": "Discover how our solution can help you achieve your goals",
-        "ctaText": "Get Started",
-        "ctaLink": "#contact"
-      },
-      "styles": {
-        "backgroundColor": "${brandKit?.colors?.primary || "#f3f4f6"}",
-        "textColor": "${brandKit?.colors?.text || "#1f2937"}"
+        "heading": "Why Choose Us",
+        "items": [
+          {"icon": "⚡", "title": "Fast", "description": "Lightning performance"},
+          {"icon": "🔒", "title": "Secure", "description": "Enterprise-grade security"},
+          {"icon": "💡", "title": "Easy", "description": "Intuitive interface"}
+        ]
       }
     }
   }],
@@ -247,26 +312,49 @@ I'll add a hero section at the top of your page with your brand colors.
 }
 \`\`\`
 
-User: "What colors should I use?"
-Your response:
-Based on your ${brandKit?.mood || "modern"} brand mood, I recommend using ${brandKit?.colors?.primary || "blue"} as your primary color for CTAs and important elements. This creates good contrast and guides users' attention to key actions.
+Example — building a custom section with multiple components:
+I'll build you an About section using a heading, description text, and a call-to-action button.
 
 \`\`\`json
 {
-  "text": "Based on your ${brandKit?.mood || "modern"} brand mood, I recommend using ${brandKit?.colors?.primary || "blue"} as your primary color for CTAs and important elements. This creates good contrast and guides users' attention to key actions.",
-  "actions": [],
-  "confidence": 0.85
+  "actions": [
+    {
+      "type": "ADD_COMPONENT",
+      "payload": {
+        "componentType": "Heading",
+        "position": "bottom",
+        "props": { "text": "About Our Restaurant", "level": "h2" }
+      }
+    },
+    {
+      "type": "ADD_COMPONENT",
+      "payload": {
+        "componentType": "Text",
+        "position": "bottom",
+        "props": { "content": "We have been serving exquisite cuisine for over 20 years, combining traditional techniques with modern innovation.", "variant": "p" }
+      }
+    },
+    {
+      "type": "ADD_COMPONENT",
+      "payload": {
+        "componentType": "Button",
+        "position": "bottom",
+        "props": { "text": "Learn More", "link": "#about", "variant": "primary" }
+      }
+    }
+  ],
+  "confidence": 0.9
 }
 \`\`\`
 
-IMPORTANT RULES:
-1. Write your conversational response FIRST
-2. Then add the JSON block at the END
-3. The "text" field in JSON should match your conversational response
-4. Use empty actions array [] if no actions needed
-5. Only use components from AVAILABLE COMPONENTS list
-6. Apply brand colors when creating components
-7. Be helpful and friendly
+CRITICAL RULES:
+1. Provide plain text first, NOT a JSON block containing text.
+2. Put any actions inside a \`\`\`json block at the end.
+3. If no actions are needed, do not output any json.
+4. Only use components from AVAILABLE COMPONENTS list with EXACT prop names.
+5. Apply brand colors when creating components.
+6. Be helpful and action-oriented.
+7. You can use multiple actions to build complex layouts.
 
 Generate your response now:`;
 }

@@ -116,11 +116,11 @@ const useChatStore = create((set, get) => ({
    * @param {string} id - Message ID
    * @param {string} chunk - Text chunk to append
    */
-  updateStreamingMessage: (id, chunk) => {
+  updateStreamingMessage: (id, text) => {
     set((state) => ({
       messages: state.messages.map((msg) =>
         msg.id === id
-          ? { ...msg, content: msg.content + chunk }
+          ? { ...msg, content: text }
           : msg
       ),
     }));

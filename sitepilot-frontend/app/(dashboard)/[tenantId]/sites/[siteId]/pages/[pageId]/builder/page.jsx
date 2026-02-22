@@ -8,7 +8,7 @@ import RightSidebar from "@/lib/components/builder/RightSidebar";
 import CanvasArea from "@/lib/components/builder/CanvasArea";
 import CollaborativeCanvas from "@/components/builder/CollaborativeCanvas";
 import AIChatCopilot from "@/lib/components/builder/AIChatCopilot";
-import AICopilot from "@/lib/components/builder/AICopilot";
+
 import useBuilderStore from "@/lib/stores/builderStore";
 import useHistoryStore from "@/lib/stores/historyStore";
 import { useAutosave } from "@/lib/hooks/useAutosave";
@@ -118,7 +118,7 @@ export default function PageBuilderPage() {
       userColor={userColor}
     >
       <div className="h-screen flex flex-col bg-[#fcfdfc] font-sans text-gray-900 overflow-hidden text-base">
-        <Toolbar saving={saving} lastSaved={lastSaved} saveError={saveError} />
+        <Toolbar saving={saving} lastSaved={lastSaved} saveError={saveError} tenantId={tenantId} />
         <div className="flex-1 flex overflow-hidden">
           <LeftSidebar />
           <CanvasArea />
@@ -126,7 +126,7 @@ export default function PageBuilderPage() {
         </div>
         
         {/* AI Copilot - Smart Suggestions */}
-        <AICopilot tenantId={tenantId} siteId={siteId} />
+
         
         {/* AI Chat Copilot - Conversational Assistant */}
         <AIChatCopilot tenantId={tenantId} siteId={siteId} />

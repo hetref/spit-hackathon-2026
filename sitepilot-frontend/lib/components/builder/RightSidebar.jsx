@@ -7,13 +7,21 @@
  * Shows a "locked" message when the selected node is being edited by another user.
  */
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import useBuilderStore from "@/lib/stores/builderStore";
 import useHistoryStore from "@/lib/stores/historyStore";
-import { Trash2, Copy, Plus, Minus, Settings2, Paintbrush, Lock } from "lucide-react";
+import { Trash2, Copy, Plus, Minus, Settings2, Paintbrush, Lock, Wand2, Loader2, ChevronDown } from "lucide-react";
 import { clsx } from "clsx";
 import FormSelector from "./FormSelector";
 import { useOthers } from "@/lib/liveblocks-client";
+
+const GOOGLE_FONTS = [
+  'Inter', 'Roboto', 'Open Sans', 'Lato', 'Montserrat', 'Oswald', 'Source Sans Pro',
+  'Raleway', 'PT Sans', 'Merriweather', 'Nunito', 'Playfair Display', 'Poppins',
+  'Ubuntu', 'Mukta', 'Rubik', 'Work Sans', 'Noto Sans', 'Fira Sans', 'Quicksand',
+  'Karla', 'Cabin', 'Barlow', 'Crimson Text', 'Bitter', 'Arimo', 'Titillium Web',
+  'DM Sans', 'Manrope', 'Space Grotesk', 'Plus Jakarta Sans', 'Outfit', 'Lexend'
+].sort();
 
 export default function RightSidebar() {
   const store = useBuilderStore();
@@ -36,10 +44,47 @@ export default function RightSidebar() {
   } = store;
   
   const siteId = store.siteId;
-  
-  // Debug logging
-  console.log('RightSidebar - siteId:', siteId);
-  console.log('RightSidebar - store keys:', Object.keys(store));
+
+  // Global settings (colors/fonts)
+  const [globalSettings, setGlobalSettings] = useState(null);
+  const [brandKit, setBrandKit] = useState(null);
+
+  useEffect(() => {
+    if (!siteId) return;
+    // Fetch site global settings
+    fetch(`/api/sites/${siteId}`)
+      .then(res => res.ok ? res.json() : null)
+      .then(data => {
+        if (data?.site?.globalSettings) {
+          setGlobalSettings(data.site.globalSettings);
+        }
+        // Also fetch brand kit from tenant
+        if (data?.site?.tenantId) {
+          fetch(`/api/tenants/${data.site.tenantId}/brand-kit`)
+            .then(res => res.ok ? res.json() : null)
+            .then(bk => { if (bk?.brandKit) setBrandKit(bk.brandKit); })
+            .catch(() => {});
+        }
+      })
+      .catch(() => {});
+  }, [siteId]);
+
+  // Resolve effective global colors/fonts
+  const effectiveGlobalColors = useMemo(() => {
+    if (globalSettings?.colorMode === 'custom' && globalSettings?.globalColors) {
+      return globalSettings.globalColors;
+    }
+    if (brandKit?.colors) return brandKit.colors;
+    return { primary: '#3B82F6', secondary: '#8B5CF6', tertiary: '#EC4899' };
+  }, [globalSettings, brandKit]);
+
+  const effectiveGlobalFonts = useMemo(() => {
+    if (globalSettings?.fontMode === 'custom' && globalSettings?.globalFonts) {
+      return globalSettings.globalFonts;
+    }
+    if (brandKit?.fonts) return brandKit.fonts;
+    return { heading: 'Poppins', body: 'Inter' };
+  }, [globalSettings, brandKit]);
   
   const { pushState } = useHistoryStore();
   const [activeTab, setActiveTab] = useState("properties");
@@ -244,6 +289,8 @@ export default function RightSidebar() {
           <StylesEditor
             styles={selectedNode.styles || {}}
             onUpdate={handleUpdateStyles}
+            globalColors={effectiveGlobalColors}
+            globalFonts={effectiveGlobalFonts}
           />
         )}
 
@@ -251,6 +298,8 @@ export default function RightSidebar() {
           <StylesEditor
             styles={selectedNode.styles || {}}
             onUpdate={handleUpdateStyles}
+            globalColors={effectiveGlobalColors}
+            globalFonts={effectiveGlobalFonts}
           />
         )}
 
@@ -407,6 +456,7 @@ function PropertiesEditor({ component, onUpdate, siteId }) {
   };
 
   const props = component.props || {};
+  const componentType = component.type;
 
   // Dynamic property fields based on component type
   return (
@@ -418,12 +468,16 @@ function PropertiesEditor({ component, onUpdate, siteId }) {
             label="Title"
             value={props.title || ""}
             onChange={(value) => handleChange("title", value)}
+            aiRewrite={true}
+            componentType={componentType}
           />
           <InputField
             label="Subtitle"
             value={props.subtitle || ""}
             onChange={(value) => handleChange("subtitle", value)}
             multiline
+            aiRewrite={true}
+            componentType={componentType}
           />
           <InputField
             label="CTA Text"
@@ -451,6 +505,8 @@ function PropertiesEditor({ component, onUpdate, siteId }) {
             value={props.content || ""}
             onChange={(value) => handleChange("content", value)}
             multiline
+            aiRewrite={true}
+            componentType={componentType}
           />
           <SelectField
             label="Variant"
@@ -531,6 +587,8 @@ function PropertiesEditor({ component, onUpdate, siteId }) {
             label="Button Text"
             value={props.text || ""}
             onChange={(value) => handleChange("text", value)}
+            aiRewrite={true}
+            componentType={componentType}
           />
           <InputField
             label="Link"
@@ -557,12 +615,16 @@ function PropertiesEditor({ component, onUpdate, siteId }) {
             label="Title"
             value={props.title || ""}
             onChange={(value) => handleChange("title", value)}
+            aiRewrite={true}
+            componentType={componentType}
           />
           <InputField
             label="Description"
             value={props.description || ""}
             onChange={(value) => handleChange("description", value)}
             multiline
+            aiRewrite={true}
+            componentType={componentType}
           />
           <InputField
             label="Button Text"
@@ -579,6 +641,8 @@ function PropertiesEditor({ component, onUpdate, siteId }) {
             label="Text"
             value={props.text || ""}
             onChange={(value) => handleChange("text", value)}
+            aiRewrite={true}
+            componentType={componentType}
           />
           <SelectField
             label="Level"
@@ -1099,7 +1163,7 @@ function PropertiesEditor({ component, onUpdate, siteId }) {
 // STYLES EDITOR
 // ============================================================================
 
-function StylesEditor({ styles, onUpdate }) {
+function StylesEditor({ styles, onUpdate, globalColors, globalFonts }) {
   const handleChange = (key, value) => {
     onUpdate({ [key]: value });
   };
@@ -1171,15 +1235,17 @@ function StylesEditor({ styles, onUpdate }) {
       <div>
         <SectionLabel>Colors</SectionLabel>
         <div className="space-y-3">
-          <ColorField
+          <GlobalColorField
             label="Background"
             value={styles.backgroundColor || "#ffffff"}
             onChange={(v) => handleChange("backgroundColor", v)}
+            globalColors={globalColors}
           />
-          <ColorField
+          <GlobalColorField
             label="Text Color"
             value={styles.textColor || "#1f2937"}
             onChange={(v) => handleChange("textColor", v)}
+            globalColors={globalColors}
           />
         </div>
       </div>
@@ -1188,6 +1254,22 @@ function StylesEditor({ styles, onUpdate }) {
       <div>
         <SectionLabel>Typography</SectionLabel>
         <div className="space-y-2">
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-1">Font Family</label>
+            <select
+              value={styles.fontFamily || ''}
+              onChange={(e) => handleChange("fontFamily", e.target.value || undefined)}
+              className="w-full px-2.5 py-1.5 border border-gray-200 rounded-md text-sm text-gray-700 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 outline-none"
+              style={{ fontFamily: styles.fontFamily || globalFonts?.body || 'inherit' }}
+            >
+              <option value="">Global Default ({globalFonts?.body || 'Inter'})</option>
+              <optgroup label="Google Fonts">
+                {GOOGLE_FONTS.map(font => (
+                  <option key={font} value={font}>{font}</option>
+                ))}
+              </optgroup>
+            </select>
+          </div>
           <SelectField
             label="Text Align"
             value={styles.textAlign || "left"}
@@ -1203,6 +1285,21 @@ function StylesEditor({ styles, onUpdate }) {
             type="number"
             value={styles.fontSize || ""}
             onChange={(value) => handleChange("fontSize", parseInt(value) || 0)}
+          />
+          <SelectField
+            label="Font Weight"
+            value={styles.fontWeight || ""}
+            options={[
+              { value: "", label: "Default" },
+              { value: "300", label: "Light" },
+              { value: "400", label: "Regular" },
+              { value: "500", label: "Medium" },
+              { value: "600", label: "Semibold" },
+              { value: "700", label: "Bold" },
+              { value: "800", label: "Extrabold" },
+              { value: "900", label: "Black" },
+            ]}
+            onChange={(value) => handleChange("fontWeight", value || undefined)}
           />
         </div>
       </div>
@@ -1553,12 +1650,59 @@ function InputField({
   type = "text",
   multiline = false,
   compact = false,
+  aiRewrite = false,
+  componentType = "",
 }) {
+  const [isRewriting, setIsRewriting] = useState(false);
+
+  const handleRewrite = async () => {
+    if (!value || isRewriting) return;
+    setIsRewriting(true);
+    try {
+      const res = await fetch("/api/ai/rewrite", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          text: value,
+          fieldType: label,
+          context: { componentType },
+        }),
+      });
+      if (!res.ok) throw new Error("Failed to rewrite");
+      const data = await res.json();
+      if (data.text) {
+        onChange(data.text);
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Failed to rewrite text. Please try again.");
+    } finally {
+      setIsRewriting(false);
+    }
+  };
+
   return (
     <div>
-      <label className="block text-xs font-medium text-gray-600 mb-1">
-        {label}
-      </label>
+      <div className="flex items-center justify-between mb-1">
+        <label className="block text-xs font-medium text-gray-600">
+          {label}
+        </label>
+        {aiRewrite && type === "text" && (
+          <button
+            onClick={handleRewrite}
+            disabled={isRewriting || !value}
+            className="flex items-center gap-1 text-[10px] uppercase font-bold text-purple-600 hover:text-purple-700 bg-purple-50 hover:bg-purple-100 px-2 py-0.5 rounded-full transition-colors disabled:opacity-50"
+            title="Rewrite with AI Magic"
+          >
+            {isRewriting ? (
+              <Loader2 size={10} className="animate-spin" />
+            ) : (
+              <Wand2 size={10} />
+            )}
+            {isRewriting ? "Rewriting..." : "AI ✨"}
+          </button>
+        )}
+      </div>
       {multiline ? (
         <textarea
           value={value}
@@ -1598,6 +1742,93 @@ function SelectField({ label, value, options, onChange }) {
           </option>
         ))}
       </select>
+    </div>
+  );
+}
+
+function GlobalColorField({ label, value, onChange, globalColors }) {
+  const [showCustomPicker, setShowCustomPicker] = useState(false);
+
+  // Determine if the current value matches a global color
+  const matchedGlobal = useMemo(() => {
+    if (!globalColors) return null;
+    for (const [key, color] of Object.entries(globalColors)) {
+      if (color?.toLowerCase() === value?.toLowerCase()) return key;
+    }
+    return null;
+  }, [value, globalColors]);
+
+  const colorOptions = useMemo(() => {
+    if (!globalColors) return [];
+    return Object.entries(globalColors).map(([key, color]) => ({
+      key,
+      label: key.charAt(0).toUpperCase() + key.slice(1),
+      color,
+    }));
+  }, [globalColors]);
+
+  return (
+    <div>
+      <label className="block text-xs font-medium text-gray-600 mb-1.5">
+        {label}
+      </label>
+      <div className="flex gap-2 items-center">
+        {/* Global color swatches */}
+        {colorOptions.map((opt) => (
+          <button
+            key={opt.key}
+            onClick={() => { onChange(opt.color); setShowCustomPicker(false); }}
+            className={clsx(
+              "w-8 h-8 rounded-lg border-2 transition-all hover:scale-110",
+              matchedGlobal === opt.key
+                ? "border-[#0b1411] ring-2 ring-[#0b1411]/20 scale-110"
+                : "border-gray-200 hover:border-gray-400"
+            )}
+            style={{ backgroundColor: opt.color }}
+            title={`${opt.label} (${opt.color})`}
+          />
+        ))}
+
+        {/* Custom button */}
+        <button
+          onClick={() => setShowCustomPicker(!showCustomPicker)}
+          className={clsx(
+            "w-8 h-8 rounded-lg border-2 transition-all hover:scale-110 flex items-center justify-center text-[10px] font-bold",
+            !matchedGlobal && !showCustomPicker
+              ? "border-gray-300"
+              : showCustomPicker
+              ? "border-[#0b1411] ring-2 ring-[#0b1411]/20"
+              : "border-gray-200 hover:border-gray-400"
+          )}
+          style={!matchedGlobal ? { backgroundColor: value } : { backgroundColor: '#f5f5f5' }}
+          title="Custom color"
+        >
+          {matchedGlobal ? '⋯' : ''}
+        </button>
+
+        {/* Current value label */}
+        <span className="text-[10px] font-mono font-bold text-gray-400 ml-1">
+          {matchedGlobal ? matchedGlobal.toUpperCase() : value}
+        </span>
+      </div>
+
+      {/* Custom color picker dropdown */}
+      {showCustomPicker && (
+        <div className="mt-2 p-3 bg-gray-50 rounded-lg border border-gray-200 flex gap-3 items-center">
+          <input
+            type="color"
+            value={value}
+            onChange={(e) => onChange(e.target.value)}
+            className="w-10 h-8 rounded border border-gray-200 cursor-pointer"
+          />
+          <input
+            type="text"
+            value={value}
+            onChange={(e) => onChange(e.target.value)}
+            className="flex-1 px-2.5 py-1.5 border border-gray-200 rounded-md text-xs font-mono font-bold uppercase focus:ring-1 focus:ring-blue-500 focus:border-blue-500 outline-none"
+          />
+        </div>
+      )}
     </div>
   );
 }

@@ -42,7 +42,20 @@ export async function POST(request) {
 
     let suggestions;
     try {
-      suggestions = JSON.parse(text);
+      let cleanText = text;
+      const match = text.match(/```(?:json)?\s*\n([\s\S]*?)\n```/);
+      if (match) {
+        cleanText = match[1];
+      } else {
+        cleanText = text.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim();
+      }
+      
+      const parsed = JSON.parse(cleanText);
+      suggestions = parsed.suggestions || parsed;
+      // If it returned an array directly
+      if (Array.isArray(suggestions)) {
+        suggestions = { suggestions };
+      }
     } catch (e) {
       console.error('Failed to parse AI response:', text);
       // Fallback suggestions

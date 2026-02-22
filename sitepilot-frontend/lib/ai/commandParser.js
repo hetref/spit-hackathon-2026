@@ -36,24 +36,27 @@ export function parseAIResponse(responseText) {
   }
 
   try {
+    let cleanText = responseText;
+    
     // Try to extract JSON from markdown code block
     const jsonMatch = responseText.match(/```json\s*\n([\s\S]*?)\n```/);
-    
     if (jsonMatch) {
-      return parseJSONBlock(jsonMatch[1], responseText);
+        // Remove the JSON block from the visible text
+        cleanText = responseText.replace(/```json\s*\n[\s\S]*?\n```/, "").trim();
+        return parseJSONBlock(jsonMatch[1], cleanText);
     }
 
-    // Try to find inline JSON object
+    // Try to find inline JSON object if no code block was used
     const inlineMatch = responseText.match(/\{[\s\S]*?"actions"[\s\S]*?\}/);
-    
-    if (inlineMatch) {
-      return parseJSONBlock(inlineMatch[0], responseText);
+    if (inlineMatch && !responseText.includes("```")) {
+        cleanText = responseText.replace(inlineMatch[0], "").trim();
+        return parseJSONBlock(inlineMatch[0], cleanText);
     }
 
     // No JSON found - treat as plain text response with no actions
     return {
       success: true,
-      text: responseText.trim(),
+      text: cleanText.trim(),
       actions: [],
       confidence: 0.8,
     };
@@ -87,7 +90,9 @@ function parseJSONBlock(jsonText, fullResponse) {
     }
 
     // Extract fields with defaults
-    const text = parsed.text || fullResponse.trim();
+    // FullResponse here is already the cleaned text
+    const text = (parsed.text ? parsed.text + "\n" : "") + fullResponse;
+    const cleanText = text.trim() || "Action completed.";
     const actions = Array.isArray(parsed.actions) ? parsed.actions : [];
     const confidence = typeof parsed.confidence === "number" 
       ? Math.max(0, Math.min(1, parsed.confidence))
@@ -102,7 +107,7 @@ function parseJSONBlock(jsonText, fullResponse) {
 
     return {
       success: true,
-      text,
+      text: cleanText,
       actions: validatedActions,
       confidence,
     };

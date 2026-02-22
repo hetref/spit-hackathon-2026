@@ -102,39 +102,9 @@ function validateAddComponent(payload) {
     errors.push("Missing componentType in payload");
   } else if (!isValidComponentType(payload.componentType)) {
     errors.push(`Unknown component type: ${payload.componentType}`);
-  } else {
-    // Validate props against schema
-    const schema = getSchema(payload.componentType);
-    const props = payload.props || {};
-
-    // Check required props
-    for (const [propName, propSchema] of Object.entries(schema.allowedProps)) {
-      if (propSchema.required && !(propName in props)) {
-        errors.push(`Missing required prop: ${propName}`);
-      }
-    }
-
-    // Validate prop types and values
-    for (const [propName, propValue] of Object.entries(props)) {
-      const propSchema = schema.allowedProps[propName];
-      
-      if (!propSchema) {
-        errors.push(`Unknown prop for ${payload.componentType}: ${propName}`);
-      } else if (!validatePropValue(propValue, propSchema)) {
-        errors.push(
-          `Invalid type for ${propName}: expected ${propSchema.type}, got ${typeof propValue}`
-        );
-      }
-    }
-
-    // Validate styles
-    const styles = payload.styles || {};
-    for (const styleProp of Object.keys(styles)) {
-      if (!isValidStyleProp(payload.componentType, styleProp)) {
-        errors.push(`Invalid style property for ${payload.componentType}: ${styleProp}`);
-      }
-    }
   }
+  // Skip strict prop/style validation - let defaults fill in
+  // The AI often sends slightly different prop names and that's OK
 
   return {
     valid: errors.length === 0,
@@ -412,19 +382,39 @@ function executeAddComponent(payload, builderStore) {
     styles = {},
   } = payload;
 
-  // Merge with default props
+  // Merge with default props, keeping only schema-valid props from AI
   const defaultProps = getDefaultProps(componentType);
-  const finalProps = { ...defaultProps, ...props };
+  const schema = getSchema(componentType);
+  const filteredAIProps = {};
+  
+  if (schema) {
+    for (const [key, value] of Object.entries(props)) {
+      if (schema.allowedProps[key]) {
+        filteredAIProps[key] = value;
+      }
+    }
+  }
+  
+  const finalProps = { ...defaultProps, ...filteredAIProps };
+
+  // Filter styles too
+  const filteredStyles = {};
+  if (schema) {
+    for (const [key, value] of Object.entries(styles)) {
+      if (schema.allowedStyles.includes(key)) {
+        filteredStyles[key] = value;
+      }
+    }
+  }
 
   if (containerId && columnIndex !== undefined) {
     // Add to specific container/column
     builderStore.addComponent(containerId, columnIndex, componentType, finalProps);
     
-    // Apply styles if provided
-    if (Object.keys(styles).length > 0) {
+    if (Object.keys(filteredStyles).length > 0) {
       const component = findLastAddedComponent(builderStore);
       if (component) {
-        builderStore.updateComponentStyles(component.id, styles);
+        builderStore.updateComponentStyles(component.id, filteredStyles);
       }
     }
   } else {
@@ -439,14 +429,25 @@ function executeAddComponent(payload, builderStore) {
     );
     
     if (currentPage && currentPage.layout.length > 0) {
-      const newContainer = currentPage.layout[currentPage.layout.length - 1];
+      let newContainer = currentPage.layout[currentPage.layout.length - 1];
+      
+      // Handle position: "top" by reordering
+      if (position === "top" && currentPage.layout.length > 1) {
+        // Move the new container to the top
+        const layout = currentPage.layout;
+        const lastIdx = layout.length - 1;
+        const removed = layout.splice(lastIdx, 1)[0];
+        layout.unshift(removed);
+        builderStore.updateLayoutJSON(layoutJSON, false);
+        newContainer = removed;
+      }
+      
       builderStore.addComponent(newContainer.id, 0, componentType, finalProps);
       
-      // Apply styles if provided
-      if (Object.keys(styles).length > 0) {
+      if (Object.keys(filteredStyles).length > 0) {
         const component = findLastAddedComponent(builderStore);
         if (component) {
-          builderStore.updateComponentStyles(component.id, styles);
+          builderStore.updateComponentStyles(component.id, filteredStyles);
         }
       }
     }

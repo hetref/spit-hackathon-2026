@@ -14,17 +14,25 @@
  */
 
 import { useState, useEffect, useRef } from "react";
-import { X, Minimize2, Maximize2, Send, Lightbulb } from "lucide-react";
+import { X, Minimize2, Maximize2, Send, Lightbulb, Sparkles, Loader2, AlertCircle, TrendingUp, Zap, MessageSquare } from "lucide-react";
 import useChatStore from "@/lib/stores/chatStore";
 import useBuilderStore from "@/lib/stores/builderStore";
 import { parseAIResponse, isUndoCommand } from "@/lib/ai/commandParser";
 import { executeActions } from "@/lib/ai/actionExecutor";
+import { nanoid } from 'nanoid';
 
 export default function AIChatCopilot({ tenantId, siteId }) {
-  const [isOpen, setIsOpen] = useState(true);
+  const [isOpen, setIsOpen] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(false);
+  const [activeTab, setActiveTab] = useState("chat"); // 'chat' or 'suggestions'
   const [inputValue, setInputValue] = useState("");
   const [isSending, setIsSending] = useState(false);
+  
+  // Suggestions state
+  const [suggestions, setSuggestions] = useState([]);
+  const [analyzing, setAnalyzing] = useState(false);
+  const [lastAnalyzed, setLastAnalyzed] = useState(null);
+  const [applyingId, setApplyingId] = useState(null);
   
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
@@ -57,12 +65,123 @@ export default function AIChatCopilot({ tenantId, siteId }) {
     scrollToBottom();
   }, [messages, isStreaming]);
 
-  // Focus input when panel opens
+  // Focus input when panel opens to chat tab
   useEffect(() => {
-    if (isOpen && !isCollapsed && inputRef.current) {
+    if (isOpen && !isCollapsed && activeTab === "chat" && inputRef.current) {
       inputRef.current.focus();
     }
-  }, [isOpen, isCollapsed]);
+  }, [isOpen, isCollapsed, activeTab]);
+
+  // Auto-analyze for suggestions when open and on suggestions tab
+  useEffect(() => {
+    if (isOpen && activeTab === "suggestions" && !lastAnalyzed) {
+      analyzePage();
+    }
+  }, [isOpen, activeTab, lastAnalyzed]);
+
+  async function analyzePage() {
+    if (analyzing) return;
+    try {
+      setAnalyzing(true);
+      
+      let brandKit = null;
+      try {
+        const brandRes = await fetch(`/api/tenants/${tenantId}/brand-kit`);
+        if (brandRes.ok) {
+          const brandData = await brandRes.json();
+          brandKit = brandData.brandKit;
+        }
+      } catch (e) {
+        console.warn('Could not fetch brand kit:', e);
+      }
+
+      let siteInfo = null;
+      try {
+        const siteRes = await fetch(`/api/sites/${siteId}`);
+        if (siteRes.ok) {
+          const siteData = await siteRes.json();
+          siteInfo = { name: siteData.site?.name || 'Your Site' };
+        }
+      } catch (e) {
+        console.warn('Could not fetch site info:', e);
+      }
+
+      const res = await fetch('/api/ai/analyze-page', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ layoutJSON: builderStore.getLayoutJSON(), brandKit, siteInfo }),
+      });
+
+      if (!res.ok) throw new Error(`Analysis failed`);
+      const data = await res.json();
+      
+      const validComponentTypes = ['Hero', 'CTA', 'Features', 'FormEmbed', 'Text', 'Heading', 'Image', 'Button', 'Gallery', 'Video', 'Navbar', 'Footer'];
+      const validSuggestions = (data.suggestions || []).filter(s => {
+        if (s.action?.type === 'add_component') return validComponentTypes.includes(s.action.componentType);
+        return true;
+      });
+      
+      setSuggestions(validSuggestions);
+      setLastAnalyzed(new Date());
+    } catch (error) {
+      console.error('Error analyzing page:', error);
+    } finally {
+      setAnalyzing(false);
+    }
+  }
+
+  async function applySuggestion(suggestion) {
+    if (applyingId) return;
+    try {
+      setApplyingId(suggestion.id);
+      const action = suggestion.action;
+      let result = null;
+      
+      if (action.type === 'add_component') {
+         result = await executeActions([{
+             type: 'ADD_COMPONENT',
+             payload: {
+                 componentType: action.componentType,
+                 position: action.position || 'bottom',
+                 props: action.props || {},
+                 styles: action.styles || {},
+             }
+         }], builderStore);
+      } else if (action.type === 'improve_component' || action.type === 'reorder') {
+        // For non-add actions, just remove the suggestion as advisory
+        result = { successCount: 1 };
+      }
+      
+      // Only remove if the action actually succeeded
+      if (result && result.successCount > 0) {
+        setSuggestions(prev => prev.filter(s => s.id !== suggestion.id));
+      } else {
+        console.warn('Suggestion action failed:', result);
+        alert('Could not apply this suggestion. Please try again.');
+      }
+    } catch (error) {
+      console.error('Error applying suggestion:', error);
+      alert('Failed to apply suggestion. Please try again.');
+    } finally {
+      setApplyingId(null);
+    }
+  }
+
+  const getPriorityIcon = (priority) => {
+    switch (priority) {
+      case 'high': return <AlertCircle className="w-4 h-4 text-red-500" />;
+      case 'medium': return <TrendingUp className="w-4 h-4 text-yellow-500" />;
+      default: return <Lightbulb className="w-4 h-4 text-blue-500" />;
+    }
+  };
+
+  const getPriorityColor = (priority) => {
+    switch (priority) {
+      case 'high': return 'border-red-200 bg-red-50';
+      case 'medium': return 'border-yellow-200 bg-yellow-50';
+      default: return 'border-blue-200 bg-blue-50';
+    }
+  };
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -167,7 +286,6 @@ export default function AIChatCopilot({ tenantId, siteId }) {
       const reader = response.body.getReader();
       const decoder = new TextDecoder();
       let fullResponse = "";
-      let displayedText = "";
 
       while (true) {
         const { done, value } = await reader.read();
@@ -177,24 +295,18 @@ export default function AIChatCopilot({ tenantId, siteId }) {
         const chunk = decoder.decode(value, { stream: true });
         fullResponse += chunk;
         
-        // Extract text before JSON block for streaming display
-        const jsonStart = fullResponse.indexOf('```json');
-        if (jsonStart === -1) {
-          // No JSON block yet, show everything
-          displayedText = fullResponse;
-          updateStreamingMessage(aiMessageId, displayedText);
-        } else {
-          // JSON block started, only show text before it
-          displayedText = fullResponse.substring(0, jsonStart).trim();
-          updateStreamingMessage(aiMessageId, displayedText);
-        }
+        // Clean JSON blocks out of what we show to the user during streaming
+        const displayChunk = fullResponse.replace(/```json\s*\n[\s\S]*?(?:\n```|$)/g, "").trim();
+        updateStreamingMessage(aiMessageId, displayChunk || "Thinking...");
       }
 
       // Parse complete response for actions
       const parsed = parseAIResponse(fullResponse);
       
-      // Update message with final parsed text
-      const finalText = parsed.text || displayedText || fullResponse;
+      // Use parsed text or the streamed display text
+      const displayText = fullResponse.replace(/```json\s*\n[\s\S]*?(?:\n```|$)/g, "").trim();
+      const finalText = displayText || parsed.text || "Done!";
+      
       updateStreamingMessage(aiMessageId, finalText);
       
       // Complete streaming
@@ -254,19 +366,23 @@ export default function AIChatCopilot({ tenantId, siteId }) {
     return (
       <button
         onClick={() => setIsOpen(true)}
-        className="fixed bottom-6 left-6 bg-blue-600 text-white p-4 rounded-full shadow-lg hover:bg-blue-700 transition-colors z-50"
-        aria-label="Open AI Chat Assistant"
+        className="fixed bottom-6 right-6 z-50 flex items-center gap-2 px-6 py-4 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-full shadow-2xl hover:shadow-purple-500/50 hover:scale-105 active:scale-95 transition-all font-bold text-sm uppercase tracking-wider group"
+        aria-label="Open SitePilot Assistant"
       >
-        <Lightbulb className="w-6 h-6" />
+        <Sparkles className="w-5 h-5 animate-pulse" />
+        <span>SitePilot Assistant</span>
       </button>
     );
   }
 
   if (isCollapsed) {
     return (
-      <div className="fixed bottom-6 left-6 bg-white rounded-lg shadow-xl border border-gray-200 z-50">
-        <div className="flex items-center justify-between p-3 border-b">
-          <span className="text-sm font-medium text-gray-700">AI Assistant</span>
+      <div className="fixed bottom-6 right-6 bg-white rounded-lg shadow-xl border border-purple-200 z-50 w-80">
+        <div className="flex items-center justify-between p-3 border-b bg-gradient-to-r from-purple-50 to-pink-50 rounded-t-lg">
+          <div className="flex items-center gap-2">
+             <Sparkles className="w-4 h-4 text-purple-600" />
+             <span className="text-sm font-bold text-gray-900 uppercase tracking-tight">SitePilot Assistant</span>
+          </div>
           <div className="flex gap-2">
             <button
               onClick={() => setIsCollapsed(false)}
@@ -290,15 +406,20 @@ export default function AIChatCopilot({ tenantId, siteId }) {
 
   return (
     <div
-      className="fixed bottom-6 left-6 w-[400px] max-h-[600px] bg-white rounded-lg shadow-xl border border-gray-200 flex flex-col z-50"
+      className="fixed bottom-6 right-6 w-[400px] max-h-[600px] h-[600px] bg-white rounded-2xl shadow-2xl border-2 border-purple-200 flex flex-col z-50 overflow-hidden"
       role="complementary"
-      aria-label="AI Chat Assistant"
+      aria-label="SitePilot Assistant"
     >
       {/* Header */}
-      <div className="flex items-center justify-between p-4 border-b border-gray-200">
+      <div className="flex items-center justify-between p-4 border-b border-gray-100 bg-gradient-to-r from-purple-50 to-pink-50">
         <div className="flex items-center gap-2">
-          <Lightbulb className="w-5 h-5 text-blue-600" />
-          <h3 className="font-semibold text-gray-900">AI Assistant</h3>
+          <div className="p-2 bg-gradient-to-r from-purple-600 to-pink-600 rounded-lg">
+             <Sparkles className="w-4 h-4 text-white" />
+          </div>
+          <div>
+            <h3 className="font-black text-sm uppercase tracking-tight text-gray-900">SitePilot Assistant</h3>
+            <p className="text-xs text-gray-500 font-medium">Build faster with AI</p>
+          </div>
         </div>
         <div className="flex gap-2">
           <button
@@ -318,9 +439,38 @@ export default function AIChatCopilot({ tenantId, siteId }) {
         </div>
       </div>
 
+      {/* Tabs */}
+      <div className="flex border-b border-gray-100 bg-white">
+        <button
+          onClick={() => setActiveTab("chat")}
+          className={`flex-1 flex items-center justify-center gap-2 py-3 text-sm font-bold uppercase tracking-wider transition-colors ${
+            activeTab === "chat" ? "text-purple-600 border-b-2 border-purple-600 bg-purple-50/50" : "text-gray-500 hover:text-gray-700 hover:bg-gray-50"
+          }`}
+        >
+          <MessageSquare className="w-4 h-4" />
+          Chat
+        </button>
+        <button
+          onClick={() => setActiveTab("suggestions")}
+          className={`flex-1 flex items-center justify-center gap-2 py-3 text-sm font-bold uppercase tracking-wider transition-colors ${
+            activeTab === "suggestions" ? "text-purple-600 border-b-2 border-purple-600 bg-purple-50/50" : "text-gray-500 hover:text-gray-700 hover:bg-gray-50"
+          }`}
+        >
+          <Lightbulb className="w-4 h-4" />
+          Suggestions
+          {suggestions.length > 0 && (
+              <span className="flex items-center justify-center w-5 h-5 bg-purple-100 text-purple-700 rounded-full text-[10px] ml-1">
+                  {suggestions.length}
+              </span>
+          )}
+        </button>
+      </div>
+
+      {activeTab === "chat" ? (
+      <>
       {/* Messages */}
       <div
-        className="flex-1 overflow-y-auto p-4 space-y-4"
+        className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50/50"
         role="log"
         aria-live="polite"
         aria-atomic="false"
@@ -382,6 +532,83 @@ export default function AIChatCopilot({ tenantId, siteId }) {
           {inputValue.length}/1000
         </div>
       </div>
+      </>
+      ) : (
+      /* Suggestions Tab */
+      <div className="flex-1 overflow-y-auto bg-gray-50/50">
+          {analyzing ? (
+            <div className="p-8 text-center h-full flex flex-col justify-center">
+              <Loader2 className="w-8 h-8 animate-spin text-purple-600 mx-auto mb-3" />
+              <p className="text-sm font-bold text-gray-700">Analyzing your page...</p>
+              <p className="text-xs text-gray-500 mt-1">This will take a few seconds</p>
+            </div>
+          ) : suggestions.length === 0 ? (
+            <div className="p-8 text-center h-full flex flex-col justify-center">
+              <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Zap className="w-8 h-8 text-green-600" />
+              </div>
+              <h4 className="font-black text-gray-900 mb-2">Looking Great!</h4>
+              <p className="text-sm text-gray-600 mb-4">
+                Your page is well-structured. Keep building!
+              </p>
+              <button
+                onClick={analyzePage}
+                disabled={analyzing}
+                className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors text-sm font-bold inline-flex items-center justify-center"
+              >
+                Re-analyze Page
+              </button>
+            </div>
+          ) : (
+            <div className="p-4 space-y-3">
+              {suggestions.map((suggestion) => (
+                <div
+                  key={suggestion.id}
+                  className={`p-4 rounded-xl border-2 ${getPriorityColor(
+                    suggestion.priority
+                  )} transition-all hover:shadow-md bg-white`}
+                >
+                  <div className="flex items-start gap-3">
+                    <div className="mt-0.5">{getPriorityIcon(suggestion.priority)}</div>
+                    <div className="flex-1 min-w-0">
+                      <h4 className="font-bold text-sm text-gray-900 mb-1">
+                        {suggestion.title}
+                      </h4>
+                      <p className="text-xs text-gray-600 mb-3 leading-relaxed">
+                        {suggestion.description}
+                      </p>
+                      <button
+                        onClick={() => applySuggestion(suggestion)}
+                        disabled={applyingId !== null}
+                        className="w-full px-3 py-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-lg hover:from-purple-700 hover:to-pink-700 transition-all text-xs font-bold uppercase tracking-wider disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                      >
+                        {applyingId === suggestion.id ? (
+                           <>
+                            <Loader2 className="w-3 h-3 animate-spin" />
+                            Applying...
+                           </>
+                        ) : (
+                          'Apply Suggestion'
+                        )}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+              
+              <div className="pt-4 pb-2">
+                 <button
+                    onClick={analyzePage}
+                    disabled={analyzing}
+                    className="w-full px-3 py-2 text-xs font-bold text-purple-600 border border-purple-200 hover:bg-purple-50 rounded-lg transition-colors uppercase tracking-wider"
+                 >
+                    Re-analyze Page
+                 </button>
+              </div>
+            </div>
+          )}
+      </div>
+      )}
     </div>
   );
 }
