@@ -1,4 +1,8 @@
 'use client'
+
+// Force dynamic rendering — this page uses auth hooks and cannot be statically prerendered
+export const dynamic = 'force-dynamic'
+
 import { useState, useRef, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useSession } from '@/lib/auth-client'
@@ -7,6 +11,7 @@ import { ArrowLeft, Briefcase, Type, Upload, X, Loader2, ImageIcon, Lock, Zap, A
 export default function NewTenantPage() {
   const router = useRouter()
   const { data: session, isPending } = useSession()
+  const [mounted, setMounted] = useState(false)
   const [formData, setFormData] = useState({
     name: '',
     slug: '',
@@ -20,6 +25,9 @@ export default function NewTenantPage() {
   const [uploadingLogo, setUploadingLogo] = useState(false)
   const [subCheck, setSubCheck] = useState(null)  // null = loading
   const fileInputRef = useRef(null)
+
+  // Ensure we never render hook-dependent UI during SSR
+  useEffect(() => { setMounted(true) }, [])
 
   useEffect(() => {
     if (!session) return
@@ -143,7 +151,8 @@ export default function NewTenantPage() {
     }
   }
 
-  if (isPending || subCheck === null) {
+  // Show spinner until client has mounted AND auth + subscription are loaded
+  if (!mounted || isPending || subCheck === null) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#FDFDFD]">
         <Loader2 className="h-8 w-8 animate-spin text-gray-400" />

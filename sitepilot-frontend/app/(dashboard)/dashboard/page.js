@@ -1,4 +1,8 @@
 'use client'
+
+// Uses auth + subscription hooks — disable static prerendering
+export const dynamic = 'force-dynamic'
+
 import { useSession, signOut } from '@/lib/auth-client'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useEffect, useState, useRef } from 'react'

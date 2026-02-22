@@ -1,6 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+// This page uses auth hooks + useSearchParams — cannot be statically prerendered
+export const dynamic = 'force-dynamic';
+
+import { useEffect, useState, Suspense } from "react";
 import { Inter } from "next/font/google";
 import { CheckCircle2, Zap, XCircle, AlertTriangle, ArrowRight, CheckCheck } from "lucide-react";
 import AppNavbar from "@/components/AppNavbar";

@@ -1,5 +1,8 @@
 'use client'
 
+// Client layout using auth hooks — must be dynamically rendered
+export const dynamic = 'force-dynamic'
+
 import { useSession, signOut } from '@/lib/auth-client'
 import { useRouter, useParams, usePathname } from 'next/navigation'
 import { useEffect, useState } from 'react'
