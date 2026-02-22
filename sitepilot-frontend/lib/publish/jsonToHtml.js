@@ -9,34 +9,24 @@ import prisma from '@/lib/prisma';
 import { generateFormHTML, generateFormJS, generateFormCSS } from '@/lib/form-renderer';
 
 // ============================================================================
-// TRACKER — inlined into every page at build time (< 1.5 KB)
+// TRACKER — served from the app's own public/ folder via <script src>
 // ============================================================================
 
 /**
- * Returns a self-contained analytics script that is injected into the <head>
- * of every published page. By inlining it we avoid:
- *  - an extra HTTP request for an external tracker.js
- *  - reliance on a CDN that may not host the file
- *  - CORS issues for the script itself
+ * Returns a <script> tag that loads tracker.js from the SitePilot app server.
  *
- * The script uses the API base URL determined at publish time so it always
- * points to the correct backend (ngrok in dev, production URL in prod).
+ * The tracker.js file lives in public/tracker.js of this Next.js app, so it is
+ * served at {APP_URL}/tracker.js. By loading it via src we get:
+ *  - Single source of truth: update tracker.js once → every site picks it up
+ *  - No code stored on user's side
+ *  - Browser caching for repeat visits
+ *
+ * The tracker script itself derives the API base URL from its own src attribute,
+ * so no separate data-api attribute is needed.
  */
-function generateTrackerScript(siteId, pageSlug, apiBaseUrl) {
-  // Escape values for safe embedding inside a JS string literal
-  const esc = (s) => String(s || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/</g, '\\x3c');
-  return `<script>
-(function(){"use strict";
-var S='${esc(siteId)}',P='${esc(pageSlug)}',A='${esc(apiBaseUrl.replace(/\/+$/, ''))}';
-if(!S||!A)return;
-function gC(n){var e=n+"=",p=document.cookie.split(";");for(var i=0;i<p.length;i++){var c=p[i].replace(/^ +/,"");if(c.indexOf(e)===0)return c.substring(e.length)}return null}
-function sC(n,v,m){var x="";if(m){var d=new Date();d.setTime(d.getTime()+m*6e4);x="; expires="+d.toUTCString()}document.cookie=n+"="+(v||"")+x+"; path=/; SameSite=Lax; Secure"}
-var pv=null,si=gC("_sp_sid");
-fetch(A+"/api/analytics/enter",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({siteId:S,pageSlug:P,sessionId:si,userAgent:navigator.userAgent,referrer:document.referrer||null}),keepalive:true}).then(function(r){return r.json()}).then(function(d){if(d.sessionId){sC("_sp_sid",d.sessionId,30);si=d.sessionId}if(d.pageViewId)pv=d.pageViewId}).catch(function(){});
-function ex(){if(!pv)return;var b=JSON.stringify({pageViewId:pv});if(navigator.sendBeacon)navigator.sendBeacon(A+"/api/analytics/exit",new Blob([b],{type:"application/json"}));else fetch(A+"/api/analytics/exit",{method:"POST",headers:{"Content-Type":"application/json"},body:b,keepalive:true});pv=null}
-window.addEventListener("pagehide",ex);document.addEventListener("visibilitychange",function(){if(document.visibilityState==="hidden")ex()})
-})()
-<\/script>`;
+function buildTrackerTag(siteId, pageSlug, appBaseUrl) {
+  const base = appBaseUrl.replace(/\/+$/, '');
+  return `<script src="${base}/tracker.js" data-site="${escapeHtml(siteId)}" data-page="${escapeHtml(pageSlug)}" defer><\/script>`;
 }
 
 // ============================================================================
@@ -957,9 +947,9 @@ export async function convertPageToHtml(
   const css = generateCSS(theme || {}) + additionalCSS;
   const js = generateJS() + additionalJS;
 
-  // Resolve the API base URL for analytics — determined at publish time
-  const trackerApiBase = process.env.NEXT_PUBLIC_API_URL || process.env.NEXT_PUBLIC_APP_URL || 'https://app.sitepilot.devally.in';
-  const trackerTag = generateTrackerScript(page.siteId, page.slug, trackerApiBase);
+  // Resolve the app base URL — this is where tracker.js is served from
+  const appBaseUrl = process.env.NEXT_PUBLIC_API_URL || process.env.NEXT_PUBLIC_APP_URL || 'https://app.sitepilot.devally.in';
+  const trackerTag = buildTrackerTag(page.siteId, page.slug, appBaseUrl);
 
   const html = `<!DOCTYPE html>
 <html lang="en">
@@ -1011,9 +1001,9 @@ export function convertJsonToHtml(layoutJSON, pageId) {
   const css = generateCSS(theme);
   const js = generateJS();
 
-  const trackerApiBase = process.env.NEXT_PUBLIC_API_URL || process.env.NEXT_PUBLIC_APP_URL || 'https://app.sitepilot.devally.in';
+  const appBaseUrl = process.env.NEXT_PUBLIC_API_URL || process.env.NEXT_PUBLIC_APP_URL || 'https://app.sitepilot.devally.in';
   const pageSiteId = page.siteId || layoutJSON.site?.id || '';
-  const trackerTag = generateTrackerScript(pageSiteId, page.slug || '/', trackerApiBase);
+  const trackerTag = buildTrackerTag(pageSiteId, page.slug || '/', appBaseUrl);
 
   const html = `<!DOCTYPE html>
 <html lang="en">

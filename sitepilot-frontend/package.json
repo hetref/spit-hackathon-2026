@@ -45,6 +45,7 @@
     "nodemailer": "^6.10.1",
     "ogl": "^1.0.11",
     "radix-ui": "^1.4.3",
+    "razorpay": "^2.9.4",
     "react": "19.2.3",
     "react-dom": "19.2.3",
     "sonner": "^2.0.7",

@@ -3,6 +3,7 @@ import prisma from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 import { generateVerificationToken, isValidDomain } from "@/lib/aws/dns-verification";
+import { getPlanGuard, PlanGuardError, planGuardErrorResponse } from "@/lib/plan-guard";
 
 /**
  * GET /api/sites/[siteId]/domains
@@ -90,6 +91,18 @@ export async function POST(request, { params }) {
 
     if (!membership || (membership.role !== "OWNER" && membership.role !== "EDITOR")) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+
+    // ── PLAN GUARD: customDomains feature gate ──────────────────────────
+    try {
+      const guard = await getPlanGuard(prisma, site.tenantId);
+      guard.requireActive();
+      guard.checkFeature('customDomains');
+    } catch (err) {
+      if (err instanceof PlanGuardError) {
+        return NextResponse.json(planGuardErrorResponse(err), { status: err.httpStatus });
+      }
+      throw err;
     }
 
     // Check if domain is already taken

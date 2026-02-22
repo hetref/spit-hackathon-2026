@@ -3,12 +3,12 @@
 import { useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { useSession } from '@/lib/auth-client'
-import { 
-  FileText, 
-  Plus, 
-  Edit, 
-  Trash2, 
-  Globe, 
+import {
+  FileText,
+  Plus,
+  Edit,
+  Trash2,
+  Globe,
   ArrowLeft,
   X,
   Loader2,
@@ -154,7 +154,7 @@ export default function PagesManagementPage() {
       })
 
       const result = await response.json()
-      
+
       if (response.ok) {
         // Refresh the page list
         fetchData()
@@ -177,7 +177,7 @@ export default function PagesManagementPage() {
 
   return (
     <div className="min-h-screen bg-[#fcfdfc] font-sans text-gray-900 pb-20 relative">
-      
+
       {/* Header */}
       <div className="bg-white/80 backdrop-blur-md border-b border-gray-100 sticky top-0 z-20">
         <div className="max-w-7xl mx-auto px-6 sm:px-10 lg:px-16 py-6">
@@ -238,28 +238,28 @@ export default function PagesManagementPage() {
           ) : (
             pages.map((page) => (
               <div key={page.id} className="group bg-white border border-gray-100 rounded-[2rem] overflow-hidden hover:border-[#8bc4b1] hover:-translate-y-1 hover:shadow-[0_20px_40px_-15px_rgba(0,0,0,0.1)] transition-all duration-300 flex flex-col h-[400px]">
-                
+
                 {/* Visual Preview / Status Top Frame */}
                 <div className="h-[55%] relative flex items-center justify-center overflow-hidden border-b border-gray-100 bg-[#f2f4f2]">
                   {page.isPublished && site?.slug ? (
-                     <div className="absolute inset-0 w-full h-full overflow-hidden">
-                       <iframe 
-                         src={`/published/${site.slug}/${page.slug === '/' ? 'index' : page.slug.replace(/^\//, '')}.html`} 
-                         className="border-0 pointer-events-none origin-top-left" 
-                         style={{ width: '400%', height: '400%', transform: 'scale(0.25)' }}
-                         title={`${page.name} Preview`}
-                       />
-                     </div>
+                    <div className="absolute inset-0 w-full h-full overflow-hidden">
+                      <iframe
+                        src={`/published/${site.slug}/${page.slug === '/' ? 'index' : page.slug.replace(/^\//, '')}.html`}
+                        className="border-0 pointer-events-none origin-top-left"
+                        style={{ width: '400%', height: '400%', transform: 'scale(0.25)' }}
+                        title={`${page.name} Preview`}
+                      />
+                    </div>
                   ) : (
                     <div className="flex flex-col items-center text-center px-4">
                       {page.isPublished ? (
-                         <div className="h-16 w-16 rounded-[2rem] bg-white border border-gray-100 flex items-center justify-center mb-4">
-                           <Globe size={24} className="text-gray-400" />
-                         </div>
+                        <div className="h-16 w-16 rounded-[2rem] bg-white border border-gray-100 flex items-center justify-center mb-4">
+                          <Globe size={24} className="text-gray-400" />
+                        </div>
                       ) : (
-                         <div className="h-16 w-16 rounded-[2rem] bg-white border border-gray-100 flex items-center justify-center mb-4">
-                           <MonitorOff size={24} className="text-gray-400" />
-                         </div>
+                        <div className="h-16 w-16 rounded-[2rem] bg-white border border-gray-100 flex items-center justify-center mb-4">
+                          <MonitorOff size={24} className="text-gray-400" />
+                        </div>
                       )}
                       <span className="text-[10px] font-black uppercase tracking-widest text-gray-400">
                         {page.isPublished ? 'Live preview hidden' : 'Draft no preview'}
@@ -274,35 +274,35 @@ export default function PagesManagementPage() {
                 <div className="p-6 lg:p-8 flex-1 flex flex-col justify-between bg-white relative">
                   <div>
                     <div className="flex items-start justify-between gap-3 mb-2">
-                       <div className="min-w-0 flex-1">
-                         <div className="flex items-center gap-3 mb-2">
-                            <h3 className="text-[1.2rem] font-black text-[#1d2321] tracking-tight uppercase truncate transition-colors">
-                              {page.name}
-                            </h3>
-                            {page.slug === '/' && (
-                              <span className="inline-flex flex-shrink-0 items-center px-3 py-1 rounded-full text-[10px] font-black tracking-widest uppercase bg-[#0b1411] text-[#d3ff4a]" title="Home Page">
-                                <Home size={10} className="mr-1 inline-block" />
-                                Home
-                              </span>
-                            )}
-                         </div>
-                         <p className="text-xs font-bold text-gray-400 truncate flex items-center px-3 py-2 bg-[#f2f4f2] text-[#0b1411] rounded-lg inline-block w-fit">
-                           {page.slug}
-                         </p>
-                       </div>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-3 mb-2">
+                          <h3 className="text-[1.2rem] font-black text-[#1d2321] tracking-tight uppercase truncate transition-colors">
+                            {page.name}
+                          </h3>
+                          {page.slug === '/' && (
+                            <span className="inline-flex flex-shrink-0 items-center px-3 py-1 rounded-full text-[10px] font-black tracking-widest uppercase bg-[#0b1411] text-[#d3ff4a]" title="Home Page">
+                              <Home size={10} className="mr-1 inline-block" />
+                              Home
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-xs font-bold text-gray-400 truncate flex items-center px-3 py-2 bg-[#f2f4f2] text-[#0b1411] rounded-lg inline-block w-fit">
+                          {page.slug}
+                        </p>
+                      </div>
                     </div>
 
                     <div className="flex flex-wrap items-center gap-2 mt-5">
                       {page.isPublished ? (
-                         <span className="inline-flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-[#0b1411] bg-[#d3ff4a] rounded-full px-3 py-1.5 shadow-sm">
-                           <span className="w-1.5 h-1.5 rounded-full bg-[#0b1411]" />
-                           Live {new Date(page.publishedAt).toLocaleDateString()}
-                         </span>
+                        <span className="inline-flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-[#0b1411] bg-[#d3ff4a] rounded-full px-3 py-1.5 shadow-sm">
+                          <span className="w-1.5 h-1.5 rounded-full bg-[#0b1411]" />
+                          Live {new Date(page.publishedAt).toLocaleDateString()}
+                        </span>
                       ) : (
-                         <span className="inline-flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-gray-500 bg-[#f2f4f2] rounded-full px-3 py-1.5">
-                           <span className="w-1.5 h-1.5 rounded-full bg-gray-400" />
-                           Draft
-                         </span>
+                        <span className="inline-flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-gray-500 bg-[#f2f4f2] rounded-full px-3 py-1.5">
+                          <span className="w-1.5 h-1.5 rounded-full bg-gray-400" />
+                          Draft
+                        </span>
                       )}
                     </div>
 
@@ -329,46 +329,46 @@ export default function PagesManagementPage() {
                     })()}
                   </div>
                 </div>
-                
+
                 {/* Actions Footer */}
                 <div className="px-6 py-4 bg-[#fcfdfc] border-t border-gray-100 flex items-center justify-between gap-2 z-20">
-                    <button
-                      onClick={() => router.push(`/${params.tenantId}/sites/${params.siteId}/pages/${page.id}/builder`)}
-                      className="flex-1 inline-flex items-center justify-center gap-2 h-10 px-4 bg-[#f2f4f2] text-[#0b1411] text-xs font-black uppercase tracking-widest rounded-full hover:bg-[#0b1411] hover:text-[#d3ff4a] transition-all focus:outline-none focus:ring-2 focus:ring-[#0b1411]/20 group"
-                    >
-                      <Edit size={12} className="text-[#0b1411] group-hover:text-[#d3ff4a]" />
-                      Builder
-                    </button>
-                    
-                    <div className="flex items-center gap-2 shrink-0">
-                      {page.isPublished && (
-                        <button
-                          onClick={() => window.open(`/published/${site.slug}/${page.slug === '/' ? 'index' : page.slug.replace(/^\//, '')}.html`, '_blank')}
-                          className="h-10 w-10 flex items-center justify-center text-gray-400 bg-[#f2f4f2] rounded-full hover:bg-[#00e5ff] hover:text-[#0b1411] transition-colors shadow-sm"
-                          title="Open published URL"
-                        >
-                          <ExternalLink size={14} />
-                        </button>
-                      )}
-                      {page.slug !== '/' && (
-                        <button
-                          onClick={() => handleSetAsHome(page.id)}
-                          className="px-4 h-10 flex items-center justify-center text-[10px] font-black uppercase tracking-widest text-[#0b1411] bg-[#f2f4f2] hover:bg-gray-200 transition-colors rounded-full shadow-sm"
-                          title="Set as Home Page"
-                        >
-                          Set Home
-                        </button>
-                      )}
-                      {page.slug !== '/' && (
-                        <button
-                          onClick={() => handleDeletePage(page.id, page.name)}
-                          className="h-10 w-10 flex items-center justify-center text-red-400 bg-red-50 rounded-full hover:bg-red-500 hover:text-white transition-colors shadow-sm"
-                          title="Delete Page"
-                        >
-                          <Trash2 size={14} />
-                        </button>
-                      )}
-                    </div>
+                  <button
+                    onClick={() => router.push(`/${params.tenantId}/sites/${params.siteId}/pages/${page.id}/builder`)}
+                    className="flex-1 inline-flex items-center justify-center gap-2 h-10 px-4 bg-[#f2f4f2] text-[#0b1411] text-xs font-black uppercase tracking-widest rounded-full hover:bg-[#0b1411] hover:text-[#d3ff4a] transition-all focus:outline-none focus:ring-2 focus:ring-[#0b1411]/20 group"
+                  >
+                    <Edit size={12} className="text-[#0b1411] group-hover:text-[#d3ff4a]" />
+                    Builder
+                  </button>
+
+                  <div className="flex items-center gap-2 shrink-0">
+                    {page.isPublished && (
+                      <button
+                        onClick={() => window.open(`/published/${site.slug}/${page.slug === '/' ? 'index' : page.slug.replace(/^\//, '')}.html`, '_blank')}
+                        className="h-10 w-10 flex items-center justify-center text-gray-400 bg-[#f2f4f2] rounded-full hover:bg-[#00e5ff] hover:text-[#0b1411] transition-colors shadow-sm"
+                        title="Open published URL"
+                      >
+                        <ExternalLink size={14} />
+                      </button>
+                    )}
+                    {page.slug !== '/' && (
+                      <button
+                        onClick={() => handleSetAsHome(page.id)}
+                        className="px-4 h-10 flex items-center justify-center text-[10px] font-black uppercase tracking-widest text-[#0b1411] bg-[#f2f4f2] hover:bg-gray-200 transition-colors rounded-full shadow-sm"
+                        title="Set as Home Page"
+                      >
+                        Set Home
+                      </button>
+                    )}
+                    {page.slug !== '/' && (
+                      <button
+                        onClick={() => handleDeletePage(page.id, page.name)}
+                        className="h-10 w-10 flex items-center justify-center text-red-400 bg-red-50 rounded-full hover:bg-red-500 hover:text-white transition-colors shadow-sm"
+                        title="Delete Page"
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    )}
+                  </div>
                 </div>
 
               </div>
@@ -395,7 +395,7 @@ export default function PagesManagementPage() {
                 <X size={18} />
               </button>
             </div>
-            
+
             <form onSubmit={handleCreatePage} className="px-8 py-8 space-y-6">
               {error && (
                 <div className="flex items-start gap-3 text-sm text-red-700 bg-red-50 border border-red-100 rounded-2xl px-5 py-4 shadow-inner">
@@ -403,7 +403,7 @@ export default function PagesManagementPage() {
                   <span className="font-bold">{error}</span>
                 </div>
               )}
-              
+
               <div>
                 <label className="block text-xs font-black tracking-[0.15em] uppercase text-gray-400 mb-3">
                   Page Name <span className="text-red-500">*</span>
@@ -422,7 +422,7 @@ export default function PagesManagementPage() {
                   required
                 />
               </div>
-              
+
               <div>
                 <label className="block text-xs font-black tracking-[0.15em] uppercase text-gray-400 mb-3">
                   URL Slug <span className="text-red-500">*</span>

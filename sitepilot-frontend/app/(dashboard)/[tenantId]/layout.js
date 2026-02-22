@@ -27,6 +27,8 @@ import {
     DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu"
 
+import SubscriptionBanner from "@/components/SubscriptionBanner"
+
 export default function TenantLayout({ children }) {
     const { data: session, isPending } = useSession()
     const router = useRouter()
@@ -40,6 +42,7 @@ export default function TenantLayout({ children }) {
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
     const [tenant, setTenant] = useState(null)
     const [fetchedTenantId, setFetchedTenantId] = useState(null)
+    const [subscription, setSubscription] = useState(null)
 
     useEffect(() => {
         setMounted(true)
@@ -69,6 +72,15 @@ export default function TenantLayout({ children }) {
         } catch (err) {
             console.error('Error fetching tenant:', err)
         }
+
+        // Load subscription status for banner
+        try {
+            const resp = await fetch(`/api/subscriptions/usage?tenantId=${tenantId}`)
+            if (resp.ok) {
+                const data = await resp.json()
+                setSubscription(data.usage)
+            }
+        } catch { /* non-fatal */ }
     }
 
     // Only show loading spinner on initial load, not on tab refocus
@@ -188,6 +200,15 @@ export default function TenantLayout({ children }) {
 
             {/* Main Content Area */}
             <main className="flex-1 w-full flex flex-col min-w-0 min-h-screen relative">
+                {/* Subscription Warning Banner */}
+                {subscription && (
+                    <SubscriptionBanner
+                        status={subscription.status}
+                        isInGracePeriod={subscription.isInGracePeriod}
+                        currentPeriodEnd={subscription.currentPeriodEnd}
+                        tenantId={tenantId}
+                    />
+                )}
                 {/* Mobile Header */}
                 <div className="lg:hidden h-20 flex items-center justify-between px-6 border-b border-gray-100 bg-white/80 backdrop-blur-md sticky top-0 z-40 shrink-0 w-full">
                     <div className="flex items-center gap-2 cursor-pointer" onClick={() => router.push('/dashboard')}>

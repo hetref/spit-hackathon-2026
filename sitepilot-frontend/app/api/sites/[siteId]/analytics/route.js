@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
+import { getPlanGuard, PlanGuardError, planGuardErrorResponse } from "@/lib/plan-guard";
 
 export async function GET(request, { params }) {
     try {
@@ -27,6 +28,17 @@ export async function GET(request, { params }) {
 
         if (!membership) {
             return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+        }
+
+        // ── PLAN GUARD: active subscription check ─────────────────────────
+        try {
+            const guard = await getPlanGuard(prisma, site.tenantId);
+            guard.requireActive();
+        } catch (err) {
+            if (err instanceof PlanGuardError) {
+                return NextResponse.json(planGuardErrorResponse(err), { status: err.httpStatus });
+            }
+            throw err;
         }
 
         let siteStats = { totalViews: 0, uniqueSessions: 0, avgDuration: 0 };
