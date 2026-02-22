@@ -63,38 +63,8 @@ export default function NewTenantPage() {
       setLogoPreview(reader.result)
     }
     reader.readAsDataURL(file)
-
-    // Upload immediately
-    await uploadLogo(file)
   }
 
-  const uploadLogo = async (file) => {
-    setUploadingLogo(true)
-    try {
-      const formData = new FormData()
-      formData.append('file', file)
-
-      const response = await fetch('/api/upload/tenant-logo', {
-        method: 'POST',
-        body: formData
-      })
-
-      const data = await response.json()
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to upload logo')
-      }
-
-      // Store the S3 key in the form data
-      setFormData(prev => ({ ...prev, logo: data.s3Key }))
-    } catch (err) {
-      setError(err.message)
-      setLogoFile(null)
-      setLogoPreview('')
-    } finally {
-      setUploadingLogo(false)
-    }
-  }
 
   const handleRemoveLogo = () => {
     setLogoFile(null)
@@ -111,23 +81,56 @@ export default function NewTenantPage() {
     setLoading(true)
 
     try {
-      const response = await fetch('/api/tenants', {
+      const tenantId = crypto.randomUUID()
+
+      // 1. Create the tenant first
+      const createResponse = await fetch('/api/tenants', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData)
+        body: JSON.stringify({
+          id: tenantId,
+          name: formData.name,
+          slug: formData.slug,
+          description: formData.description,
+          logo: null
+        })
       })
 
-      const data = await response.json()
+      const data = await createResponse.json()
 
-      if (!response.ok) {
+      if (!createResponse.ok) {
         throw new Error(data.error || 'Failed to create tenant')
       }
 
-      router.push(`/${data.tenant.id}`)
+      // 2. Upload logo and update tenant if logo exists
+      if (logoFile) {
+        setUploadingLogo(true)
+        const uploadData = new FormData()
+        uploadData.append('file', logoFile)
+
+        const uploadResponse = await fetch('/api/upload/tenant-logo', {
+          method: 'POST',
+          body: uploadData
+        })
+
+        const uploadResult = await uploadResponse.json()
+
+        if (uploadResponse.ok && uploadResult.s3Key) {
+          await fetch(`/api/tenants/${tenantId}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ logo: uploadResult.s3Key })
+          })
+        }
+        setUploadingLogo(false)
+      }
+
+      router.push(`/${tenantId}`)
     } catch (err) {
       setError(err.message)
     } finally {
       setLoading(false)
+      setUploadingLogo(false)
     }
   }
 
