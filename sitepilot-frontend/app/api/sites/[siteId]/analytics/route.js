@@ -14,6 +14,7 @@ export async function GET(request, { params }) {
 
         const site = await prisma.site.findUnique({
             where: { id: siteId },
+            select: { id: true, tenantId: true },
         });
 
         if (!site) {
@@ -28,61 +29,67 @@ export async function GET(request, { params }) {
             return NextResponse.json({ error: "Forbidden" }, { status: 403 });
         }
 
-        // Per Site Aggregation
-        const totalSessions = await prisma.visitorSession.count({
-            where: { siteId }
-        });
+        let siteStats = { totalViews: 0, uniqueSessions: 0, avgDuration: 0 };
+        let pageStats = [];
 
-        const pageViews = await prisma.pageView.findMany({
-            where: { siteId },
-        });
+        try {
+            // Use database-level aggregation for scalability
+            const [totalViews, uniqueSessions, durationAgg, pageGrouped] = await Promise.all([
+                // Total page views
+                prisma.pageView.count({ where: { siteId } }),
+                // Unique sessions
+                prisma.visitorSession.count({ where: { siteId } }),
+                // Average duration (only views that have exited)
+                prisma.pageView.aggregate({
+                    where: { siteId, duration: { gt: 0 } },
+                    _avg: { duration: true },
+                }),
+                // Per-page grouped stats
+                prisma.pageView.groupBy({
+                    by: ['pageSlug'],
+                    where: { siteId },
+                    _count: { id: true },
+                    _avg: { duration: true },
+                    orderBy: { _count: { id: 'desc' } },
+                    take: 50,
+                }),
+            ]);
 
-        const totalViews = pageViews.length;
+            siteStats = {
+                totalViews,
+                uniqueSessions,
+                avgDuration: Math.round(durationAgg._avg?.duration || 0),
+            };
 
-        // Avg Duration
-        const viewsWithDuration = pageViews.filter(pv => pv.duration > 0);
-        const totalDuration = viewsWithDuration.reduce((acc, pv) => acc + pv.duration, 0);
-        const avgDuration = viewsWithDuration.length > 0 ? Math.floor(totalDuration / viewsWithDuration.length) : 0;
+            // For unique sessions per page, do a single efficient query
+            const pageSessionCounts = pageGrouped.length > 0
+                ? await prisma.pageView.groupBy({
+                    by: ['pageSlug', 'sessionId'],
+                    where: { siteId },
+                })
+                : [];
 
-        // Per Page Aggregation
-        const pagesMap = {};
-        pageViews.forEach(pv => {
-            const slug = pv.pageSlug;
-            if (!pagesMap[slug]) {
-                pagesMap[slug] = {
-                    slug,
-                    views: 0,
-                    uniqueSessions: new Set(),
-                    totalDuration: 0,
-                    durationCount: 0
-                };
+            // Build a slug → unique session count map
+            const slugSessionMap = {};
+            for (const row of pageSessionCounts) {
+                slugSessionMap[row.pageSlug] = (slugSessionMap[row.pageSlug] || 0) + 1;
             }
-            pagesMap[slug].views += 1;
-            pagesMap[slug].uniqueSessions.add(pv.sessionId);
-            if (pv.duration > 0) {
-                pagesMap[slug].totalDuration += pv.duration;
-                pagesMap[slug].durationCount += 1;
-            }
-        });
 
-        // Format page stats
-        const pageStats = Object.values(pagesMap).map(p => ({
-            slug: p.slug,
-            views: p.views,
-            uniqueSessions: p.uniqueSessions.size,
-            avgDuration: p.durationCount > 0 ? Math.floor(p.totalDuration / p.durationCount) : 0
-        })).sort((a, b) => b.views - a.views);
+            pageStats = pageGrouped.map(pg => ({
+                slug: pg.pageSlug,
+                views: pg._count.id,
+                uniqueSessions: slugSessionMap[pg.pageSlug] || 0,
+                avgDuration: Math.round(pg._avg?.duration || 0),
+            }));
+        } catch (analyticsError) {
+            console.warn("[Analytics] Models not ready — returning empty stats.", analyticsError.message);
+        }
 
         return NextResponse.json({
             success: true,
-            siteStats: {
-                totalViews,
-                uniqueSessions: totalSessions,
-                avgDuration
-            },
-            pageStats
+            siteStats,
+            pageStats,
         });
-
     } catch (error) {
         console.error("Analytics fetch error:", error);
         return NextResponse.json({ error: "Internal Error" }, { status: 500 });

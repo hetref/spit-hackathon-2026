@@ -9,6 +9,37 @@ import prisma from '@/lib/prisma';
 import { generateFormHTML, generateFormJS, generateFormCSS } from '@/lib/form-renderer';
 
 // ============================================================================
+// TRACKER — inlined into every page at build time (< 1.5 KB)
+// ============================================================================
+
+/**
+ * Returns a self-contained analytics script that is injected into the <head>
+ * of every published page. By inlining it we avoid:
+ *  - an extra HTTP request for an external tracker.js
+ *  - reliance on a CDN that may not host the file
+ *  - CORS issues for the script itself
+ *
+ * The script uses the API base URL determined at publish time so it always
+ * points to the correct backend (ngrok in dev, production URL in prod).
+ */
+function generateTrackerScript(siteId, pageSlug, apiBaseUrl) {
+  // Escape values for safe embedding inside a JS string literal
+  const esc = (s) => String(s || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/</g, '\\x3c');
+  return `<script>
+(function(){"use strict";
+var S='${esc(siteId)}',P='${esc(pageSlug)}',A='${esc(apiBaseUrl.replace(/\/+$/, ''))}';
+if(!S||!A)return;
+function gC(n){var e=n+"=",p=document.cookie.split(";");for(var i=0;i<p.length;i++){var c=p[i].replace(/^ +/,"");if(c.indexOf(e)===0)return c.substring(e.length)}return null}
+function sC(n,v,m){var x="";if(m){var d=new Date();d.setTime(d.getTime()+m*6e4);x="; expires="+d.toUTCString()}document.cookie=n+"="+(v||"")+x+"; path=/; SameSite=Lax; Secure"}
+var pv=null,si=gC("_sp_sid");
+fetch(A+"/api/analytics/enter",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({siteId:S,pageSlug:P,sessionId:si,userAgent:navigator.userAgent,referrer:document.referrer||null}),keepalive:true}).then(function(r){return r.json()}).then(function(d){if(d.sessionId){sC("_sp_sid",d.sessionId,30);si=d.sessionId}if(d.pageViewId)pv=d.pageViewId}).catch(function(){});
+function ex(){if(!pv)return;var b=JSON.stringify({pageViewId:pv});if(navigator.sendBeacon)navigator.sendBeacon(A+"/api/analytics/exit",new Blob([b],{type:"application/json"}));else fetch(A+"/api/analytics/exit",{method:"POST",headers:{"Content-Type":"application/json"},body:b,keepalive:true});pv=null}
+window.addEventListener("pagehide",ex);document.addEventListener("visibilitychange",function(){if(document.visibilityState==="hidden")ex()})
+})()
+<\/script>`;
+}
+
+// ============================================================================
 // HELPERS
 // ============================================================================
 
@@ -926,6 +957,10 @@ export async function convertPageToHtml(
   const css = generateCSS(theme || {}) + additionalCSS;
   const js = generateJS() + additionalJS;
 
+  // Resolve the API base URL for analytics — determined at publish time
+  const trackerApiBase = process.env.NEXT_PUBLIC_API_URL || process.env.NEXT_PUBLIC_APP_URL || 'https://app.sitepilot.devally.in';
+  const trackerTag = generateTrackerScript(page.siteId, page.slug, trackerApiBase);
+
   const html = `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -938,7 +973,7 @@ export async function convertPageToHtml(
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="${stylesHref}" />
-  <script src="https://cdn.sitepilot.devally.in/tracker.js" data-site="${page.siteId}" data-page="${page.slug}" defer></script>
+  ${trackerTag}
 </head>
 <body>
 ${bodyContent}
@@ -976,6 +1011,10 @@ export function convertJsonToHtml(layoutJSON, pageId) {
   const css = generateCSS(theme);
   const js = generateJS();
 
+  const trackerApiBase = process.env.NEXT_PUBLIC_API_URL || process.env.NEXT_PUBLIC_APP_URL || 'https://app.sitepilot.devally.in';
+  const pageSiteId = page.siteId || layoutJSON.site?.id || '';
+  const trackerTag = generateTrackerScript(pageSiteId, page.slug || '/', trackerApiBase);
+
   const html = `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -987,6 +1026,7 @@ export function convertJsonToHtml(layoutJSON, pageId) {
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="styles.css" />
+  ${trackerTag}
 </head>
 <body>
 ${bodyContent}

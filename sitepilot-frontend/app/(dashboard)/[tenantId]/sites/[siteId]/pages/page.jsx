@@ -15,7 +15,10 @@ import {
   AlertCircle,
   Home,
   MonitorOff,
-  ExternalLink
+  ExternalLink,
+  MousePointerClick,
+  Users,
+  Timer
 } from 'lucide-react'
 
 export default function PagesManagementPage() {
@@ -24,6 +27,7 @@ export default function PagesManagementPage() {
   const { data: session, isPending } = useSession()
   const [site, setSite] = useState(null)
   const [pages, setPages] = useState([])
+  const [pageAnalytics, setPageAnalytics] = useState({}) // slug → { views, uniqueSessions, avgDuration }
   const [loading, setLoading] = useState(true)
   const [showCreateModal, setShowCreateModal] = useState(false)
   const [newPageName, setNewPageName] = useState('')
@@ -45,9 +49,10 @@ export default function PagesManagementPage() {
 
   const fetchData = async () => {
     try {
-      const [siteRes, pagesRes] = await Promise.all([
+      const [siteRes, pagesRes, analyticsRes] = await Promise.all([
         fetch(`/api/sites/${params.siteId}`),
-        fetch(`/api/sites/${params.siteId}/pages`)
+        fetch(`/api/sites/${params.siteId}/pages`),
+        fetch(`/api/sites/${params.siteId}/analytics`),
       ])
 
       if (siteRes.ok) {
@@ -58,6 +63,15 @@ export default function PagesManagementPage() {
       if (pagesRes.ok) {
         const { pages } = await pagesRes.json()
         setPages(pages)
+      }
+
+      if (analyticsRes.ok) {
+        const data = await analyticsRes.json()
+        if (data.success && data.pageStats) {
+          const map = {}
+          data.pageStats.forEach(ps => { map[ps.slug] = ps })
+          setPageAnalytics(map)
+        }
       }
     } catch (error) {
       console.error('Error fetching data:', error)
@@ -291,6 +305,28 @@ export default function PagesManagementPage() {
                          </span>
                       )}
                     </div>
+
+                    {/* Per-page analytics mini stats */}
+                    {(() => {
+                      const stats = pageAnalytics[page.slug];
+                      if (!stats || stats.views === 0) return null;
+                      return (
+                        <div className="flex items-center gap-4 mt-4 pt-3 border-t border-gray-100">
+                          <span className="flex items-center gap-1 text-[10px] font-bold text-gray-500" title="Page Views">
+                            <MousePointerClick size={11} className="text-gray-400" />
+                            {stats.views}
+                          </span>
+                          <span className="flex items-center gap-1 text-[10px] font-bold text-gray-500" title="Unique Visitors">
+                            <Users size={11} className="text-gray-400" />
+                            {stats.uniqueSessions}
+                          </span>
+                          <span className="flex items-center gap-1 text-[10px] font-bold text-gray-500" title="Avg. Duration">
+                            <Timer size={11} className="text-gray-400" />
+                            {stats.avgDuration}s
+                          </span>
+                        </div>
+                      );
+                    })()}
                   </div>
                 </div>
                 
