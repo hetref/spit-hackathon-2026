@@ -16,6 +16,7 @@
  */
 
 import { getPlanConfig, GRACE_PERIOD_DAYS } from './plans.js';
+import { getBusinessLimit } from './plans.js';
 
 // ─── Error class ──────────────────────────────────────────────────────────────
 
@@ -148,6 +149,22 @@ export class PlanGuard {
     }
 
     /**
+     * Require a paid subscription (block FREE plan users from creating resources).
+     * FREE plan has businesses:0 — user must subscribe before creating any business.
+     */
+    requirePaidSubscription() {
+        const businessLimit = getBusinessLimit(this.planType);
+        if (businessLimit === 0) {
+            throw new PlanGuardError(
+                'You need an active subscription to create workspaces. Please choose a plan to get started.',
+                'SUBSCRIPTION_REQUIRED',
+                403
+            );
+        }
+        return this.requireActive();
+    }
+
+    /**
      * Throw PlanGuardError if a site limit would be exceeded.
      * @param {number} currentSiteCount  Current number of sites for the tenant
      */
@@ -155,8 +172,31 @@ export class PlanGuard {
         const limit = this.planConfig.limits.sites;
         if (limit !== -1 && currentSiteCount >= limit) {
             throw new PlanGuardError(
-                `Your ${this.planConfig.displayName} plan allows up to ${limit} site${limit === 1 ? '' : 's'}. Please upgrade to add more.`,
+                `Your ${this.planConfig.displayName} plan allows up to ${limit} site${limit === 1 ? '' : 's'} per workspace. Please upgrade to add more.`,
                 'SITE_LIMIT_EXCEEDED',
+                403
+            );
+        }
+        return this;
+    }
+
+    /**
+     * Throw PlanGuardError if the business (tenant) limit would be exceeded.
+     * @param {number} currentBusinessCount  Number of businesses/workspaces user currently owns
+     */
+    checkBusinessLimit(currentBusinessCount) {
+        const limit = getBusinessLimit(this.planType);
+        if (limit === 0) {
+            throw new PlanGuardError(
+                'You need an active subscription to create workspaces. Please choose a plan.',
+                'SUBSCRIPTION_REQUIRED',
+                403
+            );
+        }
+        if (limit !== -1 && currentBusinessCount >= limit) {
+            throw new PlanGuardError(
+                `Your ${this.planConfig.displayName} plan allows up to ${limit} workspace${limit === 1 ? '' : 's'}. Please upgrade to create more.`,
+                'BUSINESS_LIMIT_EXCEEDED',
                 403
             );
         }
@@ -238,6 +278,12 @@ export class PlanGuard {
     canAddSite(currentSiteCount) {
         const limit = this.planConfig.limits.sites;
         return limit === -1 || currentSiteCount < limit;
+    }
+
+    canCreateBusiness(currentBusinessCount) {
+        const limit = getBusinessLimit(this.planType);
+        if (limit === 0) return false;
+        return limit === -1 || currentBusinessCount < limit;
     }
 
     canAddPage(currentPageCount) {

@@ -39,7 +39,8 @@ export const PLANS = {
         razorpayPlanId: null,
 
         limits: {
-            sites: 1,                   // Max sites
+            businesses: 0,              // FREE: no business creation — must subscribe
+            sites: 1,                   // Max sites per business
             pagesPerSite: 1,            // Max pages per site
             deploymentsPerMonth: 3,     // Max deployments per month
             tokenLimit: 5000,           // AI token limit per billing cycle
@@ -70,7 +71,8 @@ export const PLANS = {
         razorpayPlanId: process.env.RAZORPAY_PLAN_STARTER || null,
 
         limits: {
-            sites: 3,
+            businesses: 3,              // Max businesses (workspaces) owned
+            sites: 3,                   // Max sites per business
             pagesPerSite: 5,
             deploymentsPerMonth: 20,
             tokenLimit: 50000,
@@ -101,7 +103,8 @@ export const PLANS = {
         razorpayPlanId: process.env.RAZORPAY_PLAN_PRO || null,
 
         limits: {
-            sites: 10,
+            businesses: 10,             // Max businesses owned
+            sites: 10,                  // Max sites per business
             pagesPerSite: -1,           // unlimited
             deploymentsPerMonth: -1,    // unlimited
             tokenLimit: 200000,
@@ -132,7 +135,8 @@ export const PLANS = {
         razorpayPlanId: process.env.RAZORPAY_PLAN_ENTERPRISE || null,
 
         limits: {
-            sites: -1,
+            businesses: -1,             // Unlimited businesses
+            sites: -1,                  // Unlimited sites per business
             pagesPerSite: -1,
             deploymentsPerMonth: -1,
             tokenLimit: -1,             // custom / negotiated
@@ -171,6 +175,15 @@ export function getTokenLimit(planType) {
 }
 
 /**
+ * Get the business (tenant) limit for a plan.
+ * Returns -1 for unlimited, 0 for no creation allowed (FREE).
+ * @param {PlanType} planType
+ */
+export function getBusinessLimit(planType) {
+    return getPlanConfig(planType).limits.businesses ?? 0;
+}
+
+/**
  * Check if planA is higher than planB.
  * @param {PlanType} planA
  * @param {PlanType} planB
@@ -195,7 +208,6 @@ export function getPlanChangeType(current, target) {
 
 /**
  * Returns an ordered array of plan configs for the pricing page.
- * Excludes ENTERPRISE from orderable list (contact sales).
  */
 export function getPricingPlans() {
     return ['FREE', 'STARTER', 'PRO', 'ENTERPRISE'].map((key) => PLANS[key]);

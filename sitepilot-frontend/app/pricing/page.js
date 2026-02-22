@@ -32,24 +32,29 @@ const FEATURE_LABELS = {
 };
 
 const LIMIT_LABELS = {
-    sites: "Sites",
-    pagesPerSite: "Pages / Site",
-    deploymentsPerMonth: "Deployments / Month",
-    tokenLimit: "AI Tokens",
-    analyticsRetentionDays: "Analytics Retention",
-    teamMembers: "Team Members",
-    storageGB: "Storage",
+    businesses: 'Workspaces',
+    sites: 'Sites / Workspace',
+    pagesPerSite: 'Pages / Site',
+    deploymentsPerMonth: 'Deployments / Month',
+    tokenLimit: 'AI Tokens',
+    analyticsRetentionDays: 'Analytics Retention',
+    teamMembers: 'Team Members',
+    storageGB: 'Storage',
 };
 
 const LIMIT_FORMAT = {
-    tokenLimit: (v) => v === -1 ? "Unlimited" : `${(v / 1000).toFixed(0)}k`,
-    storageGB: (v) => v === -1 ? "Unlimited" : `${v}GB`,
-    analyticsRetentionDays: (v) => v === -1 ? "1 Year+" : `${v}d`,
-    sites: (v) => v === -1 ? "Unlimited" : String(v),
-    pagesPerSite: (v) => v === -1 ? "Unlimited" : String(v),
-    deploymentsPerMonth: (v) => v === -1 ? "Unlimited" : String(v),
-    teamMembers: (v) => v === -1 ? "Unlimited" : String(v),
+    businesses: (v) => v === -1 ? 'Unlimited' : v === 0 ? 'Requires Plan' : String(v),
+    tokenLimit: (v) => v === -1 ? 'Unlimited' : v >= 1000 ? `${(v / 1000).toFixed(0)}k` : String(v),
+    storageGB: (v) => v === -1 ? 'Unlimited' : `${v}GB`,
+    analyticsRetentionDays: (v) => v === -1 ? '1 Year+' : `${v}d`,
+    sites: (v) => v === -1 ? 'Unlimited' : String(v),
+    pagesPerSite: (v) => v === -1 ? 'Unlimited' : String(v),
+    deploymentsPerMonth: (v) => v === -1 ? 'Unlimited' : String(v),
+    teamMembers: (v) => v === -1 ? 'Unlimited' : String(v),
 };
+
+// Order in which limits appear on the card
+const LIMIT_ORDER = ['businesses', 'sites', 'pagesPerSite', 'deploymentsPerMonth', 'tokenLimit', 'teamMembers', 'storageGB'];
 
 function formatPrice(price, currency) {
     if (price === 0) return "Free";
@@ -123,23 +128,26 @@ function PlanCard({ plan, currentPlan, subscription, onSelectPlan, loading, tena
                     <span className={`text-4xl font-black ${isPro ? "text-white" : "text-[#0b1411]"}`}>
                         {formatPrice(plan.price, plan.currency)}
                     </span>
-                    {plan.price !== null && plan.price !== 0 && (
+                    {plan.price !== 0 && (
                         <span className={`text-sm font-medium ${isPro ? "text-gray-500" : "text-gray-500"}`}>
-                            /{plan.billingCycle === "annual" ? "year" : "month"}
+                            /month
                         </span>
                     )}
                 </div>
             </div>
 
-            {/* Limits */}
+            {/* Limits — businesses first, then others in order */}
             <ul className="flex flex-col gap-3 mb-6 flex-1">
-                {Object.entries(plan.limits).map(([key, val]) => {
-                    const formatted = LIMIT_FORMAT[key] ? LIMIT_FORMAT[key](val) : String(val);
+                {LIMIT_ORDER.filter(key => plan.limits[key] !== undefined).map((key) => {
+                    const val = plan.limits[key];
+                    const formatter = LIMIT_FORMAT[key] || String;
+                    const formatted = formatter(val);
+                    const isBusinesses = key === 'businesses';
                     return (
-                        <li key={key} className={`flex items-center gap-3 text-sm font-medium ${isPro ? "text-gray-300" : "text-gray-700"}`}>
-                            <CheckCircle2 className={`w-4 h-4 shrink-0 ${isPro ? "text-[#d3ff4a]" : "text-[#8bc4b1]"}`} />
-                            <span className="font-bold">{formatted}</span>
-                            <span className={isPro ? "text-gray-500" : "text-gray-400"}>{LIMIT_LABELS[key]}</span>
+                        <li key={key} className={`flex items-center gap-3 text-sm font-medium ${isPro ? "text-gray-300" : "text-gray-700"} ${isBusinesses ? 'font-bold' : ''}`}>
+                            <CheckCircle2 className={`w-4 h-4 shrink-0 ${isBusinesses ? (isPro ? 'text-[#d3ff4a]' : 'text-[#0b1411]') : (isPro ? 'text-[#d3ff4a]/60' : 'text-[#8bc4b1]')}`} />
+                            <span className="font-black">{formatted}</span>
+                            <span className={`${isPro ? "text-gray-500" : "text-gray-400"} ${isBusinesses ? 'font-bold' : ''}`}>{LIMIT_LABELS[key]}</span>
                         </li>
                     );
                 })}

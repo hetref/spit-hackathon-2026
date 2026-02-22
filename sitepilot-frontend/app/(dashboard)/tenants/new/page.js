@@ -1,8 +1,8 @@
 'use client'
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useSession } from '@/lib/auth-client'
-import { ArrowLeft, Briefcase, Type, Upload, X, Loader2, ImageIcon } from 'lucide-react'
+import { ArrowLeft, Briefcase, Type, Upload, X, Loader2, ImageIcon, Lock, Zap, ArrowRight } from 'lucide-react'
 
 export default function NewTenantPage() {
   const router = useRouter()
@@ -18,7 +18,16 @@ export default function NewTenantPage() {
   const [logoFile, setLogoFile] = useState(null)
   const [logoPreview, setLogoPreview] = useState('')
   const [uploadingLogo, setUploadingLogo] = useState(false)
+  const [subCheck, setSubCheck] = useState(null)  // null = loading
   const fileInputRef = useRef(null)
+
+  useEffect(() => {
+    if (!session) return
+    fetch('/api/user/subscription')
+      .then(r => r.json())
+      .then(data => setSubCheck(data))
+      .catch(() => setSubCheck({ canCreateBusiness: false, blockReason: 'ERROR' }))
+  }, [session])
 
   const generateSlug = (name) => {
     return name
@@ -134,19 +143,56 @@ export default function NewTenantPage() {
     }
   }
 
-  if (isPending) {
+  if (isPending || subCheck === null) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#FDFDFD]">
-        <div className="flex flex-col items-center">
-          <Loader2 className="h-8 w-8 animate-spin text-gray-500 mb-4" />
-        </div>
+        <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
       </div>
     )
   }
 
   if (!session) {
-    router.push('/auth/signin')
+    router.push('/signin')
     return null
+  }
+
+  // Subscription gate—show before the form
+  if (!subCheck.canCreateBusiness) {
+    const isLimitHit = subCheck.blockReason === 'BUSINESS_LIMIT_EXCEEDED'
+    return (
+      <div className="min-h-screen bg-[#FDFDFD] font-sans text-gray-900 flex items-center justify-center px-4">
+        <div className="max-w-lg w-full text-center">
+          <div className="h-20 w-20 rounded-[2rem] bg-[#f2f4f2] flex items-center justify-center mx-auto mb-8">
+            <Lock className="h-8 w-8 text-gray-400" />
+          </div>
+          <h1 className="text-3xl font-black text-[#0b1411] tracking-tight mb-3">
+            {isLimitHit ? 'Workspace Limit Reached' : 'Subscription Required'}
+          </h1>
+          <p className="text-gray-500 font-medium mb-8 leading-relaxed">
+            {isLimitHit
+              ? `Your ${subCheck.plan} plan allows ${subCheck.businessLimit} workspace${subCheck.businessLimit === 1 ? '' : 's'}. Upgrade to create more.`
+              : 'You need an active subscription to create workspaces. Choose a plan to get started.'}
+          </p>
+          <div className="flex flex-col sm:flex-row gap-3 justify-center">
+            <button
+              onClick={() => router.push('/pricing')}
+              className="flex items-center justify-center gap-2 bg-[#d3ff4a] text-[#0b1411] px-8 py-4 rounded-full font-black uppercase tracking-widest text-sm hover:bg-[#c0eb3f] hover:scale-105 active:scale-95 transition-all shadow-[0_0_20px_rgba(211,255,74,0.3)]"
+            >
+              <Zap className="h-4 w-4" />
+              {isLimitHit ? 'Upgrade Plan' : 'Choose a Plan'}
+              <ArrowRight className="h-4 w-4" />
+            </button>
+            <button
+              onClick={() => router.push('/dashboard')}
+              className="flex items-center justify-center gap-2 border border-gray-200 text-gray-600 px-8 py-4 rounded-full font-bold text-sm hover:border-gray-400 transition-all"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              Back to Dashboard
+            </button>
+          </div>
+        </div>
+      </div>
+    )
   }
 
   return (
