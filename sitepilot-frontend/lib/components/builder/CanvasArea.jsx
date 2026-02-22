@@ -153,11 +153,12 @@ export default function CanvasArea() {
   return (
     <div
       ref={canvasRef}
+      data-lenis-prevent
       className="flex-1 bg-[#fcfdfc] overflow-auto relative"
       onPointerMove={handlePointerMove}
       onPointerLeave={handlePointerLeave}
     >
-      <div className="absolute inset-0 bg-[#fefefe] bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] [background-size:20px_20px] opacity-60 z-0 pointer-events-none" />
+      <div className="absolute inset-0 bg-[#fefefe] bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] [background-size:20px_20px] opacity-60 -z-10" />
 
       {/* Remote cursors — scoped to canvas area only */}
       <CursorLayer />

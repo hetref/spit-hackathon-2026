@@ -82,8 +82,8 @@ export default function RightSidebar() {
 
   if (!selectedNodeId || !selectedNode) {
     return (
-      <div className="w-80 bg-[#fcfdfc] border-l border-gray-100 overflow-y-auto builder-sidebar z-10 shrink-0">
-        <div className="p-8 flex flex-col items-center justify-center text-center h-full">
+      <div className="w-80 bg-[#fcfdfc] border-l border-gray-100 flex flex-col h-full min-h-0 builder-sidebar z-10 shrink-0">
+        <div data-lenis-prevent className="flex-1 min-h-0 overflow-y-auto p-8 flex flex-col items-center justify-center text-center">
           <div className="w-12 h-12 bg-white rounded-2xl shadow-sm border border-gray-100 flex items-center justify-center mb-4">
             <Settings2 size={20} className="text-[#8bc4b1] opacity-50" />
           </div>
@@ -99,8 +99,8 @@ export default function RightSidebar() {
   // ── If the selected node is locked by another user ─────────────────────
   if (selectedNodeLock) {
     return (
-      <div className="w-80 bg-[#fcfdfc] border-l border-gray-100 overflow-y-auto builder-sidebar z-10 shrink-0">
-        <div className="p-8 flex flex-col items-center justify-center text-center h-full">
+      <div className="w-80 bg-[#fcfdfc] border-l border-gray-100 flex flex-col h-full min-h-0 builder-sidebar z-10 shrink-0">
+        <div data-lenis-prevent className="flex-1 min-h-0 overflow-y-auto p-8 flex flex-col items-center justify-center text-center">
           <div
             className="w-12 h-12 rounded-2xl flex items-center justify-center mb-4 border"
             style={{ backgroundColor: `${selectedNodeLock.color}10`, borderColor: `${selectedNodeLock.color}30` }}
@@ -165,7 +165,7 @@ export default function RightSidebar() {
   };
 
   return (
-    <div className="w-80 bg-white/80 backdrop-blur-md border-l border-gray-100 overflow-y-auto builder-sidebar z-10 shadow-sm shrink-0">
+    <div className="w-80 bg-white/80 backdrop-blur-md border-l border-gray-100 flex flex-col h-full min-h-0 builder-sidebar z-10 shadow-sm shrink-0">
       {/* Header */}
       <div className="p-6 border-b border-gray-100">
         <div className="flex items-center justify-between mb-4">
@@ -231,7 +231,7 @@ export default function RightSidebar() {
       </div>
 
       {/* Content */}
-      <div className="p-4">
+      <div data-lenis-prevent className="flex-1 min-h-0 overflow-y-auto p-4">
         {activeTab === "properties" && isComponent && (
           <PropertiesEditor
             component={selectedNode}
