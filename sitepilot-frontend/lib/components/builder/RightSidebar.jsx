@@ -14,7 +14,7 @@ import { useParams } from "next/navigation";
 import useBuilderStore from "@/lib/stores/builderStore";
 import useHistoryStore from "@/lib/stores/historyStore";
 import useUIStore from "@/lib/stores/uiStore";
-import { Trash2, Copy, Plus, Minus, Settings2, Paintbrush, Lock, X, Image as ImageIcon, Wand2, Loader2, ChevronDown } from "lucide-react";
+import { Trash2, Copy, Plus, Minus, Settings2, Paintbrush, Lock, X, Image as ImageIcon, Wand2, Loader2, ChevronDown, Maximize2, Move, Type, Palette, AlignLeft, AlignCenter, AlignRight, AlignJustify, Italic, Underline, Strikethrough, Layers, ChevronRight, RotateCcw, Square } from "lucide-react";
 import { clsx } from "clsx";
 import FormSelector from "./FormSelector";
 import { useOthers } from "@/lib/liveblocks-client";
@@ -26,6 +26,17 @@ const GOOGLE_FONTS = [
   'Karla', 'Cabin', 'Barlow', 'Crimson Text', 'Bitter', 'Arimo', 'Titillium Web',
   'DM Sans', 'Manrope', 'Space Grotesk', 'Plus Jakarta Sans', 'Outfit', 'Lexend'
 ].sort();
+
+const shadowPresets = [
+  { label: "None", value: "none" },
+  { label: "XS", value: "0 1px 2px 0 rgb(0 0 0 / 0.05)" },
+  { label: "SM", value: "0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1)" },
+  { label: "MD", value: "0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)" },
+  { label: "LG", value: "0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1)" },
+  { label: "XL", value: "0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1)" },
+  { label: "2XL", value: "0 25px 50px -12px rgb(0 0 0 / 0.5)" },
+  { label: "Inner", value: "inset 0 2px 4px 0 rgb(0 0 0 / 0.05)" },
+];
 
 export default function RightSidebar() {
   const store = useBuilderStore();
@@ -1368,6 +1379,25 @@ function StylesEditor({ styles, onUpdate, globalColors, globalFonts }) {
         onToggle={() => toggleSection("typography")}
       >
         <div className="space-y-3">
+          {/* Font Family */}
+          <div>
+            <label className="block text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-1.5">
+              Font Family
+            </label>
+            <select
+              value={styles.fontFamily || ''}
+              onChange={(e) => handleChange("fontFamily", e.target.value || undefined)}
+              className="w-full px-2.5 py-1.5 bg-white border border-gray-200 rounded-lg text-xs text-gray-700 focus:ring-1 focus:ring-[#8bc4b1] focus:border-[#8bc4b1] outline-none"
+              style={{ fontFamily: styles.fontFamily || (typeof globalFonts !== 'undefined' ? globalFonts.body : 'Inter') || 'inherit' }}
+            >
+              <option value="">Global Default</option>
+              <optgroup label="Google Fonts">
+                {GOOGLE_FONTS.map(font => (
+                  <option key={font} value={font}>{font}</option>
+                ))}
+              </optgroup>
+            </select>
+          </div>
           {/* Text Align */}
           <div>
             <label className="block text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-1.5">
@@ -1514,59 +1544,53 @@ function StylesEditor({ styles, onUpdate, globalColors, globalFonts }) {
         </div>
       </CollapsibleSection>
 
-      {/* Typography Section */}
-      <div>
-        <SectionLabel>Typography</SectionLabel>
-        <div className="space-y-2">
-          <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">Font Family</label>
-            <select
-              value={styles.fontFamily || ''}
-              onChange={(e) => handleChange("fontFamily", e.target.value || undefined)}
-              className="w-full px-2.5 py-1.5 border border-gray-200 rounded-md text-sm text-gray-700 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 outline-none"
-              style={{ fontFamily: styles.fontFamily || globalFonts?.body || 'inherit' }}
-            >
-              <option value="">Global Default ({globalFonts?.body || 'Inter'})</option>
-              <optgroup label="Google Fonts">
-                {GOOGLE_FONTS.map(font => (
-                  <option key={font} value={font}>{font}</option>
-                ))}
-              </optgroup>
-            </select>
+      {/* ── Border ─────────────────────────────────────────────── */}
+      <CollapsibleSection
+        title="Border"
+        icon={<Square size={12} />}
+        isOpen={openSections.border}
+        onToggle={() => toggleSection("border")}
+      >
+        <div className="space-y-3">
+          <div className="grid grid-cols-2 gap-2">
+            <InputField
+              label="Weight"
+              type="number"
+              value={styles.borderWidth || ""}
+              onChange={(v) => handleChange("borderWidth", v ? parseInt(v) : null)}
+              compact
+              placeholder="0"
+              suffix="px"
+            />
+            <SelectField
+              label="Style"
+              value={styles.borderStyle || "solid"}
+              options={[
+                { value: "solid", label: "Solid" },
+                { value: "dashed", label: "Dashed" },
+                { value: "dotted", label: "Dotted" },
+                { value: "none", label: "None" },
+              ]}
+              onChange={(v) => handleChange("borderStyle", v)}
+            />
           </div>
-          <SelectField
-            label="Text Align"
-            value={styles.textAlign || "left"}
-            options={[
-              { value: "left", label: "Left" },
-              { value: "center", label: "Center" },
-              { value: "right", label: "Right" },
-            ]}
-            onChange={(value) => handleChange("textAlign", value)}
-          />
           <InputField
-            label="Border Radius"
+            label="Radius"
             type="number"
-            value={styles.fontSize || ""}
-            onChange={(value) => handleChange("fontSize", parseInt(value) || 0)}
+            value={styles.borderRadius || ""}
+            onChange={(v) => handleChange("borderRadius", v ? parseInt(v) : null)}
+            compact
+            placeholder="0"
+            suffix="px"
           />
-          <SelectField
-            label="Font Weight"
-            value={styles.fontWeight || ""}
-            options={[
-              { value: "", label: "Default" },
-              { value: "300", label: "Light" },
-              { value: "400", label: "Regular" },
-              { value: "500", label: "Medium" },
-              { value: "600", label: "Semibold" },
-              { value: "700", label: "Bold" },
-              { value: "800", label: "Extrabold" },
-              { value: "900", label: "Black" },
-            ]}
-            onChange={(value) => handleChange("fontWeight", value || undefined)}
+          <ColorField
+            label="Border Color"
+            value={styles.borderColor || ""}
+            onChange={(v) => handleChange("borderColor", v)}
+            placeholder="#e5e7eb"
           />
         </div>
-      </div>
+      </CollapsibleSection>
 
       {/* ── Effects ─────────────────────────────────────────────── */}
       <CollapsibleSection
@@ -2312,6 +2336,8 @@ function InputField({
   value,
   onChange,
   type = "text",
+  placeholder = "",
+  suffix = null,
   multiline = false,
   compact = false,
   aiRewrite = false,
