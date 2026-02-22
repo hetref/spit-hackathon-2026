@@ -3,6 +3,7 @@ import prisma from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 import { provisionSiteTenant } from "@/lib/aws/cf-tenants";
+import { getPlanGuard, PlanGuardError, planGuardErrorResponse } from "@/lib/plan-guard";
 
 // Helper — verify user is a member of the given tenant
 async function getTenantMembership(userId, tenantId) {
@@ -86,6 +87,19 @@ export async function POST(request) {
     const membership = await getTenantMembership(session.user.id, tenantId);
     if (!membership) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+
+    // ── PLAN GUARD: Check subscription status & site limit ───────────────────
+    try {
+      const guard = await getPlanGuard(prisma, tenantId);
+      guard.requireActive();
+      const currentSiteCount = await prisma.site.count({ where: { tenantId } });
+      guard.checkSiteLimit(currentSiteCount);
+    } catch (err) {
+      if (err instanceof PlanGuardError) {
+        return NextResponse.json(planGuardErrorResponse(err), { status: err.httpStatus });
+      }
+      throw err;
     }
 
     // ── 1. GLOBAL SLUG UNIQUENESS CHECK ─────────────────────────────────────

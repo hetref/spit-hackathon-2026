@@ -31,6 +31,9 @@ export default function Text({ props, styles, isSelected, onClick }) {
         color: styles?.textColor || "#1f2937",
         textAlign: styles?.textAlign || "left",
         backgroundColor: styles?.backgroundColor,
+        fontFamily: styles?.fontFamily || undefined, // Falls back to global via CSS inheritance
+        fontWeight: styles?.fontWeight || undefined,
+        fontSize: styles?.fontSize ? `${styles.fontSize}px` : undefined,
       }}
     >
       {content || "Enter your text here"}

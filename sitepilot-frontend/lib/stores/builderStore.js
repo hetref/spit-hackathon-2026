@@ -19,7 +19,7 @@ import { produce } from "immer";
 // LOCAL STORAGE PERSISTENCE (v2 key to invalidate old section-based data)
 // ============================================================================
 
-const STORAGE_KEY = "sitepilot_builder_v2";
+const STORAGE_KEY = "sitepilot_builder_v2";                                                         
 
 const saveToLocalStorage = (layoutJSON) => {
   try {
@@ -70,6 +70,10 @@ const useBuilderStore = create((set, get) => ({
   siteId: null,
   pageId: null,
   theme: null,
+
+  // UNDO/REDO STATE
+  undoStack: [],
+  redoStack: [],
 
   // INITIALIZATION  (demo / localStorage fallback — keeps backward compat)
   initializeBuilder: (layoutJSON) => {
@@ -685,6 +689,114 @@ const useBuilderStore = create((set, get) => ({
       }),
     );
     saveToLocalStorage(get().layoutJSON);
+  },
+
+  // ============================================================================
+  // UNDO/REDO OPERATIONS
+  // ============================================================================
+
+  /**
+   * Create an undo snapshot of the current layout state
+   * @param {Object} snapshot - Optional snapshot to store (defaults to current state)
+   */
+  createUndoSnapshot: (snapshot = null) => {
+    const snapshotToStore = snapshot || get().layoutJSON;
+    
+    if (!snapshotToStore) return;
+
+    set((state) => {
+      const newUndoStack = [...state.undoStack, snapshotToStore];
+      
+      // Limit undo stack to 20 snapshots
+      if (newUndoStack.length > 20) {
+        newUndoStack.shift();
+      }
+
+      return {
+        undoStack: newUndoStack,
+        redoStack: [], // Clear redo stack when new action is performed
+      };
+    });
+  },
+
+  /**
+   * Perform undo operation - restore previous state
+   * @returns {boolean} True if undo was performed, false if nothing to undo
+   */
+  performUndo: () => {
+    const { undoStack, layoutJSON } = get();
+
+    if (undoStack.length === 0) {
+      return false;
+    }
+
+    // Get the last snapshot
+    const previousState = undoStack[undoStack.length - 1];
+    
+    // Store current state in redo stack
+    set((state) => ({
+      layoutJSON: previousState,
+      undoStack: state.undoStack.slice(0, -1),
+      redoStack: [...state.redoStack, layoutJSON],
+      selectedNodeId: null,
+      hoveredNodeId: null,
+    }));
+
+    saveToLocalStorage(previousState);
+    return true;
+  },
+
+  /**
+   * Perform redo operation - restore next state
+   * @returns {boolean} True if redo was performed, false if nothing to redo
+   */
+  performRedo: () => {
+    const { redoStack, layoutJSON } = get();
+
+    if (redoStack.length === 0) {
+      return false;
+    }
+
+    // Get the last redo state
+    const nextState = redoStack[redoStack.length - 1];
+    
+    // Store current state in undo stack
+    set((state) => ({
+      layoutJSON: nextState,
+      undoStack: [...state.undoStack, layoutJSON],
+      redoStack: state.redoStack.slice(0, -1),
+      selectedNodeId: null,
+      hoveredNodeId: null,
+    }));
+
+    saveToLocalStorage(nextState);
+    return true;
+  },
+
+  /**
+   * Check if undo is available
+   * @returns {boolean} True if undo stack has items
+   */
+  canUndo: () => {
+    return get().undoStack.length > 0;
+  },
+
+  /**
+   * Check if redo is available
+   * @returns {boolean} True if redo stack has items
+   */
+  canRedo: () => {
+    return get().redoStack.length > 0;
+  },
+
+  /**
+   * Clear undo/redo stacks
+   */
+  clearUndoHistory: () => {
+    set({
+      undoStack: [],
+      redoStack: [],
+    });
   },
 }));
 

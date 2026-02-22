@@ -9,6 +9,27 @@ import prisma from '@/lib/prisma';
 import { generateFormHTML, generateFormJS, generateFormCSS } from '@/lib/form-renderer';
 
 // ============================================================================
+// TRACKER — served from the app's own public/ folder via <script src>
+// ============================================================================
+
+/**
+ * Returns a <script> tag that loads tracker.js from the SitePilot app server.
+ *
+ * The tracker.js file lives in public/tracker.js of this Next.js app, so it is
+ * served at {APP_URL}/tracker.js. By loading it via src we get:
+ *  - Single source of truth: update tracker.js once → every site picks it up
+ *  - No code stored on user's side
+ *  - Browser caching for repeat visits
+ *
+ * The tracker script itself derives the API base URL from its own src attribute,
+ * so no separate data-api attribute is needed.
+ */
+function buildTrackerTag(siteId, pageSlug, appBaseUrl) {
+  const base = appBaseUrl.replace(/\/+$/, '');
+  return `<script src="${base}/tracker.js" data-site="${escapeHtml(siteId)}" data-page="${escapeHtml(pageSlug)}" defer><\/script>`;
+}
+
+// ============================================================================
 // HELPERS
 // ============================================================================
 
@@ -926,6 +947,10 @@ export async function convertPageToHtml(
   const css = generateCSS(theme || {}) + additionalCSS;
   const js = generateJS() + additionalJS;
 
+  // Resolve the app base URL — this is where tracker.js is served from
+  const appBaseUrl = process.env.NEXT_PUBLIC_API_URL || process.env.NEXT_PUBLIC_APP_URL || 'https://app.sitepilot.devally.in';
+  const trackerTag = buildTrackerTag(page.siteId, page.slug, appBaseUrl);
+
   const html = `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -938,7 +963,7 @@ export async function convertPageToHtml(
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="${stylesHref}" />
-  <script src="https://cdn.sitepilot.devally.in/tracker.js" data-site="${page.siteId}" data-page="${page.slug}" defer></script>
+  ${trackerTag}
 </head>
 <body>
 ${bodyContent}
@@ -976,6 +1001,10 @@ export function convertJsonToHtml(layoutJSON, pageId) {
   const css = generateCSS(theme);
   const js = generateJS();
 
+  const appBaseUrl = process.env.NEXT_PUBLIC_API_URL || process.env.NEXT_PUBLIC_APP_URL || 'https://app.sitepilot.devally.in';
+  const pageSiteId = page.siteId || layoutJSON.site?.id || '';
+  const trackerTag = buildTrackerTag(pageSiteId, page.slug || '/', appBaseUrl);
+
   const html = `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -987,6 +1016,7 @@ export function convertJsonToHtml(layoutJSON, pageId) {
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="styles.css" />
+  ${trackerTag}
 </head>
 <body>
 ${bodyContent}

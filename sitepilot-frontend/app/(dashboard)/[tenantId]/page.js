@@ -11,6 +11,7 @@ import {
   Settings
 } from 'lucide-react'
 import { hasPermission } from '@/lib/permissions'
+import BillingWidget from '@/components/BillingWidget'
 
 export default function TenantDashboardPage() {
   const router = useRouter()
@@ -123,15 +124,15 @@ export default function TenantDashboardPage() {
                   <span className="text-xs text-gray-400 font-bold uppercase tracking-widest mt-1 block">sitepilot.com/{tenant.slug}</span>
                 </div>
               </div>
-            {userRole === 'OWNER' && (
-              <button
-                onClick={() => router.push(`/${params.tenantId}/settings`)}
-                className="inline-flex items-center justify-center px-6 h-12 text-xs font-black uppercase tracking-widest text-gray-600 bg-white border-2 border-gray-200 rounded-full hover:border-[#0b1411] hover:text-[#0b1411] transition-all shadow-sm hover:shadow-md focus:outline-none"
-              >
-                <Settings className="h-4 w-4 mr-2" />
-                Settings
-              </button>
-            )}
+              {userRole === 'OWNER' && (
+                <button
+                  onClick={() => router.push(`/${params.tenantId}/settings`)}
+                  className="inline-flex items-center justify-center px-6 h-12 text-xs font-black uppercase tracking-widest text-gray-600 bg-white border-2 border-gray-200 rounded-full hover:border-[#0b1411] hover:text-[#0b1411] transition-all shadow-sm hover:shadow-md focus:outline-none"
+                >
+                  <Settings className="h-4 w-4 mr-2" />
+                  Settings
+                </button>
+              )}
             </div>
           </div>
         </div>
@@ -170,17 +171,8 @@ export default function TenantDashboardPage() {
         <div>
           <h2 className="text-sm font-black text-gray-400 tracking-[0.15em] uppercase mb-6">Overview Data</h2>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-            <div className="bg-white border border-gray-100 rounded-[2rem] p-6 lg:p-8 shadow-sm flex flex-col justify-between hover:border-[#8bc4b1] transition-all">
-              <div className="flex items-center gap-4 mb-8 text-gray-500">
-                <div className="h-10 w-10 rounded-2xl bg-[#f2f4f2] text-[#0b1411] flex items-center justify-center">
-                  <CreditCard className="h-5 w-5" />
-                </div>
-                <span className="text-xs font-bold uppercase tracking-widest text-[#0b1411]">Billing Plan</span>
-              </div>
-              <div>
-                <h3 className="text-3xl font-black tracking-tight text-[#1d2321] capitalize">{tenant.plan.toLowerCase()}</h3>
-              </div>
-            </div>
+            {/* Billing Widget — replaces static plan display */}
+            <BillingWidget tenantId={params.tenantId} />
 
             <div className="bg-white border border-gray-100 rounded-[2rem] p-6 lg:p-8 shadow-sm flex flex-col justify-between hover:border-[#00e5ff] transition-all">
               <div className="flex items-center gap-4 mb-8 text-gray-500">

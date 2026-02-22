@@ -2,6 +2,9 @@ import { auth } from '@/lib/auth'
 import { headers } from 'next/headers'
 import { redirect } from 'next/navigation'
 
+// All dashboard routes use auth hooks — disable static prerendering for the entire group
+export const dynamic = 'force-dynamic'
+
 /**
  * Dashboard Layout
  * 

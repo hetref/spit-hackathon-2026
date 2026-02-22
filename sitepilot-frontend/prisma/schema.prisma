@@ -127,6 +127,7 @@ model Tenant {
   forms              Form[] // Temporary for migration
   owner              User          @relation("TenantOwner", fields: [ownerId], references: [id], onDelete: Cascade)
   media              Media[]
+  subscription Subscription?
 
   @@index([slug])
   @@index([ownerId])
@@ -370,6 +371,14 @@ enum PlanType {
   ENTERPRISE
 }
 
+enum SubscriptionStatus {
+  TRIAL
+  ACTIVE
+  PAST_DUE
+  CANCELLED
+  PAUSED
+}
+
 enum VersionStatus {
   DRAFT
   PUBLISHED
@@ -380,6 +389,49 @@ enum InvitationStatus {
   ACCEPTED
   EXPIRED
   CANCELLED
+}
+
+model Subscription {
+  id                     String             @id @default(uuid())
+
+  // Tenant link
+  tenantId               String             @unique
+  tenant                 Tenant             @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  // Owner user (billing contact)
+  userId                 String
+
+  // Razorpay IDs
+  razorpayCustomerId     String?
+  razorpaySubscriptionId String?            @unique
+  razorpayPlanId         String?            // Razorpay plan identifier
+
+  // Plan & Status
+  planType               PlanType           @default(FREE)
+  status                 SubscriptionStatus @default(TRIAL)
+
+  // Billing cycle
+  billingCycle           String             @default("monthly") // monthly | yearly
+  currentPeriodStart     DateTime?
+  currentPeriodEnd       DateTime?
+
+  // Grace period after payment failure
+  gracePeriodEnd         DateTime?
+
+  // Cancellation
+  cancelAtPeriodEnd      Boolean            @default(false)
+  cancelledAt            DateTime?
+
+  // Webhook idempotency: store last processed event id
+  lastWebhookEventId     String?
+
+  createdAt              DateTime           @default(now())
+  updatedAt              DateTime           @updatedAt
+
+  @@index([tenantId])
+  @@index([razorpaySubscriptionId])
+  @@index([status])
+  @@map("subscriptions")
 }
 
 model Form {
