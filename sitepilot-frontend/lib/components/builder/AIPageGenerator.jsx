@@ -3,11 +3,31 @@
 import { useState } from 'react';
 import { X, Sparkles, Loader2 } from 'lucide-react';
 
-export default function AIPageGenerator({ isOpen, onClose, onGenerate }) {
+export default function AIPageGenerator({ isOpen, onClose, onGenerate, tenantId }) {
   const [description, setDescription] = useState('');
   const [businessType, setBusinessType] = useState('');
   const [pageType, setPageType] = useState('home');
   const [loading, setLoading] = useState(false);
+  const [brandKit, setBrandKit] = useState(null);
+
+  // Fetch brand kit when modal opens
+  useState(() => {
+    if (isOpen && tenantId) {
+      fetchBrandKit();
+    }
+  }, [isOpen, tenantId]);
+
+  const fetchBrandKit = async () => {
+    try {
+      const response = await fetch(`/api/tenants/${tenantId}/brand-kit`);
+      if (response.ok) {
+        const data = await response.json();
+        setBrandKit(data.brandKit);
+      }
+    } catch (error) {
+      console.error('Failed to fetch brand kit:', error);
+    }
+  };
 
   const businessTypes = [
     'Restaurant',
@@ -46,7 +66,8 @@ export default function AIPageGenerator({ isOpen, onClose, onGenerate }) {
         body: JSON.stringify({
           description,
           businessType,
-          pageType
+          pageType,
+          brandKit  // Pass brand kit to API
         })
       });
 
