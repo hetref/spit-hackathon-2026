@@ -255,6 +255,21 @@ function ContainerBlock({
         paddingRight: `${styles.paddingRight ?? 0}px`,
         marginTop: `${styles.marginTop ?? 0}px`,
         marginBottom: `${styles.marginBottom ?? 0}px`,
+        marginLeft: styles.marginLeft ? `${styles.marginLeft}px` : undefined,
+        marginRight: styles.marginRight ? `${styles.marginRight}px` : undefined,
+        // Border
+        ...(styles.borderWidth && {
+          borderWidth: `${styles.borderWidth}px`,
+          borderStyle: styles.borderStyle || "solid",
+          borderColor: styles.borderColor || "#e5e7eb",
+        }),
+        borderRadius: styles.borderRadius ? `${styles.borderRadius}px` : undefined,
+        // Effects
+        boxShadow: styles.boxShadow || undefined,
+        opacity: (styles.opacity != null && styles.opacity !== 100) ? styles.opacity / 100 : undefined,
+        // Dimensions
+        minHeight: styles.minHeight ? `${styles.minHeight}px` : undefined,
+        overflow: styles.overflow || undefined,
       }}
     >
       {/* Drag Handle for Container (hidden when locked by another user) */}
@@ -513,6 +528,47 @@ function ComponentRenderer({ component, isContainerLockedByOther = false, locked
   // Determine which lock label to show (component-level takes priority)
   const activeLock = lockInfo || (isContainerLockedByOther ? null : null);
 
+  // Build wrapper styles from component.styles so spacing/border/shadow/dimensions actually render
+  const cs = component.styles || {};
+  const wrapperStyle = {};
+  // Spacing
+  if (cs.marginTop) wrapperStyle.marginTop = `${cs.marginTop}px`;
+  if (cs.marginBottom) wrapperStyle.marginBottom = `${cs.marginBottom}px`;
+  if (cs.marginLeft) wrapperStyle.marginLeft = `${cs.marginLeft}px`;
+  if (cs.marginRight) wrapperStyle.marginRight = `${cs.marginRight}px`;
+  if (cs.paddingTop) wrapperStyle.paddingTop = `${cs.paddingTop}px`;
+  if (cs.paddingBottom) wrapperStyle.paddingBottom = `${cs.paddingBottom}px`;
+  if (cs.paddingLeft) wrapperStyle.paddingLeft = `${cs.paddingLeft}px`;
+  if (cs.paddingRight) wrapperStyle.paddingRight = `${cs.paddingRight}px`;
+  // Dimensions
+  if (cs.width) wrapperStyle.width = `${cs.width}px`;
+  if (cs.height) wrapperStyle.height = `${cs.height}px`;
+  if (cs.minHeight) wrapperStyle.minHeight = `${cs.minHeight}px`;
+  if (cs.maxWidth) wrapperStyle.maxWidth = `${cs.maxWidth}px`;
+  if (cs.overflow) wrapperStyle.overflow = cs.overflow;
+  // Typography (cascade to children)
+  if (cs.fontSize) wrapperStyle.fontSize = `${cs.fontSize}px`;
+  if (cs.fontWeight) wrapperStyle.fontWeight = cs.fontWeight;
+  if (cs.lineHeight) wrapperStyle.lineHeight = cs.lineHeight;
+  if (cs.letterSpacing) wrapperStyle.letterSpacing = `${cs.letterSpacing}px`;
+  if (cs.textAlign) wrapperStyle.textAlign = cs.textAlign;
+  if (cs.textTransform) wrapperStyle.textTransform = cs.textTransform;
+  if (cs.textDecoration) wrapperStyle.textDecoration = cs.textDecoration;
+  if (cs.fontStyle) wrapperStyle.fontStyle = cs.fontStyle;
+  // Colors
+  if (cs.backgroundColor) wrapperStyle.backgroundColor = cs.backgroundColor;
+  if (cs.textColor) wrapperStyle.color = cs.textColor;
+  if (cs.opacity != null && cs.opacity !== 100) wrapperStyle.opacity = cs.opacity / 100;
+  // Border
+  if (cs.borderWidth) {
+    wrapperStyle.borderWidth = `${cs.borderWidth}px`;
+    wrapperStyle.borderStyle = cs.borderStyle || "solid";
+    if (cs.borderColor) wrapperStyle.borderColor = cs.borderColor;
+  }
+  if (cs.borderRadius) wrapperStyle.borderRadius = `${cs.borderRadius}px`;
+  // Effects
+  if (cs.boxShadow) wrapperStyle.boxShadow = cs.boxShadow;
+
   return (
     <div
       draggable={!isLockedByOther}
@@ -526,6 +582,7 @@ function ComponentRenderer({ component, isContainerLockedByOther = false, locked
           "ring-2 ring-blue-500 shadow-[0_0_0_1px_rgba(59,130,246,0.3)] rounded-sm",
         !isLockedByOther && isHovered && !isSelected && "ring-1 ring-blue-300 rounded-sm",
       )}
+      style={wrapperStyle}
       onMouseEnter={(e) => {
         e.stopPropagation();
         if (!isLockedByOther) setHoveredNode(component.id);

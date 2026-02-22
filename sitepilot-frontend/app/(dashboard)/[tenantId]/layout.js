@@ -64,6 +64,14 @@ export default function TenantLayout({ children }) {
         }
     }, [session, tenantId, fetchedTenantId])
 
+    // Re-fetch tenant data on route changes so the onboarding guard
+    // picks up onboardingComplete after the settings page saves it
+    useEffect(() => {
+        if (session && tenantId && fetchedTenantId === tenantId) {
+            fetchTenantData()
+        }
+    }, [pathname])
+
     const fetchTenantData = async () => {
         try {
             const response = await fetch(`/api/tenants/${tenantId}`)
