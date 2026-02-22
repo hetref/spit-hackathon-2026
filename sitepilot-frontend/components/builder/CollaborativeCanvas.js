@@ -42,32 +42,6 @@ function RoomInner({ children }) {
 
   return (
     <div className="relative h-full w-full">
-      {/* Status bar — floats over Toolbar area */}
-      <div className="absolute top-2 right-72 z-50 flex items-center gap-3">
-        {/* Connection status */}
-        <div className="flex items-center gap-1.5 text-xs text-gray-500">
-          {status === 'connected' ? (
-            <>
-              <Wifi size={12} className="text-emerald-500" />
-              <span className="text-emerald-600">Connected</span>
-            </>
-          ) : status === 'connecting' ? (
-            <>
-              <Loader2 size={12} className="animate-spin text-amber-500" />
-              <span className="text-amber-600">Connecting…</span>
-            </>
-          ) : (
-            <>
-              <WifiOff size={12} className="text-red-500" />
-              <span className="text-red-600">Disconnected</span>
-            </>
-          )}
-        </div>
-
-        {/* Avatar stack */}
-        <AvatarStack />
-      </div>
-
       {/* Builder content (Toolbar, Sidebars, CanvasArea) */}
       {children}
     </div>

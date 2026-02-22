@@ -33,6 +33,8 @@ export default function MembersPage() {
   const [successMessage, setSuccessMessage] = useState('')
   const [copiedId, setCopiedId] = useState(null)
 
+  const [fetchedTenantId, setFetchedTenantId] = useState(null)
+
   useEffect(() => {
     if (!isPending && !session) {
       router.push('/auth/signin')
@@ -40,12 +42,13 @@ export default function MembersPage() {
   }, [session, isPending, router])
 
   useEffect(() => {
-    if (session && params.tenantId) {
+    if (session && params.tenantId && fetchedTenantId !== params.tenantId) {
       fetchTenantData()
       fetchMembers()
       fetchInvitations()
+      setFetchedTenantId(params.tenantId)
     }
-  }, [session, params.tenantId])
+  }, [session, params.tenantId, fetchedTenantId])
 
   const fetchTenantData = async () => {
     try {
@@ -184,7 +187,7 @@ export default function MembersPage() {
                 <span className="text-xs text-gray-400 font-bold uppercase tracking-widest mt-1 block">Manage access and roles</span>
               </div>
             </div>
-            
+
             {hasPermission(userRole, 'members:invite') && !showAddMember && (
               <button
                 onClick={() => setShowAddMember(true)}
@@ -199,7 +202,7 @@ export default function MembersPage() {
       </div>
 
       <div className="max-w-7xl mx-auto px-6 sm:px-10 lg:px-16 py-12 space-y-16">
-        
+
         {/* Team Settings Container */}
         <div>
           <div className="bg-white border border-gray-100 rounded-[2rem] shadow-sm overflow-hidden relative">

@@ -139,10 +139,10 @@ export default function CanvasArea() {
 
   if (!currentPage) {
     return (
-      <div className="flex-1 flex items-center justify-center bg-gray-100">
+      <div className="flex-1 flex items-center justify-center bg-[#fcfdfc]">
         <div className="text-center">
-          <div className="text-gray-400 text-lg mb-2">No page available</div>
-          <div className="text-gray-500 text-sm">
+          <div className="text-gray-300 text-lg mb-2 font-black uppercase tracking-widest">No page available</div>
+          <div className="text-gray-400 text-[10px] font-bold uppercase tracking-widest">
             The builder is initializing...
           </div>
         </div>
@@ -153,16 +153,19 @@ export default function CanvasArea() {
   return (
     <div
       ref={canvasRef}
-      className="flex-1 bg-[#F1F5F9] canvas-grid overflow-auto relative"
+      data-lenis-prevent
+      className="flex-1 bg-[#fcfdfc] overflow-auto relative"
       onPointerMove={handlePointerMove}
       onPointerLeave={handlePointerLeave}
     >
+      <div className="absolute inset-0 bg-[#fefefe] bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] [background-size:20px_20px] opacity-60 -z-10" />
+
       {/* Remote cursors — scoped to canvas area only */}
       <CursorLayer />
 
-      <div className="min-h-full flex items-start justify-center p-6 pl-20">
+      <div className="min-h-full flex items-start justify-center p-6 pl-20 relative z-10">
         <div
-          className="bg-white shadow-xl rounded-lg transition-all duration-300 overflow-hidden"
+          className="bg-white shadow-[0_8px_30px_rgb(0,0,0,0.04)] rounded-[2rem] border border-gray-100 transition-all duration-300 overflow-hidden my-4"
           style={{
             width: getCanvasWidth(),
             minHeight: "100vh",

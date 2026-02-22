@@ -101,7 +101,7 @@ function PresetIcon({ widths }) {
       {widths.map((w, i) => (
         <div
           key={i}
-          className="bg-blue-400/80 rounded-sm"
+          className="bg-[#0b1411]/80 rounded-sm"
           style={{ width: `${(w / 12) * 100}%`, height: "100%" }}
         />
       ))}
@@ -161,31 +161,31 @@ export default function LeftSidebar() {
   }, [searchQuery]);
 
   return (
-    <div className="w-72 bg-[#1E293B] border-r border-slate-700 overflow-hidden builder-sidebar flex flex-col">
+    <div className="w-72 bg-white/80 backdrop-blur-md border-r border-gray-100 overflow-hidden builder-sidebar flex flex-col z-10 shadow-sm shrink-0">
       {/* ── Tab Switcher ──────────────────────────────────────── */}
-      <div className="flex border-b border-slate-700">
+      <div className="flex border-b border-gray-100">
         <button
           onClick={() => setActiveLeftTab("elements")}
           className={clsx(
-            "flex-1 flex items-center justify-center gap-1.5 py-2.5 text-xs font-medium transition-colors",
+            "flex-1 flex items-center justify-center gap-2 py-4 text-[10px] font-black uppercase tracking-widest transition-colors",
             activeLeftTab === "elements"
-              ? "text-blue-400 border-b-2 border-blue-400 bg-slate-800/30"
-              : "text-slate-500 hover:text-slate-300 hover:bg-slate-800/20",
+              ? "text-[#1d2321] border-b-2 border-[#1d2321] bg-[#fcfdfc]"
+              : "text-gray-400 hover:text-[#1d2321] hover:bg-gray-50",
           )}
         >
-          <Plus size={13} />
+          <Plus size={14} />
           Elements
         </button>
         <button
           onClick={() => setActiveLeftTab("layers")}
           className={clsx(
-            "flex-1 flex items-center justify-center gap-1.5 py-2.5 text-xs font-medium transition-colors",
+            "flex-1 flex items-center justify-center gap-2 py-4 text-[10px] font-black uppercase tracking-widest transition-colors",
             activeLeftTab === "layers"
-              ? "text-blue-400 border-b-2 border-blue-400 bg-slate-800/30"
-              : "text-slate-500 hover:text-slate-300 hover:bg-slate-800/20",
+              ? "text-[#1d2321] border-b-2 border-[#1d2321] bg-[#fcfdfc]"
+              : "text-gray-400 hover:text-[#1d2321] hover:bg-gray-50",
           )}
         >
-          <Layers size={13} />
+          <Layers size={14} />
           Layers
         </button>
         <button
@@ -206,42 +206,42 @@ export default function LeftSidebar() {
       {activeLeftTab === "elements" && (
         <>
           {/* Search */}
-          <div className="p-3 border-b border-slate-700">
+          <div className="p-4 border-b border-gray-100 bg-[#fcfdfc]">
             <div className="relative">
               <Search
                 size={14}
-                className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-500"
+                className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
               />
               <input
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Search elements..."
-                className="w-full pl-8 pr-3 py-2 bg-slate-800 border border-slate-600 rounded-lg text-xs text-slate-200 placeholder:text-slate-500 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                className="w-full pl-10 pr-4 py-3 bg-white border border-gray-200 rounded-xl text-xs font-bold text-[#0b1411] placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#8bc4b1] focus:border-transparent shadow-sm transition-all"
               />
             </div>
           </div>
 
-          <div className="flex-1 overflow-y-auto p-3 space-y-4">
+          <div data-lenis-prevent className="flex-1 min-h-0 overflow-y-auto p-4 space-y-6">
             {/* ── Layout Presets ──────────────────────────────────────── */}
             {!searchQuery && (
               <div>
-                <div className="flex items-center gap-1.5 mb-2.5">
-                  <LayoutGrid size={12} className="text-slate-500" />
-                  <h3 className="text-[10px] font-semibold text-slate-500 uppercase tracking-widest">
+                <div className="flex items-center gap-2 mb-3">
+                  <LayoutGrid size={14} className="text-[#8bc4b1]" />
+                  <h3 className="text-[10px] font-black text-[#8bc4b1] uppercase tracking-[0.2em]">
                     Containers
                   </h3>
                 </div>
-                <div className="grid grid-cols-3 gap-1.5">
+                <div className="grid grid-cols-3 gap-2">
                   {layoutPresets.map((preset) => (
                     <button
                       key={preset.label}
                       onClick={() => handleAddContainer(preset.widths)}
-                      className="p-2 bg-slate-800 border border-slate-600 rounded-lg hover:border-blue-400 hover:bg-slate-700 transition-all duration-200 flex flex-col items-center gap-1.5 group"
+                      className="p-3 bg-white border border-gray-100 rounded-xl hover:border-[#8bc4b1] hover:shadow-md transition-all duration-300 flex flex-col items-center gap-2 group hover:-translate-y-0.5"
                       title={preset.label}
                     >
                       <PresetIcon widths={preset.widths} />
-                      <span className="text-[9px] text-slate-500 group-hover:text-slate-300 leading-none">
+                      <span className="text-[9px] font-bold uppercase tracking-widest text-gray-400 group-hover:text-[#1d2321] leading-none transition-colors">
                         {preset.label}
                       </span>
                     </button>
@@ -252,35 +252,35 @@ export default function LeftSidebar() {
 
             {/* ── Draggable Elements ──────────────────────────────────── */}
             <div>
-              <div className="flex items-center gap-1.5 mb-2.5">
-                <GripVertical size={12} className="text-slate-500" />
-                <h3 className="text-[10px] font-semibold text-slate-500 uppercase tracking-widest">
+              <div className="flex items-center gap-2 mb-3">
+                <GripVertical size={14} className="text-[#8bc4b1]" />
+                <h3 className="text-[10px] font-black text-[#8bc4b1] uppercase tracking-[0.2em]">
                   Elements
                 </h3>
               </div>
 
-              <div className="space-y-2">
+              <div className="space-y-3">
                 {Object.entries(filteredLibrary).map(([category, elements]) => (
                   <div
                     key={category}
-                    className="bg-slate-800/50 rounded-lg border border-slate-700 overflow-hidden"
+                    className="bg-white rounded-2xl border border-gray-100 overflow-hidden shadow-sm"
                   >
                     <button
                       onClick={() => toggleCategory(category)}
-                      className="w-full flex items-center justify-between px-3 py-2 hover:bg-slate-700/50 transition-colors"
+                      className="w-full flex items-center justify-between px-4 py-3 hover:bg-[#fcfdfc] transition-colors"
                     >
-                      <span className="text-xs font-medium text-slate-300">
+                      <span className="text-[10px] font-black uppercase tracking-widest text-[#1d2321]">
                         {category}
                       </span>
                       {expandedCategories.includes(category) ? (
-                        <ChevronDown size={14} className="text-slate-500" />
+                        <ChevronDown size={14} className="text-gray-400" />
                       ) : (
-                        <ChevronRight size={14} className="text-slate-500" />
+                        <ChevronRight size={14} className="text-gray-400" />
                       )}
                     </button>
 
                     {expandedCategories.includes(category) && (
-                      <div className="px-1.5 pb-1.5 grid grid-cols-3 gap-1">
+                      <div className="px-2 pb-2 grid grid-cols-3 gap-1.5 bg-[#fcfdfc] pt-2 border-t border-gray-50">
                         {elements.map((item) => {
                           const Icon = item.icon;
                           return (
@@ -289,13 +289,13 @@ export default function LeftSidebar() {
                               draggable
                               onDragStart={(e) => handleDragStart(e, item.type)}
                               onDragEnd={handleDragEnd}
-                              className="flex flex-col items-center gap-1 p-2 rounded-md cursor-grab active:cursor-grabbing hover:bg-blue-600/20 hover:border-blue-500/40 transition-all duration-150 border border-transparent text-center"
+                              className="group flex flex-col items-center gap-2 p-3 bg-white rounded-xl cursor-grab active:cursor-grabbing hover:bg-[#f2f4f2] hover:shadow-sm border border-gray-100 hover:border-[#8bc4b1] transition-all duration-300 text-center hover:-translate-y-0.5"
                             >
                               <Icon
                                 size={18}
-                                className="text-slate-400 group-hover:text-blue-400 shrink-0"
+                                className="text-gray-400 group-hover:text-[#1d2321] shrink-0 transition-colors"
                               />
-                              <span className="text-[10px] text-slate-400 leading-tight">
+                              <span className="text-[9px] font-bold uppercase tracking-wider text-gray-500 group-hover:text-[#8bc4b1] leading-tight transition-colors">
                                 {item.label}
                               </span>
                             </div>

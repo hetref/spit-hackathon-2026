@@ -336,10 +336,10 @@ const componentRenderers = {
     const images = props.images?.length
       ? props.images
       : [
-          { src: "https://via.placeholder.com/400", alt: "Gallery 1" },
-          { src: "https://via.placeholder.com/400", alt: "Gallery 2" },
-          { src: "https://via.placeholder.com/400", alt: "Gallery 3" },
-        ];
+        { src: "https://via.placeholder.com/400", alt: "Gallery 1" },
+        { src: "https://via.placeholder.com/400", alt: "Gallery 2" },
+        { src: "https://via.placeholder.com/400", alt: "Gallery 3" },
+      ];
     const wrapStyle = {
       "padding-top": px(styles?.paddingTop) || "20px",
       "padding-bottom": px(styles?.paddingBottom) || "20px",
@@ -370,11 +370,11 @@ const componentRenderers = {
     const links = props.links?.length
       ? props.links
       : [
-          { label: "Home", href: "#" },
-          { label: "About", href: "#" },
-          { label: "Services", href: "#" },
-          { label: "Contact", href: "#" },
-        ];
+        { label: "Home", href: "#" },
+        { label: "About", href: "#" },
+        { label: "Services", href: "#" },
+        { label: "Contact", href: "#" },
+      ];
     const linkHtml = links
       .map(
         (l) =>
@@ -420,10 +420,10 @@ const componentRenderers = {
       : props.features?.length
         ? props.features
         : [
-            { title: "Feature 1", description: "Description of feature 1" },
-            { title: "Feature 2", description: "Description of feature 2" },
-            { title: "Feature 3", description: "Description of feature 3" },
-          ];
+          { title: "Feature 1", description: "Description of feature 1" },
+          { title: "Feature 2", description: "Description of feature 2" },
+          { title: "Feature 3", description: "Description of feature 3" },
+        ];
     const color = styles?.textColor || "#1f2937";
     const descColor = styles?.textColor ? `${styles.textColor}cc` : "#4b5563";
     const wrapStyle = {
@@ -892,14 +892,15 @@ export async function convertPageToHtml(
         settings: form.settings,
         styling: form.styling || {},
       });
-      
+
       const formCSS = generateFormCSS({
         id: form.id,
         styling: form.styling || {},
       });
-      
-      // Pass the API base URL (use environment variable or default)
-      const apiBaseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://sitepilot-frontend.vercel.app';
+
+      // Pass the API base URL (use NEXT_PUBLIC_API_URL for form submissions)
+      // This allows using ngrok for published sites while keeping localhost for dev
+      const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL || process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
       const formJS = generateFormJS({
         id: form.id,
       }, apiBaseUrl);
@@ -937,6 +938,7 @@ export async function convertPageToHtml(
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="${stylesHref}" />
+  <script src="https://cdn.sitepilot.devally.in/tracker.js" data-site="${page.siteId}" data-page="${page.slug}" defer></script>
 </head>
 <body>
 ${bodyContent}

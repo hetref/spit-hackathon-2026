@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
 import { auth } from '@/lib/auth'
 import { headers } from 'next/headers'
+import { getPresignedMediaUrl } from '@/lib/aws/s3-publish'
 
 export async function POST(request) {
   try {
@@ -13,7 +14,7 @@ export async function POST(request) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const { name, slug, description, logo } = await request.json()
+    const { id, name, slug, description, logo } = await request.json()
 
     if (!name || !slug) {
       return NextResponse.json(
@@ -37,10 +38,11 @@ export async function POST(request) {
     // Create tenant
     const tenant = await prisma.tenant.create({
       data: {
+        id: id || undefined,
         name,
         slug,
         description: description || null,
-        logo: logo || null,
+        logo: logo || null, // Store S3 key
         ownerId: session.user.id,
         plan: 'FREE',
         tokenUsage: 0,
@@ -57,7 +59,18 @@ export async function POST(request) {
       }
     })
 
-    return NextResponse.json({ tenant }, { status: 201 })
+    // Generate presigned URL for logo if it exists
+    let tenantWithLogo = { ...tenant }
+    if (tenant.logo) {
+      try {
+        const logoUrl = await getPresignedMediaUrl(tenant.logo, 3600)
+        tenantWithLogo.logoUrl = logoUrl
+      } catch (error) {
+        console.error('Failed to generate presigned URL for logo:', error)
+      }
+    }
+
+    return NextResponse.json({ tenant: tenantWithLogo }, { status: 201 })
   } catch (error) {
     console.error('Error creating tenant:', error)
     return NextResponse.json(
@@ -96,10 +109,26 @@ export async function GET(request) {
       }
     })
 
-    const tenants = tenantUsers.map(tu => ({
-      ...tu.tenant,
-      userRole: tu.role
-    }))
+    // Map tenants and generate presigned URLs for logos
+    const tenants = await Promise.all(
+      tenantUsers.map(async (tu) => {
+        const tenant = {
+          ...tu.tenant,
+          userRole: tu.role
+        }
+
+        // Generate presigned URL for logo if it exists
+        if (tenant.logo) {
+          try {
+            tenant.logoUrl = await getPresignedMediaUrl(tenant.logo, 3600)
+          } catch (error) {
+            console.error('Failed to generate presigned URL for tenant logo:', error)
+          }
+        }
+
+        return tenant
+      })
+    )
 
     return NextResponse.json({ tenants })
   } catch (error) {

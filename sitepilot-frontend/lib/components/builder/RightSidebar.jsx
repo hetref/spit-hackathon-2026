@@ -82,14 +82,14 @@ export default function RightSidebar() {
 
   if (!selectedNodeId || !selectedNode) {
     return (
-      <div className="w-80 bg-white border-l border-gray-200 overflow-y-auto builder-sidebar">
-        <div className="p-8 flex flex-col items-center justify-center text-center">
-          <div className="w-12 h-12 bg-gray-100 rounded-xl flex items-center justify-center mb-3">
-            <Settings2 size={20} className="text-gray-400" />
+      <div className="w-80 bg-[#fcfdfc] border-l border-gray-100 flex flex-col h-full min-h-0 builder-sidebar z-10 shrink-0">
+        <div data-lenis-prevent className="flex-1 min-h-0 overflow-y-auto p-8 flex flex-col items-center justify-center text-center">
+          <div className="w-12 h-12 bg-white rounded-2xl shadow-sm border border-gray-100 flex items-center justify-center mb-4">
+            <Settings2 size={20} className="text-[#8bc4b1] opacity-50" />
           </div>
-          <p className="text-sm text-gray-500">Select an element to edit</p>
-          <p className="text-xs text-gray-400 mt-1">
-            Click on any component or container on the canvas
+          <p className="text-[10px] font-black tracking-widest uppercase text-[#1d2321]">Select an element</p>
+          <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400 mt-2 leading-relaxed">
+            Click on any component or container on the canvas to view properties
           </p>
         </div>
       </div>
@@ -99,25 +99,25 @@ export default function RightSidebar() {
   // ── If the selected node is locked by another user ─────────────────────
   if (selectedNodeLock) {
     return (
-      <div className="w-80 bg-white border-l border-gray-200 overflow-y-auto builder-sidebar">
-        <div className="p-8 flex flex-col items-center justify-center text-center">
+      <div className="w-80 bg-[#fcfdfc] border-l border-gray-100 flex flex-col h-full min-h-0 builder-sidebar z-10 shrink-0">
+        <div data-lenis-prevent className="flex-1 min-h-0 overflow-y-auto p-8 flex flex-col items-center justify-center text-center">
           <div
-            className="w-12 h-12 rounded-xl flex items-center justify-center mb-3"
-            style={{ backgroundColor: `${selectedNodeLock.color}20` }}
+            className="w-12 h-12 rounded-2xl flex items-center justify-center mb-4 border"
+            style={{ backgroundColor: `${selectedNodeLock.color}10`, borderColor: `${selectedNodeLock.color}30` }}
           >
             <Lock size={20} style={{ color: selectedNodeLock.color }} />
           </div>
-          <p className="text-sm font-medium text-gray-700">Element Locked</p>
-          <p className="text-xs text-gray-500 mt-1">
+          <p className="text-[10px] font-black uppercase tracking-widest text-[#1d2321]">Element Locked</p>
+          <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400 mt-2 leading-relaxed">
             <span
-              className="font-semibold"
+              className="mr-1"
               style={{ color: selectedNodeLock.color }}
             >
               {selectedNodeLock.username}
-            </span>{" "}
-            is currently editing this element.
+            </span>
+            is currently editing
           </p>
-          <p className="text-xs text-gray-400 mt-2">
+          <p className="text-[9px] font-bold uppercase tracking-widest text-gray-300 mt-4 leading-relaxed">
             You can view real-time changes but cannot edit until they finish.
           </p>
         </div>
@@ -165,48 +165,51 @@ export default function RightSidebar() {
   };
 
   return (
-    <div className="w-80 bg-white border-l border-gray-200 overflow-y-auto builder-sidebar">
+    <div className="w-80 bg-white/80 backdrop-blur-md border-l border-gray-100 flex flex-col h-full min-h-0 builder-sidebar z-10 shadow-sm shrink-0">
       {/* Header */}
-      <div className="p-3 border-b border-gray-100">
-        <div className="flex items-center justify-between mb-2.5">
-          <div className="flex items-center gap-2">
-            <div
-              className={clsx(
-                "w-2 h-2 rounded-full",
-                isContainer ? "bg-violet-500" : "bg-blue-500",
-              )}
-            />
-            <h3 className="text-sm font-semibold text-gray-800">
-              {isContainer ? "Container" : selectedNode.type}
-            </h3>
+      <div className="p-6 border-b border-gray-100">
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <p className="text-[#8bc4b1] text-[10px] font-bold tracking-[0.2em] uppercase mb-1">Editing</p>
+            <div className="flex items-center gap-2">
+              <div
+                className={clsx(
+                  "w-2 h-2 rounded-full",
+                  isContainer ? "bg-[#d3ff4a]" : "bg-[#0b1411]",
+                )}
+              />
+              <h3 className="text-xl font-black text-[#1d2321] uppercase tracking-tighter">
+                {isContainer ? "Container" : selectedNode.type}
+              </h3>
+            </div>
           </div>
-          <div className="flex gap-0.5">
+          <div className="flex gap-1">
             <button
               onClick={handleDuplicate}
-              className="p-1.5 hover:bg-gray-100 rounded-md text-gray-500 hover:text-gray-700 transition-colors"
+              className="p-2 hover:bg-[#f2f4f2] hover:text-[#0b1411] rounded-xl text-gray-400 transition-colors"
               title="Duplicate"
             >
-              <Copy size={14} />
+              <Copy size={16} />
             </button>
             <button
               onClick={handleDelete}
-              className="p-1.5 hover:bg-red-50 text-gray-500 hover:text-red-600 rounded-md transition-colors"
+              className="p-2 hover:bg-red-50 text-gray-400 hover:text-red-600 rounded-xl transition-colors"
               title="Delete"
             >
-              <Trash2 size={14} />
+              <Trash2 size={16} />
             </button>
           </div>
         </div>
 
         {/* Tabs */}
-        <div className="flex bg-gray-100 rounded-lg p-0.5">
+        <div className="flex bg-[#f2f4f2] rounded-full p-1 border border-gray-100 shadow-inner">
           <button
             onClick={() => setActiveTab("properties")}
             className={clsx(
-              "flex-1 flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md transition-all",
+              "flex-1 flex items-center justify-center gap-1.5 px-4 py-2 text-[10px] font-black uppercase tracking-widest rounded-full transition-all duration-300",
               activeTab === "properties"
-                ? "bg-white text-gray-800 shadow-sm"
-                : "text-gray-500 hover:text-gray-700",
+                ? "bg-white text-[#0b1411] shadow-sm transform scale-105"
+                : "text-gray-400 hover:text-gray-900",
             )}
           >
             <Settings2 size={12} />
@@ -215,10 +218,10 @@ export default function RightSidebar() {
           <button
             onClick={() => setActiveTab("styles")}
             className={clsx(
-              "flex-1 flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md transition-all",
+              "flex-1 flex items-center justify-center gap-1.5 px-4 py-2 text-[10px] font-black uppercase tracking-widest rounded-full transition-all duration-300",
               activeTab === "styles"
-                ? "bg-white text-gray-800 shadow-sm"
-                : "text-gray-500 hover:text-gray-700",
+                ? "bg-white text-[#0b1411] shadow-sm transform scale-105"
+                : "text-gray-400 hover:text-gray-900",
             )}
           >
             <Paintbrush size={12} />
@@ -228,7 +231,7 @@ export default function RightSidebar() {
       </div>
 
       {/* Content */}
-      <div className="p-4">
+      <div data-lenis-prevent className="flex-1 min-h-0 overflow-y-auto p-4">
         {activeTab === "properties" && isComponent && (
           <PropertiesEditor
             component={selectedNode}

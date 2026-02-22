@@ -29,10 +29,10 @@ export default function FormPropertiesSidebar() {
 
   if (!selectedField) {
     return (
-      <div className="w-80 bg-white border-l border-gray-200 flex items-center justify-center p-8">
+      <div className="w-80 bg-[#fcfdfc] border-l border-gray-100 flex items-center justify-center p-8 z-10 shrink-0">
         <div className="text-center text-gray-400">
           <svg
-            className="mx-auto h-12 w-12 mb-3"
+            className="mx-auto h-12 w-12 mb-3 opacity-50"
             fill="none"
             viewBox="0 0 24 24"
             stroke="currentColor"
@@ -44,10 +44,10 @@ export default function FormPropertiesSidebar() {
               d="M15 15l-2 5L9 9l11 4-5 2zm0 0l5 5M7.188 2.239l.777 2.897M5.136 7.965l-2.898-.777M13.95 4.05l-2.122 2.122m-5.657 5.656l-2.12 2.122"
             />
           </svg>
-          <p className="text-sm">Select a field to edit its properties</p>
+          <p className="text-[10px] font-bold uppercase tracking-widest mt-4">Select a field to edit</p>
           {selectedFieldId && (
-            <p className="text-xs text-red-500 mt-2">
-              Field ID: {selectedFieldId} (not found in fields array)
+            <p className="text-[10px] text-red-500 mt-2 font-bold uppercase tracking-widest">
+              Field ID Error
             </p>
           )}
         </div>
@@ -56,20 +56,23 @@ export default function FormPropertiesSidebar() {
   }
 
   return (
-    <div className="w-80 bg-white border-l border-gray-200 flex flex-col h-full overflow-y-auto">
+    <div className="w-80 bg-white/80 backdrop-blur-md border-l border-gray-100 flex flex-col h-full min-h-0 z-10 shadow-sm relative shrink-0">
       {/* Header */}
-      <div className="p-4 border-b border-gray-200 flex items-center justify-between">
-        <h2 className="text-sm font-semibold text-gray-900">Field Properties</h2>
+      <div className="p-6 border-b border-gray-100 flex items-center justify-between">
+        <div>
+          <h2 className="text-[10px] font-bold tracking-[0.2em] uppercase text-[#8bc4b1] mb-1">Editing</h2>
+          <p className="text-xl font-black text-[#1d2321] uppercase tracking-tighter">Properties</p>
+        </div>
         <button
           onClick={() => selectField(null)}
-          className="p-1 text-gray-400 hover:text-gray-600 rounded"
+          className="p-2 text-gray-400 hover:text-[#0b1411] hover:bg-[#f2f4f2] rounded-xl transition-all"
         >
-          <X size={16} />
+          <X size={18} />
         </button>
       </div>
 
       {/* Properties Form */}
-      <div className="flex-1 p-4 space-y-4">
+      <div data-lenis-prevent className="flex-1 min-h-0 overflow-y-auto p-6 space-y-6">
         {/* Label */}
         <div>
           <label className="block text-xs font-medium text-gray-700 mb-1">

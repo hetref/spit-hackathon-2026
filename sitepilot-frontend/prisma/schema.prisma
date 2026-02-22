@@ -115,6 +115,7 @@ model Tenant {
   tokenUsage  Int          @default(0)
   tokenLimit  Int          @default(10000)
   ownerId     String
+  brandKit    Json?        @default("{}")
   createdAt   DateTime     @default(now())
   updatedAt   DateTime     @updatedAt
   sites       Site[]
@@ -191,17 +192,73 @@ model Site {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  pages            Page[]
-  versions         SiteVersion[]
-  contentVersions  ContentVersion[]
-  deployments      Deployment[]
-  forms            Form[] // Site-specific forms
-  tenant           Tenant            @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  dockerDeployment DockerDeployment?
+  pages           Page[]
+  versions        SiteVersion[]
+  contentVersions ContentVersion[]
+  deployments     Deployment[]
+  forms           Form[] // Site-specific forms
+  tenant          Tenant           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  customDomains   CustomDomain[]
+  visitorSessions VisitorSession[]
+  pageViews       PageView[]
 
   @@index([tenantId])
   @@index([slug])
   @@map("sites")
+}
+
+model CustomDomain {
+  id     String             @id @default(uuid())
+  domain String             @unique
+  status CustomDomainStatus @default(PENDING)
+
+  // DNS Verification
+  verificationToken  String    @unique @default(uuid())
+  verificationRecord String? // TXT record value
+  verifiedAt         DateTime?
+
+  // SSL Certificate (ACM)
+  certificateArn        String?   @unique
+  certificateStatus     String? // PENDING_VALIDATION, ISSUED, FAILED
+  certificateValidation Json? // ACM DNS validation records
+  certificateIssuedAt   DateTime?
+
+  // CloudFront Attachment
+  attachedToCF Boolean   @default(false)
+  attachedAt   DateTime?
+
+  // Final DNS Configuration
+  cnameTarget   String? // CloudFront endpoint to CNAME to
+  cnameVerified Boolean @default(false)
+
+  // Activation
+  activatedAt   DateTime?
+  lastCheckedAt DateTime?
+
+  // Site relation
+  siteId String
+  site   Site   @relation(fields: [siteId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([siteId])
+  @@index([status])
+  @@index([domain])
+  @@map("custom_domains")
+}
+
+enum CustomDomainStatus {
+  PENDING // Domain added, awaiting verification
+  VERIFYING // Checking DNS TXT record
+  VERIFIED // Ownership verified
+  SSL_PENDING // ACM certificate requested
+  SSL_VALIDATING // Waiting for ACM DNS validation
+  SSL_ISSUED // Certificate issued
+  ATTACHING // Attaching to CloudFront
+  DNS_PENDING // Waiting for final CNAME
+  ACTIVE // Fully active and serving
+  FAILED // Verification or setup failed
 }
 
 model Page {
@@ -410,29 +467,35 @@ model Media {
   @@map("media")
 }
 
-model DockerDeployment {
-  id String @id @default(uuid())
-
-  // Port assignments (unique per host)
-  backendPort Int @unique
-  dbPort      Int @unique
-
-  // Container identifiers
-  composeProject String @unique // docker-compose project name
-
-  // Status: BUILDING, RUNNING, STOPPED, FAILED
-  status String @default("BUILDING")
-
-  // Logs for debugging
-  buildLog String?
-
-  siteId String @unique // one docker deployment per site
-  site   Site   @relation(fields: [siteId], references: [id], onDelete: Cascade)
-
+model VisitorSession {
+  id        String   @id @default(uuid())
+  siteId    String
+  ipHash    String
+  userAgent String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  site      Site     @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  pageViews PageView[]
+
   @@index([siteId])
-  @@index([status])
-  @@map("docker_deployments")
+  @@map("visitor_sessions")
+}
+
+model PageView {
+  id        String   @id @default(uuid())
+  sessionId String
+  siteId    String
+  pageSlug  String
+  duration  Int      @default(0) // seconds
+  enteredAt DateTime @default(now())
+  exitedAt  DateTime?
+
+  session   VisitorSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  site      Site           @relation(fields: [siteId], references: [id], onDelete: Cascade)
+
+  @@index([sessionId])
+  @@index([siteId])
+  @@index([pageSlug])
+  @@map("page_views")
 }
