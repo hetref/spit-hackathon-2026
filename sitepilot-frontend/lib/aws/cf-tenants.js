@@ -1,10 +1,11 @@
-import { updateKVS } from "./s3-publish";
+import { updateKVS } from "./s3-publish.js";
 import { S3Client, PutObjectCommand, HeadObjectCommand } from "@aws-sdk/client-s3";
 import {
     CloudFrontClient,
     GetDistributionCommand,
     TagResourceCommand,
     CreateDistributionTenantCommand,
+    ListDistributionTenantsCommand,
 } from "@aws-sdk/client-cloudfront";
 import fs from "fs/promises";
 import path from "path";
@@ -37,6 +38,36 @@ const CF_CONNECTION_GROUP_ID = process.env.CLOUDFRONT_CONNECTION_GROUP_ID;
 const CF_KVS_ARN = process.env.CLOUDFRONT_KVS_ARN;
 
 /**
+ * Validate CloudFront configuration
+ */
+function validateCloudFrontConfig() {
+    const errors = [];
+
+    if (!CF_DISTRIBUTION_ID || CF_DISTRIBUTION_ID.trim() === '') {
+        errors.push('CLOUDFRONT_DISTRIBUTION_ID is missing or empty');
+    }
+
+    if (!CF_CONNECTION_GROUP_ID || CF_CONNECTION_GROUP_ID.trim() === '') {
+        errors.push('CLOUDFRONT_CONNECTION_GROUP_ID is missing or empty');
+    }
+
+    if (!CF_KVS_ARN || CF_KVS_ARN.trim() === '') {
+        errors.push('CLOUDFRONT_KVS_ARN is missing or empty');
+    }
+
+    if (errors.length > 0) {
+        console.error('[CloudFront] Configuration errors:', errors);
+        throw new Error(`CloudFront configuration is incomplete: ${errors.join(', ')}`);
+    }
+
+    console.log('[CloudFront] Config validated:', {
+        distributionId: `${CF_DISTRIBUTION_ID.substring(0, 8)}...`,
+        connectionGroupId: CF_CONNECTION_GROUP_ID ? `${CF_CONNECTION_GROUP_ID.substring(0, 8)}...` : 'N/A',
+        kvsArn: CF_KVS_ARN ? `${CF_KVS_ARN.substring(0, 30)}...` : 'N/A'
+    });
+}
+
+/**
  * Create a CloudFront tenant in the multi-tenant distribution.
  * This is the main entry point for tenant creation via API.
  * 
@@ -60,9 +91,7 @@ export async function createCloudFrontTenant({ tenantName, siteId, domains, user
         // ────────────────────────────────────────────────────────────────────
         // Validate configuration
         // ────────────────────────────────────────────────────────────────────
-        if (!CF_DISTRIBUTION_ID || !CF_CONNECTION_GROUP_ID || !CF_KVS_ARN) {
-            throw new Error("CloudFront configuration is incomplete. Check environment variables.");
-        }
+        validateCloudFrontConfig();
 
         const domain = domains[0] || `${tenantName}.sitepilot.devally.in`;
 
@@ -175,9 +204,16 @@ async function createDistributionTenant({
         const response = await cloudfront.send(command);
         const tenant = response.DistributionTenant;
 
+        console.log(`[CloudFront] ✓ Tenant created successfully`);
+        console.log(`[CloudFront] Identifier: ${tenant.Id}`);
+        console.log(`[CloudFront] ARN: ${tenant.ARN}`);
+        console.log(`[CloudFront] Name: ${tenant.Name}`);
+
         return {
-            id: tenant.Id,
+            id: tenant.Id,              // This is the CloudFront Identifier - CRITICAL!
+            identifier: tenant.Id,       // Explicit identifier field
             arn: tenant.ARN,
+            name: tenant.Name,
             alreadyExisted: false,
         };
 
@@ -188,19 +224,116 @@ async function createDistributionTenant({
             error.message.includes('already exists') ||
             error.name === 'ResourceAlreadyExistsException') {
 
-            console.log(`[CloudFront] ℹ️  Tenant "${tenantName}" already exists. Skipping creation.`);
+            console.log(`[CloudFront] ℹ️  Tenant "${tenantName}" already exists. Fetching identifier...`);
 
-            // Extract account ID from distribution ARN for fallback
+            // Try to fetch the existing tenant to get its Identifier
+            try {
+                const existingTenant = await findTenantByName(tenantName, distributionId);
+                if (existingTenant) {
+                    console.log(`[CloudFront] ✓ Found existing tenant: ${existingTenant.id}`);
+                    return {
+                        id: existingTenant.id,
+                        identifier: existingTenant.id,
+                        arn: existingTenant.arn,
+                        name: existingTenant.name,
+                        alreadyExisted: true,
+                    };
+                }
+            } catch (fetchError) {
+                console.error(`[CloudFront] Failed to fetch existing tenant:`, fetchError);
+            }
+
+            // Fallback: construct a placeholder (NOT SAFE FOR API CALLS!)
+            console.warn(`[CloudFront] ⚠️  Could not fetch tenant identifier. Using placeholder.`);
             const accountId = CF_DISTRIBUTION_ARN?.split(':')[4] || '851725466206';
 
             return {
-                id: `tenant-${tenantName}`,
+                id: `PLACEHOLDER-${tenantName}`,  // This is NOT a real identifier
+                identifier: `PLACEHOLDER-${tenantName}`,
                 arn: `arn:aws:cloudfront::${accountId}:tenant/${tenantName}`,
+                name: tenantName,
                 alreadyExisted: true,
+                warning: 'Using placeholder identifier - fetch tenant manually to get real ID',
             };
         }
 
         console.error("[CloudFront] Failed to create distribution tenant:", error);
+        throw error;
+    }
+}
+
+
+/**
+ * Find a tenant by name using ListDistributionTenants.
+ * This is used for recovery when a tenant already exists but we don't have its Identifier.
+ * 
+ * @param {string} tenantName - Tenant name to search for
+ * @param {string} distributionId - Distribution ID
+ * @returns {Promise<object|null>} Tenant info with id (Identifier), arn, and name
+ */
+async function findTenantByName(tenantName, distributionId) {
+    try {
+        console.log(`[CloudFront] Searching for tenant: ${tenantName}`);
+
+        const command = new ListDistributionTenantsCommand({
+            DistributionId: distributionId,
+        });
+
+        const response = await cloudfront.send(command);
+        const tenants = response.DistributionTenantList?.Items || [];
+
+        // Find tenant by name
+        const tenant = tenants.find(t => t.Name === tenantName);
+
+        if (tenant) {
+            return {
+                id: tenant.Id,           // CloudFront Identifier
+                identifier: tenant.Id,
+                arn: tenant.ARN,
+                name: tenant.Name,
+            };
+        }
+
+        console.log(`[CloudFront] Tenant "${tenantName}" not found in list`);
+        return null;
+
+    } catch (error) {
+        console.error(`[CloudFront] Failed to list tenants:`, error);
+        throw error;
+    }
+}
+
+/**
+ * List all tenants in the CloudFront distribution.
+ * Useful for debugging and data recovery.
+ * 
+ * @returns {Promise<Array>} Array of tenant objects with id, name, arn
+ */
+export async function listAllCloudFrontTenants() {
+    try {
+        validateCloudFrontConfig();
+
+        console.log(`[CloudFront] Listing all tenants in distribution: ${CF_DISTRIBUTION_ID}`);
+
+        const command = new ListDistributionTenantsCommand({
+            DistributionId: CF_DISTRIBUTION_ID,
+        });
+
+        const response = await cloudfront.send(command);
+        const tenants = response.DistributionTenantList?.Items || [];
+
+        console.log(`[CloudFront] Found ${tenants.length} tenant(s)`);
+
+        return tenants.map(t => ({
+            id: t.Id,                    // CloudFront Identifier  
+            identifier: t.Id,
+            name: t.Name,
+            arn: t.ARN,
+            domains: t.Domains || [],
+        }));
+
+    } catch (error) {
+        console.error(`[CloudFront] Failed to list tenants:`, error);
         throw error;
     }
 }

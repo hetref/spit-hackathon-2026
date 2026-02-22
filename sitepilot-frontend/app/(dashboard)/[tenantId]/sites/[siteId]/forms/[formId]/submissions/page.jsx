@@ -142,6 +142,10 @@ export default function FormSubmissionsPage() {
     );
   }
 
+  const fieldIds = Array.from(
+    new Set(submissions.flatMap((sub) => Object.keys(sub.data || {})))
+  );
+
   return (
     <div className="min-h-screen bg-[#fcfdfc] font-sans text-gray-900 pb-20 relative">
       <div className="bg-white/80 backdrop-blur-md border-b border-gray-100 sticky top-0 z-20">
@@ -191,56 +195,74 @@ export default function FormSubmissionsPage() {
             </p>
           </div>
         ) : (
-          <div className="space-y-6">
-            {submissions.map((submission) => (
-              <div
-                key={submission.id}
-                className="group flex flex-col bg-white border border-gray-200 rounded-[2rem] hover:border-[#8bc4b1] hover:shadow-[0_20px_40px_-15px_rgba(0,0,0,0.1)] hover:-translate-y-1 transition-all duration-500 overflow-hidden relative"
-              >
-                {/* Subtle card background accent */}
-                <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-[#d3ff4a]/0 to-[#8bc4b1]/0 group-hover:from-[#d3ff4a]/5 group-hover:to-[#8bc4b1]/5 rounded-bl-[100px] transition-all duration-500 pointer-events-none" />
-
-                <div className="p-6 lg:p-8 relative z-10">
-                  <div className="flex items-start justify-between mb-8 border-b border-gray-100/50 pb-6">
-                    <div>
-                      <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest flex items-center gap-1.5">
-                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                        Submitted
-                      </p>
-                      <p className="text-lg font-black text-[#1d2321] mt-2">
-                        {new Date(submission.createdAt).toLocaleString('en-US', {
-                          year: 'numeric',
-                          month: 'short',
-                          day: 'numeric',
-                          hour: '2-digit',
-                          minute: '2-digit'
-                        })}
-                      </p>
-                    </div>
-                    <button
-                      onClick={() => handleDelete(submission.id)}
-                      className="h-11 w-11 flex items-center justify-center border border-transparent text-gray-400 rounded-full hover:bg-red-50 hover:text-red-600 hover:border-red-100 transition-all hover:scale-105"
-                      title="Delete submission"
-                    >
-                      <Trash2 size={16} />
-                    </button>
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
-                    {Object.entries(submission.data).map(([fieldId, value]) => (
-                      <div key={fieldId} className="bg-[#f2f4f2] p-5 rounded-2xl shadow-inner border border-gray-50">
-                        <p className="text-[10px] font-bold uppercase tracking-widest text-[#8bc4b1] mb-2">
-                          {getFieldLabel(fieldId)}
-                        </p>
-                        <p className="text-sm font-medium text-gray-900 break-words">
-                          {Array.isArray(value) ? value.join(', ') : value || '—'}
-                        </p>
-                      </div>
+          <div className="bg-white border border-gray-200 rounded-[2rem] overflow-hidden shadow-sm hover:shadow-md transition-shadow duration-300">
+            <div className="overflow-x-auto">
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className="bg-[#f2f4f2] border-b border-gray-200/80">
+                    <th className="px-6 py-5 text-[10px] font-black uppercase tracking-widest text-[#8bc4b1] whitespace-nowrap">
+                      Submitted
+                    </th>
+                    {fieldIds.map((fieldId) => (
+                      <th
+                        key={fieldId}
+                        className="px-6 py-5 text-[10px] font-black uppercase tracking-widest text-[#8bc4b1] whitespace-nowrap"
+                      >
+                        {getFieldLabel(fieldId)}
+                      </th>
                     ))}
-                  </div>
-                </div>
-              </div>
-            ))}
+                    <th className="px-6 py-5 text-right text-[10px] font-black uppercase tracking-widest text-[#8bc4b1] whitespace-nowrap">
+                      Actions
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100">
+                  {submissions.map((submission) => (
+                    <tr
+                      key={submission.id}
+                      className="group hover:bg-gray-50/50 transition-colors"
+                    >
+                      <td className="px-6 py-5 whitespace-nowrap">
+                        <div className="flex items-center gap-2">
+                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" />
+                          <span className="text-sm font-bold text-[#1d2321]">
+                            {new Date(submission.createdAt).toLocaleString('en-US', {
+                              year: 'numeric',
+                              month: 'short',
+                              day: 'numeric',
+                              hour: '2-digit',
+                              minute: '2-digit'
+                            })}
+                          </span>
+                        </div>
+                      </td>
+                      {fieldIds.map((fieldId) => {
+                        const value = submission.data[fieldId];
+                        const displayValue = Array.isArray(value) ? value.join(', ') : value || '—';
+                        return (
+                          <td
+                            key={fieldId}
+                            className="px-6 py-5 text-sm font-medium text-gray-600 max-w-xs truncate"
+                            title={displayValue}
+                          >
+                            {displayValue}
+                          </td>
+                        );
+                      })}
+                      <td className="px-6 py-5 whitespace-nowrap text-right">
+                        <button
+                          onClick={() => handleDelete(submission.id)}
+                          className="inline-flex items-center justify-center w-8 h-8 rounded-full text-gray-400 hover:text-red-600 hover:bg-red-50 transition-colors"
+                          title="Delete submission"
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
         )}
       </div>

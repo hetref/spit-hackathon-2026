@@ -33,6 +33,7 @@ import useHistoryStore from "@/lib/stores/historyStore";
 import useBuilderStore, { clearSavedState } from "@/lib/stores/builderStore";
 import { clsx } from "clsx";
 import AvatarStack from "@/components/builder/AvatarStack";
+import AIPageGenerator from "./AIPageGenerator";
 
 // ─── Publish Modal ────────────────────────────────────────────────────────────
 
@@ -369,7 +370,8 @@ export default function Toolbar({ saving: autoSaving, lastSaved, saveError }) {
         {/* Right Side — Actions */}
         <div className="flex items-center gap-4">
           <AvatarStack />
-          
+
+
           {/* AI Generate Button */}
           <button
             onClick={() => setShowAIGenerator(true)}
@@ -379,7 +381,7 @@ export default function Toolbar({ saving: autoSaving, lastSaved, saveError }) {
             <Sparkles size={14} />
             <span className="hidden sm:inline">AI Generate</span>
           </button>
-          
+
           <button
             onClick={() => {
               if (confirm("Reset to demo data? All changes will be lost.")) {
@@ -393,7 +395,7 @@ export default function Toolbar({ saving: autoSaving, lastSaved, saveError }) {
             <RotateCcw size={14} />
             <span className="hidden sm:inline">Reset</span>
           </button>
-          
+
           <div className="h-8 w-px bg-gray-200 mx-1" />
 
           {/* Auto-save status indicator */}
@@ -451,17 +453,17 @@ export default function Toolbar({ saving: autoSaving, lastSaved, saveError }) {
         onGenerate={(containers) => {
           const currentLayout = getLayoutJSON();
           const currentPage = currentLayout.pages.find(p => p.id === currentLayout.pages[0].id);
-          
+
           // Replace current page layout with AI-generated containers
           const updatedLayout = {
             ...currentLayout,
-            pages: currentLayout.pages.map(p => 
-              p.id === currentPage.id 
+            pages: currentLayout.pages.map(p =>
+              p.id === currentPage.id
                 ? { ...p, layout: containers }
                 : p
             )
           };
-          
+
           updateLayoutJSON(updatedLayout);
         }}
       />

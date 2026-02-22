@@ -56,7 +56,7 @@ export default function FormPropertiesSidebar() {
   }
 
   return (
-    <div className="w-80 bg-white/80 backdrop-blur-md border-l border-gray-100 flex flex-col h-full overflow-y-auto z-10 shadow-sm relative shrink-0">
+    <div className="w-80 bg-white/80 backdrop-blur-md border-l border-gray-100 flex flex-col h-full min-h-0 z-10 shadow-sm relative shrink-0">
       {/* Header */}
       <div className="p-6 border-b border-gray-100 flex items-center justify-between">
         <div>
@@ -72,7 +72,7 @@ export default function FormPropertiesSidebar() {
       </div>
 
       {/* Properties Form */}
-      <div className="flex-1 p-6 space-y-6">
+      <div data-lenis-prevent className="flex-1 min-h-0 overflow-y-auto p-6 space-y-6">
         {/* Label */}
         <div>
           <label className="block text-xs font-medium text-gray-700 mb-1">

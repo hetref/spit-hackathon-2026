@@ -36,18 +36,27 @@ export default function TenantLayout({ children }) {
     const sitesId = params.siteId || '';
 
     const [mounted, setMounted] = useState(false)
+    const [initialLoadComplete, setInitialLoadComplete] = useState(false)
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
     const [tenant, setTenant] = useState(null)
+    const [fetchedTenantId, setFetchedTenantId] = useState(null)
 
     useEffect(() => {
         setMounted(true)
     }, [])
 
+    // Track when initial session load is complete
     useEffect(() => {
-        if (session && tenantId) {
+        if (session && !isPending && mounted) {
+            setInitialLoadComplete(true)
+        }
+    }, [session, isPending, mounted])
+
+    useEffect(() => {
+        if (session && tenantId && fetchedTenantId !== tenantId) {
             fetchTenantData()
         }
-    }, [session, tenantId])
+    }, [session, tenantId, fetchedTenantId])
 
     const fetchTenantData = async () => {
         try {
@@ -55,13 +64,15 @@ export default function TenantLayout({ children }) {
             if (response.ok) {
                 const data = await response.json()
                 setTenant(data.tenant)
+                setFetchedTenantId(tenantId)
             }
         } catch (err) {
             console.error('Error fetching tenant:', err)
         }
     }
 
-    if (!mounted || isPending) {
+    // Only show loading spinner on initial load, not on tab refocus
+    if (!initialLoadComplete) {
         return (
             <div className="min-h-screen flex items-center justify-center bg-[#fcfdfc]">
                 <div className="animate-spin rounded-full h-10 w-10 border-[4px] border-gray-100 border-t-[#0b1411] mb-4" />

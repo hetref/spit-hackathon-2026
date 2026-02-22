@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
 import { auth } from '@/lib/auth'
 import { headers } from 'next/headers'
+import { getPresignedMediaUrl } from '@/lib/aws/s3-publish'
 
 export async function GET(request, { params }) {
   try {
@@ -53,7 +54,17 @@ export async function GET(request, { params }) {
       return NextResponse.json({ error: 'Tenant not found' }, { status: 404 })
     }
 
-    return NextResponse.json({ tenant, userRole: tenantUser.role })
+    // Generate presigned URL for logo if it exists
+    let tenantData = { ...tenant }
+    if (tenant.logo) {
+      try {
+        tenantData.logoUrl = await getPresignedMediaUrl(tenant.logo, 3600)
+      } catch (error) {
+        console.error('Failed to generate presigned URL for tenant logo:', error)
+      }
+    }
+
+    return NextResponse.json({ tenant: tenantData, userRole: tenantUser.role })
   } catch (error) {
     console.error('Error fetching tenant:', error)
     return NextResponse.json(
@@ -90,7 +101,17 @@ export async function PATCH(request, { params }) {
       data: updates
     })
 
-    return NextResponse.json({ tenant: updatedTenant })
+    // Generate presigned URL for logo if it exists
+    let tenantData = { ...updatedTenant }
+    if (updatedTenant.logo) {
+      try {
+        tenantData.logoUrl = await getPresignedMediaUrl(updatedTenant.logo, 3600)
+      } catch (error) {
+        console.error('Failed to generate presigned URL for tenant logo:', error)
+      }
+    }
+
+    return NextResponse.json({ tenant: tenantData })
   } catch (error) {
     console.error('Error updating tenant:', error)
     return NextResponse.json(

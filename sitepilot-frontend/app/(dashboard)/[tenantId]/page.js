@@ -7,7 +7,8 @@ import {
   Users,
   Globe,
   CreditCard,
-  ShieldAlert
+  ShieldAlert,
+  Settings
 } from 'lucide-react'
 import { hasPermission } from '@/lib/permissions'
 
@@ -18,6 +19,8 @@ export default function TenantDashboardPage() {
   const [tenant, setTenant] = useState(null)
   const [userRole, setUserRole] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [initialLoadComplete, setInitialLoadComplete] = useState(false)
+  const [fetchedTenantId, setFetchedTenantId] = useState(null)
 
   useEffect(() => {
     if (!isPending && !session) {
@@ -25,11 +28,18 @@ export default function TenantDashboardPage() {
     }
   }, [session, isPending, router])
 
+  // Track when initial session load is complete
   useEffect(() => {
-    if (session && params.tenantId) {
+    if (session && !isPending) {
+      setInitialLoadComplete(true)
+    }
+  }, [session, isPending])
+
+  useEffect(() => {
+    if (session && params.tenantId && fetchedTenantId !== params.tenantId) {
       fetchTenantData()
     }
-  }, [session, params.tenantId])
+  }, [session, params.tenantId, fetchedTenantId])
 
   const fetchTenantData = async () => {
     try {
@@ -38,6 +48,7 @@ export default function TenantDashboardPage() {
         const data = await response.json()
         setTenant(data.tenant)
         setUserRole(data.userRole)
+        setFetchedTenantId(params.tenantId)
       }
     } catch (err) {
       console.error('Error fetching tenant:', err)
@@ -46,7 +57,8 @@ export default function TenantDashboardPage() {
     }
   }
 
-  if (isPending || loading) {
+  // Only show loading spinner on initial load, not on tab refocus
+  if (!initialLoadComplete || loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#fcfdfc]">
         <div className="flex flex-col items-center">
@@ -93,7 +105,9 @@ export default function TenantDashboardPage() {
               </button>
               <div className="flex flex-row items-center gap-4">
                 <div className="h-14 w-14 bg-[#0b1411] text-[#d3ff4a] rounded-2xl flex items-center justify-center overflow-hidden shrink-0 shadow-lg font-black text-xl">
-                  {tenant.logo ? (
+                  {tenant.logoUrl ? (
+                    <img src={tenant.logoUrl} alt={tenant.name} className="h-full w-full object-cover" />
+                  ) : tenant.logo ? (
                     <img src={tenant.logo} alt={tenant.name} className="h-full w-full object-cover" />
                   ) : (
                     <span>{tenant.name.substring(0, 2).toUpperCase()}</span>
@@ -109,6 +123,15 @@ export default function TenantDashboardPage() {
                   <span className="text-xs text-gray-400 font-bold uppercase tracking-widest mt-1 block">sitepilot.com/{tenant.slug}</span>
                 </div>
               </div>
+            {userRole === 'OWNER' && (
+              <button
+                onClick={() => router.push(`/${params.tenantId}/settings`)}
+                className="inline-flex items-center justify-center px-6 h-12 text-xs font-black uppercase tracking-widest text-gray-600 bg-white border-2 border-gray-200 rounded-full hover:border-[#0b1411] hover:text-[#0b1411] transition-all shadow-sm hover:shadow-md focus:outline-none"
+              >
+                <Settings className="h-4 w-4 mr-2" />
+                Settings
+              </button>
+            )}
             </div>
           </div>
         </div>
