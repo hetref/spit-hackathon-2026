@@ -3,14 +3,21 @@
 /**
  * RIGHT SIDEBAR
  *
- * Properties and styles editor for selected component.
+ * Comprehensive properties and styles editor for selected component.
+ * Context-sensitive tools that change based on the element selected.
  * Shows a "locked" message when the selected node is being edited by another user.
  */
 
 import React, { useState, useMemo } from "react";
 import useBuilderStore from "@/lib/stores/builderStore";
 import useHistoryStore from "@/lib/stores/historyStore";
-import { Trash2, Copy, Plus, Minus, Settings2, Paintbrush, Lock } from "lucide-react";
+import {
+  Trash2, Copy, Plus, Minus, Settings2, Paintbrush, Lock,
+  ChevronDown, ChevronRight, AlignLeft, AlignCenter, AlignRight,
+  AlignJustify, Italic, Underline, Strikethrough,
+  Square, Maximize2,
+  RotateCcw, Type, Palette, Layers, Move
+} from "lucide-react";
 import { clsx } from "clsx";
 import FormSelector from "./FormSelector";
 import { useOthers } from "@/lib/liveblocks-client";
@@ -244,6 +251,7 @@ export default function RightSidebar() {
           <StylesEditor
             styles={selectedNode.styles || {}}
             onUpdate={handleUpdateStyles}
+            componentType={selectedNode.type}
           />
         )}
 
@@ -251,6 +259,7 @@ export default function RightSidebar() {
           <StylesEditor
             styles={selectedNode.styles || {}}
             onUpdate={handleUpdateStyles}
+            componentType="container"
           />
         )}
 
@@ -414,6 +423,24 @@ function PropertiesEditor({ component, onUpdate, siteId }) {
       {/* Hero Component */}
       {component.type === "Hero" && (
         <>
+          <SelectField
+            label="Variant"
+            value={props.variant || "centered"}
+            options={[
+              { value: "centered", label: "Centered" },
+              { value: "split", label: "Split (Text + Image)" },
+              { value: "gradient-bg", label: "Gradient Background" },
+              { value: "floating-card", label: "Floating Card" },
+              { value: "minimal", label: "Minimal" },
+            ]}
+            onChange={(value) => handleChange("variant", value)}
+          />
+          <InputField
+            label="Badge Text"
+            value={props.badge || ""}
+            onChange={(value) => handleChange("badge", value)}
+            placeholder="e.g. NEW, LAUNCH, etc."
+          />
           <InputField
             label="Title"
             value={props.title || ""}
@@ -436,9 +463,26 @@ function PropertiesEditor({ component, onUpdate, siteId }) {
             onChange={(value) => handleChange("ctaLink", value)}
           />
           <InputField
-            label="Background Image URL"
-            value={props.backgroundImage || ""}
-            onChange={(value) => handleChange("backgroundImage", value)}
+            label="Secondary CTA Text"
+            value={props.secondaryCtaText || ""}
+            onChange={(value) => handleChange("secondaryCtaText", value)}
+          />
+          <InputField
+            label="Secondary CTA Link"
+            value={props.secondaryCtaLink || ""}
+            onChange={(value) => handleChange("secondaryCtaLink", value)}
+          />
+          <InputField
+            label="Image URL"
+            value={props.image || props.backgroundImage || ""}
+            onChange={(value) => handleChange("image", value)}
+            placeholder="https://..."
+          />
+          <InputField
+            label="Rating"
+            value={props.rating || ""}
+            onChange={(value) => handleChange("rating", value)}
+            placeholder="e.g. 4.9"
           />
         </>
       )}
@@ -568,6 +612,17 @@ function PropertiesEditor({ component, onUpdate, siteId }) {
             label="Button Text"
             value={props.buttonText || ""}
             onChange={(value) => handleChange("buttonText", value)}
+          />
+          <InputField
+            label="Button Link"
+            value={props.buttonLink || ""}
+            onChange={(value) => handleChange("buttonLink", value)}
+          />
+          <InputField
+            label="Secondary Button Text"
+            value={props.secondaryButtonText || ""}
+            onChange={(value) => handleChange("secondaryButtonText", value)}
+            placeholder="Optional"
           />
         </>
       )}
@@ -1055,6 +1110,23 @@ function PropertiesEditor({ component, onUpdate, siteId }) {
             value={props.title || ""}
             onChange={(value) => handleChange("title", value)}
           />
+          <InputField
+            label="Section Subtitle"
+            value={props.subtitle || ""}
+            onChange={(value) => handleChange("subtitle", value)}
+            multiline
+            placeholder="Optional description above the features grid"
+          />
+          <SelectField
+            label="Columns"
+            value={String(props.columns || 3)}
+            options={[
+              { value: "2", label: "2 Columns" },
+              { value: "3", label: "3 Columns" },
+              { value: "4", label: "4 Columns" },
+            ]}
+            onChange={(value) => handleChange("columns", parseInt(value))}
+          />
           <FeaturesEditor
             items={props.items || []}
             onChange={(items) => handleChange("items", items)}
@@ -1069,6 +1141,24 @@ function PropertiesEditor({ component, onUpdate, siteId }) {
             label="Logo Text"
             value={props.logo || ""}
             onChange={(value) => handleChange("logo", value)}
+          />
+          <InputField
+            label="Logo Image URL"
+            value={props.logoImage || ""}
+            onChange={(value) => handleChange("logoImage", value)}
+            placeholder="https://..."
+          />
+          <InputField
+            label="CTA Button Text"
+            value={props.ctaText || ""}
+            onChange={(value) => handleChange("ctaText", value)}
+            placeholder="Optional, e.g. Get Started"
+          />
+          <InputField
+            label="CTA Button Link"
+            value={props.ctaLink || ""}
+            onChange={(value) => handleChange("ctaLink", value)}
+            placeholder="#"
           />
           <NavLinksEditor
             links={props.links || []}
@@ -1085,6 +1175,13 @@ function PropertiesEditor({ component, onUpdate, siteId }) {
             value={props.copyright || ""}
             onChange={(value) => handleChange("copyright", value)}
           />
+          <InputField
+            label="Description"
+            value={props.description || ""}
+            onChange={(value) => handleChange("description", value)}
+            multiline
+            placeholder="Optional footer description"
+          />
           <NavLinksEditor
             links={props.links || []}
             onChange={(links) => handleChange("links", links)}
@@ -1096,129 +1193,516 @@ function PropertiesEditor({ component, onUpdate, siteId }) {
 }
 
 // ============================================================================
-// STYLES EDITOR
+// STYLES EDITOR — Comprehensive modern style controls
 // ============================================================================
 
-function StylesEditor({ styles, onUpdate }) {
+const shadowPresets = [
+  { label: "None", value: "none" },
+  { label: "SM", value: "0 1px 2px 0 rgba(0,0,0,0.05)" },
+  { label: "MD", value: "0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -2px rgba(0,0,0,0.1)" },
+  { label: "LG", value: "0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -4px rgba(0,0,0,0.1)" },
+  { label: "XL", value: "0 20px 25px -5px rgba(0,0,0,0.1), 0 8px 10px -6px rgba(0,0,0,0.1)" },
+  { label: "2XL", value: "0 25px 50px -12px rgba(0,0,0,0.25)" },
+  { label: "Inner", value: "inset 0 2px 4px 0 rgba(0,0,0,0.06)" },
+];
+
+function StylesEditor({ styles, onUpdate, componentType }) {
   const handleChange = (key, value) => {
     onUpdate({ [key]: value });
   };
 
+  const [openSections, setOpenSections] = useState({
+    layout: true,
+    spacing: true,
+    typography: false,
+    background: false,
+    border: false,
+    effects: false,
+  });
+
+  const toggleSection = (section) => {
+    setOpenSections((prev) => ({ ...prev, [section]: !prev[section] }));
+  };
+
   return (
-    <div className="space-y-5">
-      {/* Spacing Section */}
-      <div>
-        <SectionLabel>Spacing</SectionLabel>
+    <div className="space-y-1">
+      {/* ── Layout & Dimensions ─────────────────────────────────── */}
+      <CollapsibleSection
+        title="Layout & Size"
+        icon={<Maximize2 size={12} />}
+        isOpen={openSections.layout}
+        onToggle={() => toggleSection("layout")}
+      >
         <div className="grid grid-cols-2 gap-2">
           <InputField
-            label="Pad Top"
+            label="Width (px)"
             type="number"
-            value={styles.paddingTop || ""}
-            onChange={(value) =>
-              handleChange("paddingTop", parseInt(value) || 0)
-            }
+            value={styles.width || ""}
+            onChange={(v) => handleChange("width", v ? parseInt(v) : null)}
             compact
+            placeholder="Auto"
           />
           <InputField
-            label="Pad Bottom"
+            label="Height (px)"
             type="number"
-            value={styles.paddingBottom || ""}
-            onChange={(value) =>
-              handleChange("paddingBottom", parseInt(value) || 0)
-            }
+            value={styles.height || ""}
+            onChange={(v) => handleChange("height", v ? parseInt(v) : null)}
             compact
+            placeholder="Auto"
           />
           <InputField
-            label="Pad Left"
+            label="Min Height"
             type="number"
-            value={styles.paddingLeft || ""}
-            onChange={(value) =>
-              handleChange("paddingLeft", parseInt(value) || 0)
-            }
+            value={styles.minHeight || ""}
+            onChange={(v) => handleChange("minHeight", v ? parseInt(v) : null)}
             compact
+            placeholder="—"
           />
           <InputField
-            label="Pad Right"
+            label="Max Width"
             type="number"
-            value={styles.paddingRight || ""}
-            onChange={(value) =>
-              handleChange("paddingRight", parseInt(value) || 0)
-            }
+            value={styles.maxWidth || ""}
+            onChange={(v) => handleChange("maxWidth", v ? parseInt(v) : null)}
             compact
-          />
-          <InputField
-            label="Margin Top"
-            type="number"
-            value={styles.marginTop || ""}
-            onChange={(value) =>
-              handleChange("marginTop", parseInt(value) || 0)
-            }
-            compact
-          />
-          <InputField
-            label="Margin Bottom"
-            type="number"
-            value={styles.marginBottom || ""}
-            onChange={(value) =>
-              handleChange("marginBottom", parseInt(value) || 0)
-            }
-            compact
+            placeholder="—"
           />
         </div>
-      </div>
+        <SelectField
+          label="Overflow"
+          value={styles.overflow || "visible"}
+          options={[
+            { value: "visible", label: "Visible" },
+            { value: "hidden", label: "Hidden" },
+            { value: "auto", label: "Scroll" },
+          ]}
+          onChange={(v) => handleChange("overflow", v === "visible" ? null : v)}
+        />
+      </CollapsibleSection>
 
-      {/* Colors Section */}
-      <div>
-        <SectionLabel>Colors</SectionLabel>
+      {/* ── Spacing — Visual Box Model ──────────────────────────── */}
+      <CollapsibleSection
+        title="Spacing"
+        icon={<Move size={12} />}
+        isOpen={openSections.spacing}
+        onToggle={() => toggleSection("spacing")}
+      >
+        <SpacingBoxModel styles={styles} onChange={handleChange} />
+      </CollapsibleSection>
+
+      {/* ── Typography ──────────────────────────────────────────── */}
+      <CollapsibleSection
+        title="Typography"
+        icon={<Type size={12} />}
+        isOpen={openSections.typography}
+        onToggle={() => toggleSection("typography")}
+      >
         <div className="space-y-3">
-          <ColorField
-            label="Background"
-            value={styles.backgroundColor || "#ffffff"}
-            onChange={(v) => handleChange("backgroundColor", v)}
+          {/* Text Align */}
+          <div>
+            <label className="block text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-1.5">
+              Text Align
+            </label>
+            <ToggleGroup
+              options={[
+                { value: "left", icon: <AlignLeft size={13} />, label: "Left" },
+                { value: "center", icon: <AlignCenter size={13} />, label: "Center" },
+                { value: "right", icon: <AlignRight size={13} />, label: "Right" },
+                { value: "justify", icon: <AlignJustify size={13} />, label: "Justify" },
+              ]}
+              value={styles.textAlign || "left"}
+              onChange={(v) => handleChange("textAlign", v)}
+            />
+          </div>
+
+          <div className="grid grid-cols-2 gap-2">
+            <InputField
+              label="Font Size"
+              type="number"
+              value={styles.fontSize || ""}
+              onChange={(v) => handleChange("fontSize", v ? parseInt(v) : null)}
+              compact
+              placeholder="—"
+              suffix="px"
+            />
+            <SelectField
+              label="Font Weight"
+              value={styles.fontWeight || ""}
+              options={[
+                { value: "", label: "Default" },
+                { value: "100", label: "Thin" },
+                { value: "300", label: "Light" },
+                { value: "400", label: "Normal" },
+                { value: "500", label: "Medium" },
+                { value: "600", label: "Semi Bold" },
+                { value: "700", label: "Bold" },
+                { value: "800", label: "Extra Bold" },
+                { value: "900", label: "Black" },
+              ]}
+              onChange={(v) => handleChange("fontWeight", v || null)}
+            />
+          </div>
+
+          <div className="grid grid-cols-2 gap-2">
+            <InputField
+              label="Line Height"
+              type="text"
+              value={styles.lineHeight || ""}
+              onChange={(v) => handleChange("lineHeight", v || null)}
+              compact
+              placeholder="Normal"
+            />
+            <InputField
+              label="Letter Spacing"
+              type="number"
+              value={styles.letterSpacing || ""}
+              onChange={(v) => handleChange("letterSpacing", v ? parseFloat(v) : null)}
+              compact
+              placeholder="0"
+              suffix="px"
+            />
+          </div>
+
+          {/* Text Transform */}
+          <SelectField
+            label="Text Transform"
+            value={styles.textTransform || ""}
+            options={[
+              { value: "", label: "None" },
+              { value: "uppercase", label: "UPPERCASE" },
+              { value: "lowercase", label: "lowercase" },
+              { value: "capitalize", label: "Capitalize" },
+            ]}
+            onChange={(v) => handleChange("textTransform", v || null)}
           />
+
+          {/* Text Style Toggles */}
+          <div>
+            <label className="block text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-1.5">
+              Text Style
+            </label>
+            <div className="flex gap-1">
+              <ToggleButton
+                active={styles.fontStyle === "italic"}
+                onClick={() =>
+                  handleChange("fontStyle", styles.fontStyle === "italic" ? null : "italic")
+                }
+                title="Italic"
+              >
+                <Italic size={13} />
+              </ToggleButton>
+              <ToggleButton
+                active={styles.textDecoration === "underline"}
+                onClick={() =>
+                  handleChange("textDecoration", styles.textDecoration === "underline" ? null : "underline")
+                }
+                title="Underline"
+              >
+                <Underline size={13} />
+              </ToggleButton>
+              <ToggleButton
+                active={styles.textDecoration === "line-through"}
+                onClick={() =>
+                  handleChange("textDecoration", styles.textDecoration === "line-through" ? null : "line-through")
+                }
+                title="Strikethrough"
+              >
+                <Strikethrough size={13} />
+              </ToggleButton>
+            </div>
+          </div>
+
           <ColorField
             label="Text Color"
-            value={styles.textColor || "#1f2937"}
+            value={styles.textColor || ""}
             onChange={(v) => handleChange("textColor", v)}
+            placeholder="#1f2937"
           />
         </div>
-      </div>
+      </CollapsibleSection>
 
-      {/* Typography Section */}
-      <div>
-        <SectionLabel>Typography</SectionLabel>
-        <div className="space-y-2">
-          <SelectField
-            label="Text Align"
-            value={styles.textAlign || "left"}
-            options={[
-              { value: "left", label: "Left" },
-              { value: "center", label: "Center" },
-              { value: "right", label: "Right" },
-            ]}
-            onChange={(value) => handleChange("textAlign", value)}
+      {/* ── Background ──────────────────────────────────────────── */}
+      <CollapsibleSection
+        title="Background"
+        icon={<Palette size={12} />}
+        isOpen={openSections.background}
+        onToggle={() => toggleSection("background")}
+      >
+        <div className="space-y-3">
+          <ColorField
+            label="Background Color"
+            value={styles.backgroundColor || ""}
+            onChange={(v) => handleChange("backgroundColor", v)}
+            placeholder="#ffffff"
           />
+          <RangeField
+            label="Opacity"
+            value={styles.opacity ?? 100}
+            min={0}
+            max={100}
+            step={1}
+            onChange={(v) => handleChange("opacity", parseInt(v))}
+            suffix="%"
+          />
+        </div>
+      </CollapsibleSection>
+
+      {/* ── Border ──────────────────────────────────────────────── */}
+      <CollapsibleSection
+        title="Border"
+        icon={<Square size={12} />}
+        isOpen={openSections.border}
+        onToggle={() => toggleSection("border")}
+      >
+        <div className="space-y-3">
+          <div className="grid grid-cols-2 gap-2">
+            <InputField
+              label="Width"
+              type="number"
+              value={styles.borderWidth || ""}
+              onChange={(v) => handleChange("borderWidth", v ? parseInt(v) : null)}
+              compact
+              placeholder="0"
+              suffix="px"
+            />
+            <SelectField
+              label="Style"
+              value={styles.borderStyle || "solid"}
+              options={[
+                { value: "solid", label: "Solid" },
+                { value: "dashed", label: "Dashed" },
+                { value: "dotted", label: "Dotted" },
+                { value: "double", label: "Double" },
+                { value: "none", label: "None" },
+              ]}
+              onChange={(v) => handleChange("borderStyle", v)}
+            />
+          </div>
+
+          <ColorField
+            label="Border Color"
+            value={styles.borderColor || ""}
+            onChange={(v) => handleChange("borderColor", v)}
+            placeholder="#e5e7eb"
+          />
+
           <InputField
-            label="Font Size (px)"
+            label="Border Radius"
             type="number"
-            value={styles.fontSize || ""}
-            onChange={(value) => handleChange("fontSize", parseInt(value) || 0)}
+            value={styles.borderRadius || ""}
+            onChange={(v) => handleChange("borderRadius", v ? parseInt(v) : null)}
+            placeholder="0"
+            suffix="px"
           />
         </div>
-      </div>
+      </CollapsibleSection>
 
-      {/* Border Section */}
-      <div>
-        <SectionLabel>Border</SectionLabel>
-        <InputField
-          label="Border Radius (px)"
-          type="number"
-          value={styles.borderRadius || ""}
-          onChange={(value) =>
-            handleChange("borderRadius", parseInt(value) || 0)
-          }
-        />
+      {/* ── Effects ─────────────────────────────────────────────── */}
+      <CollapsibleSection
+        title="Effects"
+        icon={<Layers size={12} />}
+        isOpen={openSections.effects}
+        onToggle={() => toggleSection("effects")}
+      >
+        <div className="space-y-3">
+          {/* Box Shadow Presets */}
+          <div>
+            <label className="block text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-1.5">
+              Box Shadow
+            </label>
+            <div className="grid grid-cols-4 gap-1">
+              {shadowPresets.map((preset) => (
+                <button
+                  key={preset.label}
+                  onClick={() =>
+                    handleChange("boxShadow", preset.value === "none" ? null : preset.value)
+                  }
+                  className={clsx(
+                    "px-2 py-1.5 rounded-md text-[9px] font-bold uppercase tracking-wider transition-all border",
+                    (styles.boxShadow || "none") === preset.value ||
+                    (!styles.boxShadow && preset.value === "none")
+                      ? "bg-[#0b1411] text-white border-[#0b1411]"
+                      : "bg-white text-gray-500 border-gray-200 hover:border-gray-400"
+                  )}
+                >
+                  {preset.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      </CollapsibleSection>
+    </div>
+  );
+}
+
+// ============================================================================
+// COLLAPSIBLE SECTION
+// ============================================================================
+
+function CollapsibleSection({ title, icon, isOpen, onToggle, children }) {
+  return (
+    <div className="border border-gray-100 rounded-xl overflow-hidden bg-white">
+      <button
+        onClick={onToggle}
+        className="w-full flex items-center justify-between px-3 py-2.5 hover:bg-gray-50 transition-colors"
+      >
+        <div className="flex items-center gap-2">
+          <span className="text-gray-400">{icon}</span>
+          <span className="text-[10px] font-black text-[#1d2321] uppercase tracking-widest">
+            {title}
+          </span>
+        </div>
+        {isOpen ? (
+          <ChevronDown size={12} className="text-gray-400" />
+        ) : (
+          <ChevronRight size={12} className="text-gray-400" />
+        )}
+      </button>
+      {isOpen && (
+        <div className="px-3 pb-3 pt-1 space-y-2 border-t border-gray-50">
+          {children}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ============================================================================
+// SPACING BOX MODEL — Visual margin/padding editor
+// ============================================================================
+
+function SpacingBoxModel({ styles, onChange }) {
+  const SpacingInput = ({ prop, pos }) => (
+    <input
+      type="number"
+      value={styles[prop] || ""}
+      onChange={(e) => onChange(prop, e.target.value ? parseInt(e.target.value) : 0)}
+      placeholder="0"
+      className={clsx(
+        "w-10 h-6 text-center text-[10px] font-mono border border-transparent rounded",
+        "bg-transparent focus:bg-white focus:border-gray-300 outline-none transition-all",
+        "placeholder:text-gray-300"
+      )}
+      title={prop}
+    />
+  );
+
+  return (
+    <div className="space-y-1">
+      {/* Margin label */}
+      <p className="text-[9px] font-bold text-orange-400 uppercase tracking-widest">Margin</p>
+      <div className="relative bg-orange-50/60 border border-orange-200/50 rounded-lg p-2">
+        {/* Margin Top */}
+        <div className="flex justify-center mb-1">
+          <SpacingInput prop="marginTop" />
+        </div>
+        {/* Margin Left / Padding Box / Margin Right */}
+        <div className="flex items-center">
+          <div className="w-10 flex justify-center">
+            <SpacingInput prop="marginLeft" />
+          </div>
+          {/* Padding box */}
+          <div className="flex-1 bg-blue-50/60 border border-blue-200/50 rounded-md p-2 mx-1">
+            <p className="text-[9px] font-bold text-blue-400 uppercase tracking-widest text-center mb-1">Padding</p>
+            {/* Padding Top */}
+            <div className="flex justify-center mb-1">
+              <SpacingInput prop="paddingTop" />
+            </div>
+            {/* Padding Left / Content / Padding Right */}
+            <div className="flex items-center">
+              <SpacingInput prop="paddingLeft" />
+              <div className="flex-1 h-6 bg-gray-100 rounded border border-dashed border-gray-300 mx-1" />
+              <SpacingInput prop="paddingRight" />
+            </div>
+            {/* Padding Bottom */}
+            <div className="flex justify-center mt-1">
+              <SpacingInput prop="paddingBottom" />
+            </div>
+          </div>
+          <div className="w-10 flex justify-center">
+            <SpacingInput prop="marginRight" />
+          </div>
+        </div>
+        {/* Margin Bottom */}
+        <div className="flex justify-center mt-1">
+          <SpacingInput prop="marginBottom" />
+        </div>
       </div>
+    </div>
+  );
+}
+
+// ============================================================================
+// TOGGLE GROUP — Button group for mutually exclusive options
+// ============================================================================
+
+function ToggleGroup({ options, value, onChange }) {
+  return (
+    <div className="flex bg-gray-100 rounded-lg p-0.5">
+      {options.map((opt) => (
+        <button
+          key={opt.value}
+          onClick={() => onChange(opt.value)}
+          className={clsx(
+            "flex-1 flex items-center justify-center p-1.5 rounded-md transition-all text-xs",
+            value === opt.value
+              ? "bg-white text-[#0b1411] shadow-sm"
+              : "text-gray-400 hover:text-gray-600"
+          )}
+          title={opt.label}
+        >
+          {opt.icon}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+// ============================================================================
+// TOGGLE BUTTON — Individual on/off style button
+// ============================================================================
+
+function ToggleButton({ active, onClick, title, children }) {
+  return (
+    <button
+      onClick={onClick}
+      className={clsx(
+        "p-1.5 rounded-md transition-all border",
+        active
+          ? "bg-[#0b1411] text-white border-[#0b1411]"
+          : "bg-white text-gray-400 border-gray-200 hover:border-gray-400 hover:text-gray-600"
+      )}
+      title={title}
+    >
+      {children}
+    </button>
+  );
+}
+
+// ============================================================================
+// RANGE FIELD — Slider with value display
+// ============================================================================
+
+function RangeField({ label, value, min, max, step, onChange, suffix = "" }) {
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-1">
+        <label className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">
+          {label}
+        </label>
+        <span className="text-[10px] font-mono text-gray-500">
+          {value}{suffix}
+        </span>
+      </div>
+      <input
+        type="range"
+        min={min}
+        max={max}
+        step={step}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className="w-full h-1.5 bg-gray-200 rounded-full appearance-none cursor-pointer accent-[#0b1411]"
+      />
     </div>
   );
 }
@@ -1239,26 +1723,35 @@ function SectionLabel({ children }) {
 // COLOR FIELD
 // ============================================================================
 
-function ColorField({ label, value, onChange }) {
+function ColorField({ label, value, onChange, placeholder = "#ffffff" }) {
   return (
     <div>
-      <label className="block text-xs font-medium text-gray-600 mb-1">
+      <label className="block text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-1">
         {label}
       </label>
       <div className="flex gap-2 items-center">
         <input
           type="color"
-          value={value}
+          value={value || "#ffffff"}
           onChange={(e) => onChange(e.target.value)}
-          className="w-8 h-8 rounded-md border border-gray-200 cursor-pointer p-0.5"
+          className="w-8 h-8 rounded-lg border border-gray-200 cursor-pointer p-0.5 shrink-0"
         />
         <input
           type="text"
-          value={value}
+          value={value || ""}
           onChange={(e) => onChange(e.target.value)}
-          className="flex-1 px-2.5 py-1.5 border border-gray-200 rounded-md text-xs font-mono text-gray-700 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 outline-none"
-          placeholder="#ffffff"
+          className="flex-1 px-2.5 py-1.5 border border-gray-200 rounded-lg text-xs font-mono text-gray-700 focus:ring-1 focus:ring-[#8bc4b1] focus:border-[#8bc4b1] outline-none bg-white"
+          placeholder={placeholder}
         />
+        {value && (
+          <button
+            onClick={() => onChange("")}
+            className="p-1 text-gray-300 hover:text-gray-500 transition-colors"
+            title="Clear"
+          >
+            <RotateCcw size={12} />
+          </button>
+        )}
       </div>
     </div>
   );
@@ -1553,29 +2046,41 @@ function InputField({
   type = "text",
   multiline = false,
   compact = false,
+  placeholder = "",
+  suffix = "",
 }) {
   return (
     <div>
-      <label className="block text-xs font-medium text-gray-600 mb-1">
+      <label className="block text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-1">
         {label}
       </label>
       {multiline ? (
         <textarea
           value={value}
           onChange={(e) => onChange(e.target.value)}
-          className="w-full px-2.5 py-1.5 border border-gray-200 rounded-md text-sm text-gray-700 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 outline-none resize-none"
+          className="w-full px-2.5 py-1.5 border border-gray-200 rounded-lg text-sm text-gray-700 focus:ring-1 focus:ring-[#8bc4b1] focus:border-[#8bc4b1] outline-none resize-none bg-white"
           rows={3}
+          placeholder={placeholder}
         />
       ) : (
-        <input
-          type={type}
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          className={clsx(
-            "w-full border border-gray-200 rounded-md text-gray-700 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 outline-none",
-            compact ? "px-2 py-1 text-xs" : "px-2.5 py-1.5 text-sm",
+        <div className="relative">
+          <input
+            type={type}
+            value={value}
+            onChange={(e) => onChange(e.target.value)}
+            className={clsx(
+              "w-full border border-gray-200 rounded-lg text-gray-700 focus:ring-1 focus:ring-[#8bc4b1] focus:border-[#8bc4b1] outline-none bg-white",
+              compact ? "px-2 py-1 text-xs" : "px-2.5 py-1.5 text-sm",
+              suffix && "pr-8"
+            )}
+            placeholder={placeholder}
+          />
+          {suffix && (
+            <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[9px] font-bold text-gray-300 uppercase pointer-events-none">
+              {suffix}
+            </span>
           )}
-        />
+        </div>
       )}
     </div>
   );
@@ -1584,13 +2089,13 @@ function InputField({
 function SelectField({ label, value, options, onChange }) {
   return (
     <div>
-      <label className="block text-xs font-medium text-gray-600 mb-1">
+      <label className="block text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-1">
         {label}
       </label>
       <select
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="w-full px-2.5 py-1.5 border border-gray-200 rounded-md text-sm text-gray-700 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 outline-none"
+        className="w-full px-2.5 py-1.5 border border-gray-200 rounded-lg text-sm text-gray-700 focus:ring-1 focus:ring-[#8bc4b1] focus:border-[#8bc4b1] outline-none bg-white"
       >
         {options.map((option) => (
           <option key={option.value} value={option.value}>
