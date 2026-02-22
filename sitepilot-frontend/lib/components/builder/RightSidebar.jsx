@@ -46,7 +46,7 @@ export default function RightSidebar() {
     updateColumnWidth,
     getLayoutJSON,
   } = store;
-  
+
   const siteId = store.siteId;
 
   // Global settings (colors/fonts)
@@ -67,10 +67,10 @@ export default function RightSidebar() {
           fetch(`/api/tenants/${data.site.tenantId}/brand-kit`)
             .then(res => res.ok ? res.json() : null)
             .then(bk => { if (bk?.brandKit) setBrandKit(bk.brandKit); })
-            .catch(() => {});
+            .catch(() => { });
         }
       })
-      .catch(() => {});
+      .catch(() => { });
   }, [siteId]);
 
   // Resolve effective global colors/fonts
@@ -89,7 +89,7 @@ export default function RightSidebar() {
     if (brandKit?.fonts) return brandKit.fonts;
     return { heading: 'Poppins', body: 'Inter' };
   }, [globalSettings, brandKit]);
-  
+
   const { pushState } = useHistoryStore();
   const { rightSidebarOpen } = useUIStore();
   const [activeTab, setActiveTab] = useState("properties");
@@ -224,7 +224,7 @@ export default function RightSidebar() {
 
   return (
     <div className={clsx(
-      "w-80 bg-white/80 backdrop-blur-md border-l border-gray-100 flex flex-col h-full min-h-0 builder-sidebar z-20 shadow-sm shrink-0 absolute right-0 md:relative bg-white",
+      "w-80 bg-white/80 backdrop-blur-md border-l border-gray-100 flex flex-col h-full min-h-0 builder-sidebar z-20 shadow-sm shrink-0 absolute right-0 md:relative",
       rightSidebarOpen ? "translate-x-0" : "translate-x-full md:translate-x-0",
       !rightSidebarOpen && "max-md:hidden"
     )}>
@@ -524,12 +524,6 @@ function PropertiesEditor({ component, onUpdate, siteId }) {
             value={props.ctaLink || ""}
             onChange={(value) => handleChange("ctaLink", value)}
           />
-<<<<<<< HEAD
-          <MediaField
-            label="Background Image"
-            value={props.backgroundImage || ""}
-            onChange={(value) => handleChange("backgroundImage", value)}
-=======
           <InputField
             label="Secondary CTA Text"
             value={props.secondaryCtaText || ""}
@@ -551,7 +545,6 @@ function PropertiesEditor({ component, onUpdate, siteId }) {
             value={props.rating || ""}
             onChange={(value) => handleChange("rating", value)}
             placeholder="e.g. 4.9"
->>>>>>> c2ad235602e4b8ceb7d8f0eb7437d94d01e6a0b2
           />
         </>
       )}
@@ -1573,7 +1566,7 @@ function StylesEditor({ styles, onUpdate, globalColors, globalFonts }) {
             onChange={(value) => handleChange("fontWeight", value || undefined)}
           />
         </div>
-      </CollapsibleSection>
+      </div>
 
       {/* ── Effects ─────────────────────────────────────────────── */}
       <CollapsibleSection
@@ -1598,7 +1591,7 @@ function StylesEditor({ styles, onUpdate, globalColors, globalFonts }) {
                   className={clsx(
                     "px-2 py-1.5 rounded-md text-[9px] font-bold uppercase tracking-wider transition-all border",
                     (styles.boxShadow || "none") === preset.value ||
-                    (!styles.boxShadow && preset.value === "none")
+                      (!styles.boxShadow && preset.value === "none")
                       ? "bg-[#0b1411] text-white border-[#0b1411]"
                       : "bg-white text-gray-500 border-gray-200 hover:border-gray-400"
                   )}
@@ -2121,46 +2114,46 @@ function MediaLibraryModal({ isOpen, onClose, onSelect, mediaList }) {
 
   const modalContent = (
     <div className="fixed inset-0 z-[1000] flex items-center justify-center bg-[#0b1411]/80 backdrop-blur-sm p-4 sm:p-8" onClick={onClose}>
-       <div 
-         className="bg-white rounded-[2.5rem] w-full max-w-4xl h-[80vh] flex flex-col shadow-2xl overflow-hidden relative"
-         onClick={e => e.stopPropagation()}
-       >
-          <div className="p-6 border-b border-gray-100 flex items-center justify-between bg-white relative z-10">
-            <div>
-               <h2 className="text-xl font-black text-[#1d2321] uppercase tracking-tighter">Media Library</h2>
-               <p className="text-xs text-gray-400 font-bold uppercase tracking-widest mt-1">Select an asset to insert</p>
+      <div
+        className="bg-white rounded-[2.5rem] w-full max-w-4xl h-[80vh] flex flex-col shadow-2xl overflow-hidden relative"
+        onClick={e => e.stopPropagation()}
+      >
+        <div className="p-6 border-b border-gray-100 flex items-center justify-between bg-white relative z-10">
+          <div>
+            <h2 className="text-xl font-black text-[#1d2321] uppercase tracking-tighter">Media Library</h2>
+            <p className="text-xs text-gray-400 font-bold uppercase tracking-widest mt-1">Select an asset to insert</p>
+          </div>
+          <button onClick={onClose} className="p-3 text-gray-400 hover:text-[#0b1411] hover:bg-[#f2f4f2] rounded-2xl transition-all shadow-sm">
+            <X size={20} />
+          </button>
+        </div>
+        <div className="flex-1 overflow-y-auto p-8 bg-[#fcfdfc]">
+          {mediaList.length === 0 ? (
+            <div className="py-20 text-center flex flex-col items-center justify-center h-full">
+              <div className="h-24 w-24 rounded-[2.5rem] bg-gray-50 border border-gray-100 flex items-center justify-center mb-8 shadow-inner">
+                <ImageIcon size={40} className="text-gray-300" />
+              </div>
+              <h3 className="text-2xl font-black text-[#0b1411] uppercase tracking-tight mb-2">No Media Found</h3>
+              <p className="text-sm font-medium text-gray-500 max-w-sm">Use the Media Library from your dashboard to upload files first.</p>
             </div>
-            <button onClick={onClose} className="p-3 text-gray-400 hover:text-[#0b1411] hover:bg-[#f2f4f2] rounded-2xl transition-all shadow-sm">
-               <X size={20} />
-            </button>
-          </div>
-          <div className="flex-1 overflow-y-auto p-8 bg-[#fcfdfc]">
-             {mediaList.length === 0 ? (
-                <div className="py-20 text-center flex flex-col items-center justify-center h-full">
-                   <div className="h-24 w-24 rounded-[2.5rem] bg-gray-50 border border-gray-100 flex items-center justify-center mb-8 shadow-inner">
-                     <ImageIcon size={40} className="text-gray-300" />
-                   </div>
-                   <h3 className="text-2xl font-black text-[#0b1411] uppercase tracking-tight mb-2">No Media Found</h3>
-                   <p className="text-sm font-medium text-gray-500 max-w-sm">Use the Media Library from your dashboard to upload files first.</p>
+          ) : (
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6">
+              {mediaList.map((item) => (
+                <div
+                  key={item.id}
+                  onClick={() => onSelect(item.url)}
+                  className="group relative aspect-square bg-gray-50 border border-gray-100 rounded-3xl overflow-hidden cursor-pointer shadow-sm hover:shadow-lg hover:-translate-y-1 hover:border-[#8bc4b1] hover:ring-2 hover:ring-[#8bc4b1]/30 transition-all duration-300"
+                >
+                  <img src={item.url} alt={item.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                  <div className="absolute inset-x-0 bottom-0 p-4 bg-gradient-to-t from-black/80 via-black/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                    <p className="text-white text-[10px] font-bold tracking-wider uppercase truncate">{item.name}</p>
+                  </div>
                 </div>
-             ) : (
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6">
-                   {mediaList.map((item) => (
-                      <div 
-                         key={item.id}
-                         onClick={() => onSelect(item.url)}
-                         className="group relative aspect-square bg-gray-50 border border-gray-100 rounded-3xl overflow-hidden cursor-pointer shadow-sm hover:shadow-lg hover:-translate-y-1 hover:border-[#8bc4b1] hover:ring-2 hover:ring-[#8bc4b1]/30 transition-all duration-300"
-                      >
-                         <img src={item.url} alt={item.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
-                         <div className="absolute inset-x-0 bottom-0 p-4 bg-gradient-to-t from-black/80 via-black/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                            <p className="text-white text-[10px] font-bold tracking-wider uppercase truncate">{item.name}</p>
-                         </div>
-                      </div>
-                   ))}
-                </div>
-             )}
-          </div>
-       </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
     </div>
   );
 
@@ -2179,25 +2172,25 @@ function MediaField({ label, value, onChange }) {
       fetch(`/api/tenants/${tenantId}/media`)
         .then(res => res.json())
         .then(data => {
-            if (data.media) {
-               // sort by newest
-               setMedia(data.media.sort((a,b) => new Date(b.createdAt) - new Date(a.createdAt)));
-            }
+          if (data.media) {
+            // sort by newest
+            setMedia(data.media.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)));
+          }
         })
         .catch(err => console.error("Failed to fetch media for MediaField", err));
     }
   }, [tenantId]);
 
   useEffect(() => {
-     if (value) {
-         if (media.some(m => m.url === value)) {
-             setMediaType('library');
-         } else {
-             setMediaType('url');
-         }
-     } else {
-         setMediaType('url');
-     }
+    if (value) {
+      if (media.some(m => m.url === value)) {
+        setMediaType('library');
+      } else {
+        setMediaType('url');
+      }
+    } else {
+      setMediaType('url');
+    }
   }, [value, media]);
 
   return (
@@ -2206,10 +2199,10 @@ function MediaField({ label, value, onChange }) {
         label={label + " Source"}
         value={mediaType}
         onChange={(type) => {
-            setMediaType(type);
-            if (type !== 'library') {
-               onChange('');
-            }
+          setMediaType(type);
+          if (type !== 'library') {
+            onChange('');
+          }
         }}
         options={[
           { label: 'Media Library', value: 'library' },
@@ -2218,33 +2211,33 @@ function MediaField({ label, value, onChange }) {
       />
       {mediaType === 'url' ? (
         <InputField
-             label="URL"
-             value={value || ''}
-             onChange={onChange}
+          label="URL"
+          value={value || ''}
+          onChange={onChange}
         />
       ) : (
         <div className="space-y-3">
-            <button
-               onClick={() => setModalOpen(true)}
-               className="w-full h-12 bg-white border border-gray-200 text-[#0b1411] text-xs font-bold uppercase tracking-widest rounded-xl hover:border-[#8bc4b1] hover:text-[#8bc4b1] transition-all shadow-sm flex items-center justify-center gap-2 hover:shadow-md active:scale-95"
-            >
-               <ImageIcon size={16} />
-               {(value && media.some(m => m.url === value)) ? "Change Media" : "Browse Library"}
-            </button>
-            {value && media.some(m => m.url === value) && (
-                <div className="mt-2 rounded-2xl overflow-hidden border border-gray-200 bg-white p-1.5 shadow-inner">
-                    <img src={value} alt="Preview" className="w-full h-auto max-h-40 object-contain rounded-xl" />
-                </div>
-            )}
-            <MediaLibraryModal 
-               isOpen={modalOpen} 
-               onClose={() => setModalOpen(false)} 
-               mediaList={media}
-               onSelect={(url) => {
-                  onChange(url);
-                  setModalOpen(false);
-               }}
-            />
+          <button
+            onClick={() => setModalOpen(true)}
+            className="w-full h-12 bg-white border border-gray-200 text-[#0b1411] text-xs font-bold uppercase tracking-widest rounded-xl hover:border-[#8bc4b1] hover:text-[#8bc4b1] transition-all shadow-sm flex items-center justify-center gap-2 hover:shadow-md active:scale-95"
+          >
+            <ImageIcon size={16} />
+            {(value && media.some(m => m.url === value)) ? "Change Media" : "Browse Library"}
+          </button>
+          {value && media.some(m => m.url === value) && (
+            <div className="mt-2 rounded-2xl overflow-hidden border border-gray-200 bg-white p-1.5 shadow-inner">
+              <img src={value} alt="Preview" className="w-full h-auto max-h-40 object-contain rounded-xl" />
+            </div>
+          )}
+          <MediaLibraryModal
+            isOpen={modalOpen}
+            onClose={() => setModalOpen(false)}
+            mediaList={media}
+            onSelect={(url) => {
+              onChange(url);
+              setModalOpen(false);
+            }}
+          />
         </div>
       )}
     </div>
@@ -2261,21 +2254,21 @@ function LinkField({ label, value, onChange }) {
       fetch(`/api/sites/${siteId}/pages`)
         .then(res => res.json())
         .then(data => {
-            if (data.pages) setPages(data.pages);
+          if (data.pages) setPages(data.pages);
         });
     }
   }, [siteId]);
 
   useEffect(() => {
-     if (value) {
-         if (pages.some(p => `/${p.slug}` === value || `/${p.slug.replace(/^\//,'')}/index.html` === value)) {
-             setLinkType('page');
-         } else {
-             setLinkType('custom');
-         }
-     } else {
-         setLinkType('custom');
-     }
+    if (value) {
+      if (pages.some(p => `/${p.slug}` === value || `/${p.slug.replace(/^\//, '')}/index.html` === value)) {
+        setLinkType('page');
+      } else {
+        setLinkType('custom');
+      }
+    } else {
+      setLinkType('custom');
+    }
   }, [value, pages]);
 
   return (
@@ -2284,12 +2277,12 @@ function LinkField({ label, value, onChange }) {
         label={label + " Type"}
         value={linkType}
         onChange={(type) => {
-            setLinkType(type);
-            if (type === 'page' && pages.length > 0) {
-               onChange(`/${pages[0].slug.replace(/^\//,'')}`);
-            } else {
-               onChange('');
-            }
+          setLinkType(type);
+          if (type === 'page' && pages.length > 0) {
+            onChange(`/${pages[0].slug.replace(/^\//, '')}`);
+          } else {
+            onChange('');
+          }
         }}
         options={[
           { label: 'Site Page', value: 'page' },
@@ -2298,16 +2291,16 @@ function LinkField({ label, value, onChange }) {
       />
       {linkType === 'custom' ? (
         <InputField
-             label="URL"
-             value={value || ''}
-             onChange={onChange}
+          label="URL"
+          value={value || ''}
+          onChange={onChange}
         />
       ) : (
         <SelectField
-             label="Select Page"
-             value={value || (pages.length ? `/${pages[0].slug.replace(/^\//,'')}` : '')}
-             onChange={onChange}
-             options={pages.map(p => ({ label: p.name, value: `/${p.slug.replace(/^\//,'')}` }))}
+          label="Select Page"
+          value={value || (pages.length ? `/${pages[0].slug.replace(/^\//, '')}` : '')}
+          onChange={onChange}
+          options={pages.map(p => ({ label: p.name, value: `/${p.slug.replace(/^\//, '')}` }))}
         />
       )}
     </div>
@@ -2478,8 +2471,8 @@ function GlobalColorField({ label, value, onChange, globalColors }) {
             !matchedGlobal && !showCustomPicker
               ? "border-gray-300"
               : showCustomPicker
-              ? "border-[#0b1411] ring-2 ring-[#0b1411]/20"
-              : "border-gray-200 hover:border-gray-400"
+                ? "border-[#0b1411] ring-2 ring-[#0b1411]/20"
+                : "border-gray-200 hover:border-gray-400"
           )}
           style={!matchedGlobal ? { backgroundColor: value } : { backgroundColor: '#f5f5f5' }}
           title="Custom color"
