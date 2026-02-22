@@ -28,6 +28,7 @@ import {
   Sparkles,
 } from "lucide-react";
 import useUIStore from "@/lib/stores/uiStore";
+import AIPageGenerator from "./AIPageGenerator";
 import useHistoryStore from "@/lib/stores/historyStore";
 import useBuilderStore, { clearSavedState } from "@/lib/stores/builderStore";
 import { clsx } from "clsx";
@@ -369,6 +370,17 @@ export default function Toolbar({ saving: autoSaving, lastSaved, saveError }) {
         {/* Right Side — Actions */}
         <div className="flex items-center gap-4">
           <AvatarStack />
+
+
+          {/* AI Generate Button */}
+          <button
+            onClick={() => setShowAIGenerator(true)}
+            className="flex items-center gap-2 px-4 py-2 text-[10px] font-bold uppercase tracking-widest text-purple-600 hover:text-purple-700 hover:bg-purple-50 rounded-full transition-colors border border-purple-200"
+            title="AI Generate Page"
+          >
+            <Sparkles size={14} />
+            <span className="hidden sm:inline">AI Generate</span>
+          </button>
 
           <button
             onClick={() => {

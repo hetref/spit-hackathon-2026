@@ -5,6 +5,7 @@ import {
     GetObjectCommand,
     ListObjectsV2Command,
     DeleteObjectsCommand,
+    DeleteObjectCommand,
 } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import {
@@ -102,6 +103,23 @@ export async function getPresignedMediaUrl(key, expiresIn = 3600) {
     });
 
     return await getSignedUrl(s3, cmd, { expiresIn });
+}
+
+/**
+ * Delete a single file from S3.
+ *
+ * @param {string} key - S3 Key to delete
+ */
+export async function deleteFile(key) {
+    if (!BUCKET) throw new Error("AWS_S3_BUCKET env var is not set");
+
+    const cmd = new DeleteObjectCommand({
+        Bucket: BUCKET,
+        Key: key,
+    });
+
+    await s3.send(cmd);
+    return true;
 }
 
 /**
