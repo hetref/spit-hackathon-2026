@@ -9,6 +9,27 @@ import prisma from '@/lib/prisma';
 import { generateFormHTML, generateFormJS, generateFormCSS } from '@/lib/form-renderer';
 
 // ============================================================================
+// TRACKER — served from the app's own public/ folder via <script src>
+// ============================================================================
+
+/**
+ * Returns a <script> tag that loads tracker.js from the SitePilot app server.
+ *
+ * The tracker.js file lives in public/tracker.js of this Next.js app, so it is
+ * served at {APP_URL}/tracker.js. By loading it via src we get:
+ *  - Single source of truth: update tracker.js once → every site picks it up
+ *  - No code stored on user's side
+ *  - Browser caching for repeat visits
+ *
+ * The tracker script itself derives the API base URL from its own src attribute,
+ * so no separate data-api attribute is needed.
+ */
+function buildTrackerTag(siteId, pageSlug, appBaseUrl) {
+  const base = appBaseUrl.replace(/\/+$/, '');
+  return `<script src="${base}/tracker.js" data-site="${escapeHtml(siteId)}" data-page="${escapeHtml(pageSlug)}" defer><\/script>`;
+}
+
+// ============================================================================
 // HELPERS
 // ============================================================================
 
@@ -336,10 +357,10 @@ const componentRenderers = {
     const images = props.images?.length
       ? props.images
       : [
-          { src: "https://via.placeholder.com/400", alt: "Gallery 1" },
-          { src: "https://via.placeholder.com/400", alt: "Gallery 2" },
-          { src: "https://via.placeholder.com/400", alt: "Gallery 3" },
-        ];
+        { src: "https://via.placeholder.com/400", alt: "Gallery 1" },
+        { src: "https://via.placeholder.com/400", alt: "Gallery 2" },
+        { src: "https://via.placeholder.com/400", alt: "Gallery 3" },
+      ];
     const wrapStyle = {
       "padding-top": px(styles?.paddingTop) || "20px",
       "padding-bottom": px(styles?.paddingBottom) || "20px",
@@ -370,11 +391,11 @@ const componentRenderers = {
     const links = props.links?.length
       ? props.links
       : [
-          { label: "Home", href: "#" },
-          { label: "About", href: "#" },
-          { label: "Services", href: "#" },
-          { label: "Contact", href: "#" },
-        ];
+        { label: "Home", href: "#" },
+        { label: "About", href: "#" },
+        { label: "Services", href: "#" },
+        { label: "Contact", href: "#" },
+      ];
     const linkHtml = links
       .map(
         (l) =>
@@ -420,10 +441,10 @@ const componentRenderers = {
       : props.features?.length
         ? props.features
         : [
-            { title: "Feature 1", description: "Description of feature 1" },
-            { title: "Feature 2", description: "Description of feature 2" },
-            { title: "Feature 3", description: "Description of feature 3" },
-          ];
+          { title: "Feature 1", description: "Description of feature 1" },
+          { title: "Feature 2", description: "Description of feature 2" },
+          { title: "Feature 3", description: "Description of feature 3" },
+        ];
     const color = styles?.textColor || "#1f2937";
     const descColor = styles?.textColor ? `${styles.textColor}cc` : "#4b5563";
     const wrapStyle = {
@@ -892,12 +913,12 @@ export async function convertPageToHtml(
         settings: form.settings,
         styling: form.styling || {},
       });
-      
+
       const formCSS = generateFormCSS({
         id: form.id,
         styling: form.styling || {},
       });
-      
+
       // Pass the API base URL (use NEXT_PUBLIC_API_URL for form submissions)
       // This allows using ngrok for published sites while keeping localhost for dev
       const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL || process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
@@ -926,6 +947,10 @@ export async function convertPageToHtml(
   const css = generateCSS(theme || {}) + additionalCSS;
   const js = generateJS() + additionalJS;
 
+  // Resolve the app base URL — this is where tracker.js is served from
+  const appBaseUrl = process.env.NEXT_PUBLIC_API_URL || process.env.NEXT_PUBLIC_APP_URL || 'https://app.sitepilot.devally.in';
+  const trackerTag = buildTrackerTag(page.siteId, page.slug, appBaseUrl);
+
   const html = `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -938,6 +963,7 @@ export async function convertPageToHtml(
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="${stylesHref}" />
+  ${trackerTag}
 </head>
 <body>
 ${bodyContent}
@@ -975,6 +1001,10 @@ export function convertJsonToHtml(layoutJSON, pageId) {
   const css = generateCSS(theme);
   const js = generateJS();
 
+  const appBaseUrl = process.env.NEXT_PUBLIC_API_URL || process.env.NEXT_PUBLIC_APP_URL || 'https://app.sitepilot.devally.in';
+  const pageSiteId = page.siteId || layoutJSON.site?.id || '';
+  const trackerTag = buildTrackerTag(pageSiteId, page.slug || '/', appBaseUrl);
+
   const html = `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -986,6 +1016,7 @@ export function convertJsonToHtml(layoutJSON, pageId) {
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="styles.css" />
+  ${trackerTag}
 </head>
 <body>
 ${bodyContent}

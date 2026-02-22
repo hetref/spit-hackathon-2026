@@ -10,6 +10,7 @@ import {
     buildDeploymentPrefix,
     buildSiteUrl,
 } from "@/lib/aws/s3-publish";
+import { getPlanGuard, PlanGuardError, planGuardErrorResponse } from "@/lib/plan-guard";
 
 export const runtime = "nodejs";
 
@@ -45,6 +46,9 @@ export async function POST(request, { params }) {
                 pages: {
                     where: { isPublished: true },
                 },
+                customDomains: {
+                    where: { attachedToCF: true },
+                },
                 tenant: { select: { id: true, ownerId: true } },
             },
         });
@@ -58,6 +62,29 @@ export async function POST(request, { params }) {
         });
         if (!membership) {
             return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+        }
+
+        // ── PLAN GUARD: Check subscription status & deployment limit ──────────
+        try {
+            const guard = await getPlanGuard(prisma, site.tenantId);
+            guard.requireActive();
+
+            // Count deployments in current billing period
+            const periodStart = (await prisma.subscription.findUnique({
+                where: { tenantId: site.tenantId },
+                select: { currentPeriodStart: true },
+            }))?.currentPeriodStart ?? new Date(new Date().getFullYear(), new Date().getMonth(), 1);
+
+            const deploymentsThisCycle = await prisma.deployment.count({
+                where: { siteId, createdAt: { gte: periodStart } },
+            });
+
+            guard.checkDeploymentLimit(deploymentsThisCycle);
+        } catch (err) {
+            if (err instanceof PlanGuardError) {
+                return NextResponse.json(planGuardErrorResponse(err), { status: err.httpStatus });
+            }
+            throw err;
         }
 
         // ── 2. Parse body ─────────────────────────────────────────────────────────
@@ -152,11 +179,16 @@ export async function POST(request, { params }) {
         });
 
         // ── 7. Update CloudFront KVS ──────────────────────────────────────────────
-        const kvsKey = site.slug;
+        const keysToUpdate = [site.slug];
+        if (site.customDomains?.length > 0) {
+            site.customDomains.forEach(cd => keysToUpdate.push(cd.domain));
+        }
 
         let kvsUpdated = false;
         try {
-            await updateKVS(kvsKey, s3Prefix);
+            for (const key of keysToUpdate) {
+                await updateKVS(key, s3Prefix);
+            }
             kvsUpdated = true;
         } catch (kvsError) {
             console.error("KVS update failed (non-fatal):", kvsError.message);
