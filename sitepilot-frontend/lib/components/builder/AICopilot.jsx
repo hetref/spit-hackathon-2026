@@ -329,12 +329,14 @@ export default function AICopilot({ tenantId, siteId }) {
     return (
       <button
         onClick={() => setIsOpen(true)}
-        className="fixed bottom-6 right-6 z-50 flex items-center gap-2 px-6 py-4 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-full shadow-2xl hover:shadow-purple-500/50 hover:scale-105 active:scale-95 transition-all font-bold text-sm uppercase tracking-wider group"
+        className="fixed bottom-6 right-6 z-[200] flex items-center justify-between gap-3 p-3 pr-6 bg-white border border-gray-100 text-[#0b1411] rounded-full shadow-2xl hover:border-[#8bc4b1] hover:-translate-y-1 active:scale-95 transition-all font-black text-[10px] uppercase tracking-[0.2em] group"
       >
-        <Sparkles className="w-5 h-5 animate-pulse" />
+        <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-[#d3ff4a] to-[#8bc4b1] flex flex-shrink-0 items-center justify-center shadow-inner">
+          <Sparkles className="w-4 h-4 text-[#0b1411]" />
+        </div>
         <span>AI Copilot</span>
         {suggestions.length > 0 && (
-          <span className="ml-1 px-2 py-0.5 bg-white text-purple-600 rounded-full text-xs font-black">
+          <span className="ml-1 px-2.5 py-1 bg-[#f2f4f2] text-[#0b1411] rounded-full text-[10px] font-black leading-none">
             {suggestions.length}
           </span>
         )}
@@ -344,21 +346,21 @@ export default function AICopilot({ tenantId, siteId }) {
 
   return (
     <div
-      className={`fixed bottom-6 right-6 z-50 bg-white rounded-2xl shadow-2xl border-2 border-purple-200 transition-all ${
+      className={`fixed bottom-6 right-6 z-[200] bg-white rounded-[2rem] shadow-2xl border border-gray-100 overflow-hidden transition-all ${
         isMinimized ? 'w-80' : 'w-96'
       }`}
     >
       {/* Header */}
-      <div className="flex items-center justify-between p-4 border-b border-gray-100 bg-gradient-to-r from-purple-50 to-pink-50">
-        <div className="flex items-center gap-2">
-          <div className="p-2 bg-gradient-to-r from-purple-600 to-pink-600 rounded-lg">
-            <Sparkles className="w-4 h-4 text-white" />
+      <div className="flex items-center justify-between p-5 border-b border-gray-100 bg-white">
+        <div className="flex items-center gap-3">
+          <div className="flex-shrink-0 w-10 h-10 rounded-[1rem] bg-[#f2f4f2] border border-gray-100 flex items-center justify-center">
+            <Sparkles className="w-5 h-5 text-[#0b1411]" />
           </div>
           <div>
-            <h3 className="font-black text-sm uppercase tracking-tight text-gray-900">
+            <h3 className="font-black text-[10px] uppercase tracking-widest text-[#1d2321]">
               AI Copilot
             </h3>
-            <p className="text-xs text-gray-500 font-medium">
+            <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest mt-0.5">
               {suggestions.length} suggestion{suggestions.length !== 1 ? 's' : ''}
             </p>
           </div>
@@ -366,71 +368,69 @@ export default function AICopilot({ tenantId, siteId }) {
         <div className="flex items-center gap-1">
           <button
             onClick={() => setIsMinimized(!isMinimized)}
-            className="p-2 hover:bg-white rounded-lg transition-colors"
+            className="p-3 text-gray-400 hover:text-[#0b1411] hover:bg-[#f2f4f2] rounded-2xl transition-all shadow-sm"
           >
             {isMinimized ? (
-              <ChevronUp className="w-4 h-4 text-gray-600" />
+              <ChevronUp className="w-4 h-4" />
             ) : (
-              <ChevronDown className="w-4 h-4 text-gray-600" />
+              <ChevronDown className="w-4 h-4" />
             )}
           </button>
           <button
             onClick={() => setIsOpen(false)}
-            className="p-2 hover:bg-white rounded-lg transition-colors"
+            className="p-3 text-gray-400 hover:text-[#0b1411] hover:bg-[#f2f4f2] rounded-2xl transition-all shadow-sm"
           >
-            <X className="w-4 h-4 text-gray-600" />
+            <X className="w-4 h-4" />
           </button>
         </div>
       </div>
 
       {/* Content */}
       {!isMinimized && (
-        <div className="max-h-[500px] overflow-y-auto">
+        <div className="max-h-[500px] overflow-y-auto bg-[#fcfdfc]">
           {analyzing ? (
-            <div className="p-8 text-center">
-              <Loader2 className="w-8 h-8 animate-spin text-purple-600 mx-auto mb-3" />
-              <p className="text-sm font-bold text-gray-700">Analyzing your page...</p>
-              <p className="text-xs text-gray-500 mt-1">This will take a few seconds</p>
+            <div className="p-10 text-center flex flex-col items-center justify-center">
+              <Loader2 className="w-8 h-8 animate-spin text-[#8bc4b1] mx-auto mb-4" />
+              <p className="text-[10px] font-black uppercase tracking-widest text-[#0b1411]">Analyzing your page...</p>
+              <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400 mt-2">This will take a few seconds</p>
             </div>
           ) : suggestions.length === 0 ? (
-            <div className="p-8 text-center">
-              <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <Zap className="w-8 h-8 text-green-600" />
+            <div className="p-12 text-center flex flex-col items-center justify-center">
+              <div className="w-16 h-16 bg-[#f2f4f2] border border-gray-100 rounded-[1.5rem] flex items-center justify-center mx-auto mb-6 shadow-inner">
+                <Zap className="w-8 h-8 text-[#d3ff4a]" />
               </div>
-              <h4 className="font-black text-gray-900 mb-2">Looking Great!</h4>
-              <p className="text-sm text-gray-600 mb-4">
+              <h4 className="font-black text-sm uppercase tracking-widest text-[#0b1411] mb-2">Looking Great!</h4>
+              <p className="text-[10px] font-bold uppercase tracking-widest text-gray-500 mb-6 leading-relaxed">
                 Your page is well-structured. Keep building!
               </p>
               <button
                 onClick={analyzePage}
                 disabled={analyzing}
-                className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors text-sm font-bold"
+                className="px-6 py-3 bg-[#1d2321] text-white rounded-full hover:bg-black transition-all text-[10px] font-black uppercase tracking-widest shadow-lg"
               >
                 Re-analyze Page
               </button>
             </div>
           ) : (
-            <div className="p-4 space-y-3">
+            <div className="p-5 space-y-4">
               {suggestions.map((suggestion) => (
                 <div
                   key={suggestion.id}
-                  className={`p-4 rounded-xl border-2 ${getPriorityColor(
-                    suggestion.priority
-                  )} transition-all hover:shadow-md`}
+                  className={`p-5 rounded-[1.5rem] bg-white border border-gray-100 transition-all hover:border-[#8bc4b1] hover:shadow-md group`}
                 >
-                  <div className="flex items-start gap-3">
-                    <div className="mt-0.5">{getPriorityIcon(suggestion.priority)}</div>
+                  <div className="flex items-start gap-4">
+                    <div className="mt-0.5 shrink-0 opacity-80">{getPriorityIcon(suggestion.priority)}</div>
                     <div className="flex-1 min-w-0">
-                      <h4 className="font-bold text-sm text-gray-900 mb-1">
+                      <h4 className="font-black text-[10px] uppercase tracking-[0.2em] text-[#0b1411] mb-2">
                         {suggestion.title}
                       </h4>
-                      <p className="text-xs text-gray-600 mb-3 leading-relaxed">
+                      <p className="text-[10px] text-gray-500 font-bold leading-relaxed mb-4">
                         {suggestion.description}
                       </p>
                       <button
                         onClick={() => applySuggestion(suggestion)}
                         disabled={loading}
-                        className="w-full px-3 py-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-lg hover:from-purple-700 hover:to-pink-700 transition-all text-xs font-bold uppercase tracking-wider disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="w-full px-4 py-3 bg-[#f2f4f2] text-[#0b1411] hover:text-[#0b1411] rounded-[1rem] hover:bg-[#d3ff4a] transition-all text-[10px] font-black uppercase tracking-widest disabled:opacity-50 hover:shadow-[0_0_20px_rgba(211,255,74,0.3)] shadow-sm border border-transparent hover:border-[#c0eb3f] group-hover:bg-[#fcfdfc]"
                       >
                         {loading ? (
                           <span className="flex items-center justify-center gap-2">
@@ -452,11 +452,11 @@ export default function AICopilot({ tenantId, siteId }) {
 
       {/* Footer */}
       {!isMinimized && !analyzing && suggestions.length > 0 && (
-        <div className="p-3 border-t border-gray-100 bg-gray-50">
+        <div className="p-4 border-t border-gray-100 bg-white">
           <button
             onClick={analyzePage}
             disabled={analyzing}
-            className="w-full px-3 py-2 text-xs font-bold text-purple-600 hover:bg-purple-50 rounded-lg transition-colors uppercase tracking-wider"
+            className="w-full px-4 py-3 bg-white border border-gray-100 text-[#0b1411] text-[10px] font-black uppercase tracking-[0.2em] rounded-[1rem] hover:border-[#8bc4b1] hover:text-[#8bc4b1] transition-all shadow-sm active:scale-[0.98]"
           >
             Re-analyze Page
           </button>

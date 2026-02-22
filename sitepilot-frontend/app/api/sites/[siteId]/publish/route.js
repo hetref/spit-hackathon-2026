@@ -111,7 +111,7 @@ export async function POST(request, { params }) {
                 site.theme,
                 page,
                 site.name,
-                { stylesHref: cssFilename, scriptSrc: jsFilename }
+                { stylesHref: cssFilename, scriptSrc: jsFilename, siteSlug: site.slug }
             );
 
             // If the user wants `about/index.html` structure instead of `about.html`:

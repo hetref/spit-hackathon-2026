@@ -81,38 +81,38 @@ export default function AIPageGenerator({ isOpen, onClose, onGenerate }) {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+    <div className="fixed inset-0 bg-[#0b1411]/80 backdrop-blur-sm flex items-center justify-center z-[9999] p-4">
+      <div className="bg-white rounded-[2.5rem] shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-hidden flex flex-col">
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-gray-200">
+        <div className="flex items-center justify-between px-8 py-6 border-b border-gray-100 bg-white">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-gradient-to-r from-purple-500 to-pink-500 rounded-lg flex items-center justify-center">
-              <Sparkles size={20} className="text-white" />
+            <div className="w-10 h-10 bg-[#f2f4f2] rounded-full flex items-center justify-center border border-gray-100">
+              <Sparkles size={16} className="text-[#0b1411]" />
             </div>
             <div>
-              <h2 className="text-xl font-bold text-gray-900">Generate Page with AI</h2>
-              <p className="text-sm text-gray-500">Describe your page and let AI build it</p>
+              <h2 className="text-xl font-black text-[#1d2321] uppercase tracking-tighter">Generate Page with AI</h2>
+              <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest mt-1">Describe your page and let AI build it</p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="p-2 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100"
+            className="p-3 text-gray-400 hover:text-[#0b1411] hover:bg-[#f2f4f2] rounded-2xl transition-all shadow-sm"
           >
             <X size={20} />
           </button>
         </div>
 
         {/* Content */}
-        <div className="p-6 space-y-6">
+        <div className="p-8 space-y-6 overflow-y-auto bg-[#fcfdfc] flex-1">
           {/* Business Type */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2">
               Business Type *
             </label>
             <select
               value={businessType}
               onChange={(e) => setBusinessType(e.target.value)}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+              className="w-full p-4 bg-white border border-gray-100 text-[#0b1411] font-bold text-xs rounded-[1.5rem] focus:outline-none focus:ring-2 focus:ring-[#0b1411]/20 hover:border-[#8bc4b1] transition-all shadow-sm"
             >
               <option value="">Select business type...</option>
               {businessTypes.map((type) => (
@@ -125,18 +125,18 @@ export default function AIPageGenerator({ isOpen, onClose, onGenerate }) {
 
           {/* Page Type */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2">
               Page Type
             </label>
-            <div className="grid grid-cols-3 gap-2">
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
               {pageTypes.map((type) => (
                 <button
                   key={type.value}
                   onClick={() => setPageType(type.value)}
-                  className={`px-4 py-2 rounded-lg border-2 transition-all ${
+                  className={`px-4 py-3 rounded-2xl border transition-all text-[10px] font-black uppercase tracking-widest shadow-sm ${
                     pageType === type.value
-                      ? 'border-purple-500 bg-purple-50 text-purple-700'
-                      : 'border-gray-200 hover:border-gray-300'
+                      ? 'border-[#1d2321] bg-[#fcfdfc] text-[#1d2321]'
+                      : 'bg-white border-gray-100 text-gray-400 hover:border-[#8bc4b1] hover:text-[#8bc4b1]'
                   }`}
                 >
                   {type.label}
@@ -147,7 +147,7 @@ export default function AIPageGenerator({ isOpen, onClose, onGenerate }) {
 
           {/* Description */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2">
               Page Description *
             </label>
             <textarea
@@ -155,17 +155,17 @@ export default function AIPageGenerator({ isOpen, onClose, onGenerate }) {
               onChange={(e) => setDescription(e.target.value)}
               placeholder="Example: Create a modern gym homepage with a hero section showcasing our facilities, a features section highlighting our services, pricing plans, and a contact form..."
               rows={6}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 resize-none"
+              className="w-full p-5 bg-white border border-gray-100 rounded-[1.5rem] font-mono text-xs text-[#0b1411] placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#0b1411]/20 hover:border-[#8bc4b1] transition-all shadow-sm resize-none"
             />
-            <p className="text-xs text-gray-500 mt-2">
+            <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest mt-2">
               Be specific about sections, content, and style you want
             </p>
           </div>
 
           {/* Examples */}
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-            <p className="text-sm font-medium text-blue-900 mb-2">💡 Example Prompts:</p>
-            <ul className="text-sm text-blue-800 space-y-1">
+          <div className="bg-[#f2f4f2]/50 border border-gray-100 rounded-[1.5rem] p-5 shadow-sm">
+            <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-3">💡 Example Prompts:</p>
+            <ul className="text-xs text-gray-600 font-medium space-y-2">
               <li>• "Modern restaurant homepage with hero, menu preview, chef's special, and reservation form"</li>
               <li>• "Fitness gym page with motivational hero, class schedule, trainer profiles, and membership pricing"</li>
               <li>• "Professional portfolio with project showcase, skills section, and contact information"</li>
@@ -174,26 +174,26 @@ export default function AIPageGenerator({ isOpen, onClose, onGenerate }) {
         </div>
 
         {/* Footer */}
-        <div className="flex items-center justify-between p-6 border-t border-gray-200 bg-gray-50">
+        <div className="flex items-center justify-end p-6 border-t border-gray-100 bg-white gap-4">
           <button
             onClick={onClose}
-            className="px-4 py-2 text-gray-700 hover:bg-gray-200 rounded-lg transition-colors"
+            className="px-6 py-3.5 rounded-full border border-gray-200 text-[#0b1411] font-bold uppercase tracking-widest text-[10px] hover:border-[#8bc4b1] hover:text-[#8bc4b1] transition-all"
           >
             Cancel
           </button>
           <button
             onClick={handleGenerate}
             disabled={loading || !description.trim() || !businessType}
-            className="flex items-center gap-2 px-6 py-2 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-lg hover:from-purple-600 hover:to-pink-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-md hover:shadow-lg"
+            className="px-8 py-3.5 rounded-full bg-[#d3ff4a] text-[#0b1411] font-black uppercase tracking-widest text-[10px] hover:bg-[#c0eb3f] transition-all shadow-[0_0_20px_rgba(211,255,74,0.3)] hover:scale-105 active:scale-95 flex items-center gap-2 disabled:opacity-50 disabled:pointer-events-none"
           >
             {loading ? (
               <>
-                <Loader2 size={18} className="animate-spin" />
+                <Loader2 size={16} className="animate-spin" />
                 <span>Generating...</span>
               </>
             ) : (
               <>
-                <Sparkles size={18} />
+                <Sparkles size={16} />
                 <span>Generate Page</span>
               </>
             )}
