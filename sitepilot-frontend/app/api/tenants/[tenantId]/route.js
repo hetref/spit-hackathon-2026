@@ -85,7 +85,16 @@ export async function PATCH(request, { params }) {
     }
 
     const { tenantId } = await params
-    const updates = await request.json()
+    const body = await request.json()
+
+    // Whitelist allowed fields
+    const allowedFields = ['name', 'description', 'logo', 'workspaceType', 'defaultMemberRole', 'onboardingComplete', 'brandKit']
+    const updates = {}
+    for (const key of allowedFields) {
+      if (body[key] !== undefined) {
+        updates[key] = body[key]
+      }
+    }
 
     // Check if user is owner
     const tenant = await prisma.tenant.findUnique({

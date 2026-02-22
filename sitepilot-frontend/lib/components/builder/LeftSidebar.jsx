@@ -35,11 +35,13 @@ import {
   GripVertical,
   Layers,
   Plus,
+  Palette,
 } from "lucide-react";
 import useBuilderStore from "@/lib/stores/builderStore";
 import useHistoryStore from "@/lib/stores/historyStore";
 import useUIStore from "@/lib/stores/uiStore";
 import TreePanel from "@/lib/components/builder/TreePanel";
+import TemplateSection from "@/lib/components/builder/TemplateSection";
 import { clsx } from "clsx";
 
 // ─── Layout presets ──────────────────────────────────────────────────────────
@@ -186,6 +188,18 @@ export default function LeftSidebar() {
           <Layers size={14} />
           Layers
         </button>
+        <button
+          onClick={() => setActiveLeftTab("templates")}
+          className={clsx(
+            "flex-1 flex items-center justify-center gap-1.5 py-2.5 text-xs font-medium transition-colors",
+            activeLeftTab === "templates"
+              ? "text-blue-400 border-b-2 border-blue-400 bg-slate-800/30"
+              : "text-slate-500 hover:text-slate-300 hover:bg-slate-800/20",
+          )}
+        >
+          <Palette size={13} />
+          Templates
+        </button>
       </div>
 
       {/* ── Elements Tab Content ──────────────────────────────── */}
@@ -299,6 +313,9 @@ export default function LeftSidebar() {
 
       {/* ── Layers Tab Content ────────────────────────────────── */}
       {activeLeftTab === "layers" && <TreePanel />}
+
+      {/* ── Templates Tab Content ────────────────────────────── */}
+      {activeLeftTab === "templates" && <TemplateSection />}
     </div>
   );
 }

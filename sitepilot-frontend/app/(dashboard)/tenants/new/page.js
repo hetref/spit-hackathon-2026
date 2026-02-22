@@ -125,7 +125,7 @@ export default function NewTenantPage() {
         setUploadingLogo(false)
       }
 
-      router.push(`/${tenantId}`)
+      router.push(`/${tenantId}/settings`)
     } catch (err) {
       setError(err.message)
     } finally {
