@@ -14,7 +14,7 @@ export async function POST(request) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const { name, slug, description, logo } = await request.json()
+    const { id, name, slug, description, logo } = await request.json()
 
     if (!name || !slug) {
       return NextResponse.json(
@@ -38,6 +38,7 @@ export async function POST(request) {
     // Create tenant
     const tenant = await prisma.tenant.create({
       data: {
+        id: id || undefined,
         name,
         slug,
         description: description || null,
