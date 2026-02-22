@@ -2,6 +2,7 @@ import { Playfair_Display } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/contexts/theme-context";
 import SmoothScroll from "@/components/smooth-scroll";
+import { Toaster } from "sonner";
 
 const playfairDisplay = Playfair_Display({
   variable: "--font-playfair",
@@ -26,6 +27,7 @@ export default function RootLayout({ children }) {
             {children}
           </SmoothScroll>
         </ThemeProvider>
+        <Toaster position="top-right" richColors closeButton />
       </body>
     </html>
   );

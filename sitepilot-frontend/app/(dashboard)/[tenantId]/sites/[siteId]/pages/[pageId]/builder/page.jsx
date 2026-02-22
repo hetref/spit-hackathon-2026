@@ -7,6 +7,7 @@ import LeftSidebar from "@/lib/components/builder/LeftSidebar";
 import RightSidebar from "@/lib/components/builder/RightSidebar";
 import CanvasArea from "@/lib/components/builder/CanvasArea";
 import CollaborativeCanvas from "@/components/builder/CollaborativeCanvas";
+import AICopilot from "@/lib/components/builder/AICopilot";
 import useBuilderStore from "@/lib/stores/builderStore";
 import useHistoryStore from "@/lib/stores/historyStore";
 import { useAutosave } from "@/lib/hooks/useAutosave";
@@ -131,6 +132,9 @@ export default function PageBuilderPage() {
           <CanvasArea />
           <RightSidebar />
         </div>
+        
+        {/* AI Copilot - Floating Assistant */}
+        <AICopilot tenantId={tenantId} siteId={siteId} />
       </div>
     </CollaborativeCanvas>
   );

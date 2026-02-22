@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useSession } from "@/lib/auth-client";
+import CustomDomainManager from "@/components/CustomDomainManager";
 import {
   Globe,
   ExternalLink,
@@ -346,9 +347,6 @@ export default function SiteDetailPage() {
   const [deployments, setDeployments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [showAddDomain, setShowAddDomain] = useState(false);
-  const [domainInput, setDomainInput] = useState('');
-  const [domains, setDomains] = useState([]);
   const [showPublishModal, setShowPublishModal] = useState(false);
 
   const siteUrl = site ? `https://${site.slug}.sitepilot.devally.in` : null;
@@ -366,10 +364,6 @@ export default function SiteDetailPage() {
       if (!siteRes.ok) throw new Error((await siteRes.json()).error || "Failed to load site");
       const { site: siteData } = await siteRes.json();
       setSite(siteData);
-
-      if (siteData.domain) {
-        setDomains([siteData.domain]);
-      }
 
       if (depRes.ok) {
         const { deployments: deps } = await depRes.json();
@@ -421,26 +415,6 @@ export default function SiteDetailPage() {
     );
   };
 
-  // ── Domain management ─────────────────────────────────────────────────────
-  const handleAddDomain = () => {
-    if (domainInput.trim() && !domains.includes(domainInput.trim())) {
-      setDomains([...domains, domainInput.trim()]);
-      setDomainInput('');
-      setShowAddDomain(false);
-    }
-  };
-
-  const handleRemoveDomain = (domain) => {
-    setDomains(domains.filter(d => d !== domain));
-  };
-
-  // Initialize domains from site data
-  useEffect(() => {
-    if (site?.domain) {
-      setDomains([site.domain]);
-    }
-  }, [site]);
-
   const handlePublishSuccess = (result) => {
     setShowPublishModal(false);
     fetchData(); // reload deployments list and site state
@@ -480,8 +454,8 @@ export default function SiteDetailPage() {
 
   const activeDeployment = deployments.find((d) => d.isActive);
 
-  // Fallback to determine visually if it's "published" 
-  const isPublished = Boolean(site.domain || domains.length > 0)
+  // Check if site has deployments (published)
+  const isPublished = Boolean(deployments.length > 0);
 
   return (
     <div className="min-h-screen bg-[#fcfdfc] font-sans text-gray-900 pb-20 relative">
@@ -542,7 +516,7 @@ export default function SiteDetailPage() {
               {isPublished ? (
                 <div className="flex-1 bg-[#f2f4f2] flex items-center justify-center overflow-hidden relative">
                   <iframe
-                    src={`https://${domains[0] || site.domain}`}
+                    src={siteUrl}
                     className="w-[200%] h-[200%] border-0 pointer-events-none origin-top-left scale-[0.5]"
                     title="Site Live Preview"
                   />
@@ -562,12 +536,12 @@ export default function SiteDetailPage() {
                 <div className="min-w-0 pr-3">
                   <h3 className="text-xs font-black uppercase tracking-widest text-[#0b1411] truncate">Live View</h3>
                   <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400 truncate mt-1">
-                    {isPublished ? (domains[0] || site.domain) : 'No connected domain'}
+                    {isPublished ? `${site.slug}.sitepilot.devally.in` : 'No deployment'}
                   </p>
                 </div>
                 {isPublished && (
                   <a
-                    href={`https://${domains[0] || site.domain}`}
+                    href={siteUrl}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="h-10 w-10 flex items-center justify-center bg-[#f2f4f2] text-[#0b1411] rounded-2xl hover:bg-[#d3ff4a] transition-colors flex-shrink-0"
@@ -633,99 +607,8 @@ export default function SiteDetailPage() {
               </div>
             </div>
 
-            {/* Domains Section */}
-            <div>
-              <div className="flex items-center justify-between mb-6">
-                <h2 className="text-sm font-black text-gray-400 tracking-[0.15em] uppercase">Connected Domains</h2>
-                {!showAddDomain && (
-                  <button
-                    onClick={() => setShowAddDomain(true)}
-                    className="inline-flex items-center justify-center px-6 h-10 text-xs font-black uppercase tracking-widest text-[#d3ff4a] bg-[#0b1411] rounded-full hover:bg-[#1d2321] transition-all hover:scale-105 active:scale-95 shadow-lg focus:outline-none"
-                  >
-                    <Plus size={16} className="mr-1.5" />
-                    Add Domain
-                  </button>
-                )}
-              </div>
-
-              <div className="bg-white border border-gray-100 rounded-[2rem] shadow-sm overflow-hidden relative">
-                {/* Add Domain Expandable Form */}
-                {showAddDomain && (
-                  <div className="p-8 bg-[#fcfdfc] border-b border-gray-100">
-                    <label className="block text-xs font-black uppercase tracking-widest text-[#0b1411] mb-4">Configure new domain</label>
-                    <div className="flex flex-col sm:flex-row gap-4">
-                      <div className="relative flex-1">
-                        <div className="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none">
-                          <LinkIcon className="h-5 w-5 text-gray-400" />
-                        </div>
-                        <input
-                          type="text"
-                          placeholder="subdomain.example.com"
-                          value={domainInput}
-                          onChange={(e) => setDomainInput(e.target.value)}
-                          onKeyPress={(e) => e.key === 'Enter' && handleAddDomain()}
-                          className="pl-12 w-full px-5 py-3.5 bg-[#f2f4f2] border-none rounded-2xl text-[#0b1411] font-bold focus:outline-none focus:ring-2 focus:ring-[#0b1411]/20 transition-all text-sm shadow-inner"
-                        />
-                      </div>
-                      <div className="flex gap-3 shrink-0">
-                        <button
-                          onClick={handleAddDomain}
-                          className="px-8 py-3.5 bg-[#d3ff4a] text-[#0b1411] text-xs font-black uppercase tracking-widest rounded-full hover:bg-[#c0eb3f] transition-all shadow-sm hover:scale-105 active:scale-95 min-w-[100px]"
-                        >
-                          Add
-                        </button>
-                        <button
-                          onClick={() => {
-                            setShowAddDomain(false)
-                            setDomainInput('')
-                          }}
-                          className="px-6 py-3.5 bg-transparent border-none text-gray-500 text-xs font-bold uppercase tracking-widest rounded-full hover:bg-gray-100 hover:text-[#0b1411] transition-all"
-                        >
-                          Cancel
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {/* Domains List */}
-                <ul className="divide-y divide-gray-100">
-                  {domains.length === 0 ? (
-                    <li className="py-24 px-8 text-center bg-white flex flex-col items-center justify-center">
-                      <div className="h-16 w-16 bg-[#f2f4f2] border border-gray-100 rounded-[2rem] flex items-center justify-center mb-6">
-                        <Monitor size={24} className="text-gray-400" />
-                      </div>
-                      <p className="text-xl font-black text-[#1d2321] tracking-tight mb-2">No domains connected</p>
-                      <p className="text-sm font-medium text-gray-500 max-w-sm">Add a custom domain to publish your site live.</p>
-                    </li>
-                  ) : (
-                    domains.map((domain, idx) => (
-                      <li key={idx} className="p-6 lg:px-8 flex flex-col sm:flex-row sm:items-center justify-between gap-6 hover:bg-gray-50/50 transition-colors">
-                        <div className="flex items-center gap-5">
-                          <div className="h-12 w-12 bg-[#f2f4f2] rounded-2xl flex items-center justify-center text-[#0b1411] shadow-sm">
-                            <Globe size={20} />
-                          </div>
-                          <div>
-                            <p className="text-[1.1rem] font-black text-[#1d2321] tracking-tight hover:text-[#8bc4b1] transition-colors">{domain}</p>
-                            <div className="flex items-center gap-2 mt-1">
-                              <span className={`inline-flex items-center px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest ${idx === 0 ? 'bg-indigo-50 text-indigo-700 border border-indigo-100' : 'bg-[#f2f4f2] text-gray-600 border border-gray-100'}`}>
-                                {idx === 0 ? 'Primary' : 'Alias'}
-                              </span>
-                            </div>
-                          </div>
-                        </div>
-                        <button
-                          onClick={() => handleRemoveDomain(domain)}
-                          className="text-xs text-red-600 font-bold uppercase tracking-widest hover:text-red-800 transition-colors py-2 px-4 rounded-full hover:bg-red-50 self-start sm:self-auto"
-                        >
-                          Remove
-                        </button>
-                      </li>
-                    ))
-                  )}
-                </ul>
-              </div>
-            </div>
+            {/* Custom Domains Section */}
+            <CustomDomainManager siteId={params.siteId} siteSlug={site.slug} />
 
           </div>
         </div>

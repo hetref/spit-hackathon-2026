@@ -1,8 +1,8 @@
 'use client'
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { useSession } from '@/lib/auth-client'
-import { ArrowLeft, Briefcase, Globe, Type, Image as ImageIcon, Loader2 } from 'lucide-react'
+import { ArrowLeft, Briefcase, Type, Upload, X, Loader2, ImageIcon } from 'lucide-react'
 
 export default function NewTenantPage() {
   const router = useRouter()
@@ -15,6 +15,10 @@ export default function NewTenantPage() {
   })
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+  const [logoFile, setLogoFile] = useState(null)
+  const [logoPreview, setLogoPreview] = useState('')
+  const [uploadingLogo, setUploadingLogo] = useState(false)
+  const fileInputRef = useRef(null)
 
   const generateSlug = (name) => {  
     return name
@@ -32,29 +36,101 @@ export default function NewTenantPage() {
     })
   }
 
+  const handleLogoSelect = async (e) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    // Validate file type
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/svg+xml']
+    if (!allowedTypes.includes(file.type)) {
+      setError('Please select a valid image file (JPEG, PNG, GIF, WebP, or SVG)')
+      return
+    }
+
+    // Validate file size (max 5MB)
+    const maxSize = 5 * 1024 * 1024
+    if (file.size > maxSize) {
+      setError('Image must be less than 5MB')
+      return
+    }
+
+    setError('')
+    setLogoFile(file)
+
+    // Create preview
+    const reader = new FileReader()
+    reader.onloadend = () => {
+      setLogoPreview(reader.result)
+    }
+    reader.readAsDataURL(file)
+  }
+
+
+  const handleRemoveLogo = () => {
+    setLogoFile(null)
+    setLogoPreview('')
+    setFormData(prev => ({ ...prev, logo: '' }))
+    if (fileInputRef.current) {
+      fileInputRef.current.value = ''
+    }
+  }
+
   const handleSubmit = async (e) => {
     e.preventDefault()
     setError('')
     setLoading(true)
 
     try {
-      const response = await fetch('/api/tenants', {
+      const tenantId = crypto.randomUUID()
+
+      // 1. Create the tenant first
+      const createResponse = await fetch('/api/tenants', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData)
+        body: JSON.stringify({
+          id: tenantId,
+          name: formData.name,
+          slug: formData.slug,
+          description: formData.description,
+          logo: null
+        })
       })
 
-      const data = await response.json()
+      const data = await createResponse.json()
 
-      if (!response.ok) {
+      if (!createResponse.ok) {
         throw new Error(data.error || 'Failed to create tenant')
       }
 
-      router.push(`/${data.tenant.id}`)
+      // 2. Upload logo and update tenant if logo exists
+      if (logoFile) {
+        setUploadingLogo(true)
+        const uploadData = new FormData()
+        uploadData.append('file', logoFile)
+
+        const uploadResponse = await fetch('/api/upload/tenant-logo', {
+          method: 'POST',
+          body: uploadData
+        })
+
+        const uploadResult = await uploadResponse.json()
+
+        if (uploadResponse.ok && uploadResult.s3Key) {
+          await fetch(`/api/tenants/${tenantId}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ logo: uploadResult.s3Key })
+          })
+        }
+        setUploadingLogo(false)
+      }
+
+      router.push(`/${tenantId}`)
     } catch (err) {
       setError(err.message)
     } finally {
       setLoading(false)
+      setUploadingLogo(false)
     }
   }
 
@@ -134,70 +210,106 @@ export default function NewTenantPage() {
                 </div>
               </div>
 
-              {/* Slug Field */}
-              <div>
-                <label htmlFor="slug" className="block text-sm font-medium text-gray-900 mb-2">
-                  Workspace URL
-                </label>
-                <div className="flex rounded-xl shadow-sm border border-gray-300 overflow-hidden focus-within:ring-2 focus-within:ring-gray-900/10 focus-within:border-gray-900 focus-within:z-10 transition-colors">
-                  <span className="inline-flex items-center px-4 bg-gray-50 border-r border-gray-300 text-gray-500 text-base select-none">
-                    sitepilot.com/
-                  </span>
-                  <input
-                    type="text"
-                    id="slug"
-                    required
-                    value={formData.slug}
-                    onChange={(e) => setFormData({ ...formData, slug: e.target.value })}
-                    placeholder="acme-inc"
-                    pattern="[a-z0-9-]+"
-                    className="flex-1 block w-full px-4 py-3 bg-white text-gray-900 placeholder-gray-400 focus:outline-none text-base"
-                  />
-                </div>
-                <p className="mt-2.5 text-sm text-gray-500 flex items-center">
-                  <Globe className="h-4 w-4 mr-1.5" />
-                  Lowercase letters, numbers, and hyphens only.
-                </p>
-              </div>
-
               {/* Description Field */}
-                <div>
-                  <label htmlFor="description" className="block text-sm font-medium text-gray-900 mb-2">
-                    Description <span className="text-gray-400 font-normal">(optional)</span>
-                  </label>
+              <div>
+                <label htmlFor="description" className="block text-sm font-medium text-gray-900 mb-2">
+                  Description <span className="text-gray-400 font-normal">(optional)</span>
+                </label>
                 <div className="relative">
                   <div className="absolute top-3.5 left-3.5 flex items-start pointer-events-none">
                     <Type className="h-5 w-5 text-gray-400" />
                   </div>
-                    <textarea
-                      id="description"
-                      value={formData.description}
-                      onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                      placeholder="Brief description of your collaborative workspace"
-                      rows={3}
-                      className="block w-full pl-11 pr-4 py-3 bg-white border border-gray-300 rounded-xl text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-900/10 focus:border-gray-900 transition-colors text-base resize-y"
-                    />
-                </div>
-                </div>
-
-              {/* Logo Field */}
-              <div>
-                <label htmlFor="logo" className="block text-sm font-medium text-gray-900 mb-2">
-                  Logo URL <span className="text-gray-400 font-normal">(optional)</span>
-                </label>
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
-                    <ImageIcon className="h-5 w-5 text-gray-400" />
-                  </div>
-                  <input
-                    type="url"
-                    id="logo"
-                    value={formData.logo}
-                    onChange={(e) => setFormData({ ...formData, logo: e.target.value })}
-                    placeholder="https://example.com/logo.png"
-                    className="block w-full pl-11 pr-4 py-3 bg-white border border-gray-300 rounded-xl text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-900/10 focus:border-gray-900 transition-colors text-base"
+                  <textarea
+                    id="description"
+                    value={formData.description}
+                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                    placeholder="Brief description of your collaborative workspace"
+                    rows={3}
+                    className="block w-full pl-11 pr-4 py-3 bg-white border border-gray-300 rounded-xl text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-900/10 focus:border-gray-900 transition-colors text-base resize-y"
                   />
                 </div>
+              </div>
+
+              {/* Logo Upload Field */}
+              <div>
+                <label className="block text-sm font-medium text-gray-900 mb-2">
+                  Workspace Logo <span className="text-gray-400 font-normal">(optional)</span>
+                </label>
+
+                {!logoPreview ? (
+                  <div className="relative">
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept="image/*"
+                      onChange={handleLogoSelect}
+                      className="hidden"
+                      id="logo-upload"
+                    />
+                    <label
+                      htmlFor="logo-upload"
+                      className="flex flex-col items-center justify-center w-full p-8 border-2 border-gray-300 border-dashed rounded-xl cursor-pointer bg-gray-50 hover:bg-gray-100 transition-colors"
+                    >
+                      <div className="flex flex-col items-center justify-center">
+                        {uploadingLogo ? (
+                          <>
+                            <Loader2 className="h-10 w-10 text-gray-400 animate-spin mb-3" />
+                            <p className="text-sm text-gray-500">Uploading...</p>
+                          </>
+                        ) : (
+                          <>
+                            <Upload className="h-10 w-10 text-gray-400 mb-3" />
+                            <p className="mb-2 text-sm text-gray-600 font-medium">
+                              Click to upload logo
+                            </p>
+                            <p className="text-xs text-gray-500">
+                              PNG, JPG, GIF, WebP or SVG (Max 5MB)
+                            </p>
+                          </>
+                        )}
+                      </div>
+                    </label>
+                  </div>
+                ) : (
+                  <div className="relative border-2 border-gray-300 rounded-xl p-4 bg-white">
+                    <div className="flex items-center gap-4">
+                      <div className="flex-shrink-0 w-20 h-20 rounded-lg overflow-hidden bg-gray-100 border border-gray-200 flex items-center justify-center">
+                        <img
+                          src={logoPreview}
+                          alt="Logo preview"
+                          className="max-w-full max-h-full object-contain"
+                        />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-gray-900 truncate">
+                          {logoFile?.name}
+                        </p>
+                        <p className="text-xs text-gray-500 mt-1">
+                          {logoFile?.size ? `${(logoFile.size / 1024).toFixed(1)} KB` : ''}
+                        </p>
+                        {uploadingLogo && (
+                          <p className="text-xs text-blue-600 mt-1 flex items-center">
+                            <Loader2 className="h-3 w-3 animate-spin mr-1" />
+                            Uploading...
+                          </p>
+                        )}
+                        {!uploadingLogo && formData.logo && (
+                          <p className="text-xs text-green-600 mt-1">
+                            ✓ Uploaded successfully
+                          </p>
+                        )}
+                      </div>
+                      <button
+                        type="button"
+                        onClick={handleRemoveLogo}
+                        disabled={uploadingLogo}
+                        className="flex-shrink-0 p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        <X className="h-5 w-5" />
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
 
             </div>
@@ -213,7 +325,7 @@ export default function NewTenantPage() {
               </button>
               <button
                 type="submit"
-                disabled={loading}
+                disabled={loading || uploadingLogo}
                 className="inline-flex items-center justify-center px-6 py-3 text-sm font-medium text-white bg-gray-900 border border-transparent rounded-xl hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-900 disabled:opacity-50 disabled:cursor-not-allowed transition-colors min-w-[160px]"
               >
                 {loading ? (

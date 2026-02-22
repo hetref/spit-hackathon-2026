@@ -5,11 +5,13 @@ import {
     GetObjectCommand,
     ListObjectsV2Command,
     DeleteObjectsCommand,
+    DeleteObjectCommand,
 } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import {
     CloudFrontKeyValueStoreClient,
     PutKeyCommand,
+    DeleteKeyCommand,
     DescribeKeyValueStoreCommand,
 } from "@aws-sdk/client-cloudfront-keyvaluestore";
 
@@ -101,6 +103,23 @@ export async function getPresignedMediaUrl(key, expiresIn = 3600) {
     });
 
     return await getSignedUrl(s3, cmd, { expiresIn });
+}
+
+/**
+ * Delete a single file from S3.
+ *
+ * @param {string} key - S3 Key to delete
+ */
+export async function deleteFile(key) {
+    if (!BUCKET) throw new Error("AWS_S3_BUCKET env var is not set");
+
+    const cmd = new DeleteObjectCommand({
+        Bucket: BUCKET,
+        Key: key,
+    });
+
+    await s3.send(cmd);
+    return true;
 }
 
 /**
@@ -213,6 +232,69 @@ export async function updateKVS(siteSlug, s3Prefix) {
         console.error("[KVS] Failed to update Key-Value Store:", {
             slug: siteSlug,
             prefix: s3Prefix,
+            error: error.message,
+            code: error.name,
+            stack: error.stack,
+        });
+        throw error;
+    }
+}
+
+/**
+ * Delete a key from the CloudFront Key-Value Store.
+ * Used when removing a custom domain or deleting a tenant.
+ * 
+ * @param {string} key - The key to delete (domain or site slug)
+ * @returns {Promise<object>} Deletion result
+ */
+export async function deleteFromKVS(key) {
+    if (!KVS_ARN) {
+        console.warn("[KVS] CLOUDFRONT_KVS_ARN not set — skipping KVS deletion");
+        return { skipped: true };
+    }
+
+    console.log(`[KVS] Deleting key from Key-Value Store: "${key}"`);
+    console.log(`[KVS] Using KVS ARN: ${KVS_ARN}`);
+
+    try {
+        // Step 1: Get the current ETag of the KV store (required for optimistic locking)
+        console.log("[KVS] Step 1: Fetching current ETag for optimistic locking");
+        const describeCmd = new DescribeKeyValueStoreCommand({ KvsARN: KVS_ARN });
+        const describeResult = await kvsClient.send(describeCmd);
+        const etag = describeResult.ETag;
+        console.log(`[KVS] Current ETag: ${etag}`);
+
+        // Step 2: Delete the key
+        console.log("[KVS] Step 2: Deleting key");
+        const deleteCmd = new DeleteKeyCommand({
+            KvsARN: KVS_ARN,
+            Key: key,
+            IfMatch: etag, // Optimistic locking
+        });
+
+        const deleteResult = await kvsClient.send(deleteCmd);
+
+        console.log(`[KVS] ✓ Successfully deleted key from KVS`);
+        console.log(`[KVS] New ETag: ${deleteResult.ETag}`);
+
+        return {
+            deleted: true,
+            key,
+            etag: deleteResult.ETag,
+        };
+    } catch (error) {
+        // If key doesn't exist, that's fine - it's already gone
+        if (error.name === "ResourceNotFoundException" || error.message.includes("not found")) {
+            console.log(`[KVS] ℹ️  Key "${key}" not found in KVS (already deleted or never existed)`);
+            return {
+                deleted: true,
+                key,
+                alreadyDeleted: true,
+            };
+        }
+
+        console.error("[KVS] Failed to delete from Key-Value Store:", {
+            key,
             error: error.message,
             code: error.name,
             stack: error.stack,
