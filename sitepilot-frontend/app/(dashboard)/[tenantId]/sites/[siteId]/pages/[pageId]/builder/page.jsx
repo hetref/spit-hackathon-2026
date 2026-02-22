@@ -7,6 +7,7 @@ import LeftSidebar from "@/lib/components/builder/LeftSidebar";
 import RightSidebar from "@/lib/components/builder/RightSidebar";
 import CanvasArea from "@/lib/components/builder/CanvasArea";
 import CollaborativeCanvas from "@/components/builder/CollaborativeCanvas";
+import AIChatCopilot from "@/lib/components/builder/AIChatCopilot";
 import AICopilot from "@/lib/components/builder/AICopilot";
 import useBuilderStore from "@/lib/stores/builderStore";
 import useHistoryStore from "@/lib/stores/historyStore";
@@ -124,8 +125,11 @@ export default function PageBuilderPage() {
           <RightSidebar />
         </div>
         
-        {/* AI Copilot - Floating Assistant */}
+        {/* AI Copilot - Smart Suggestions */}
         <AICopilot tenantId={tenantId} siteId={siteId} />
+        
+        {/* AI Chat Copilot - Conversational Assistant */}
+        <AIChatCopilot tenantId={tenantId} siteId={siteId} />
       </div>
     </CollaborativeCanvas>
   );

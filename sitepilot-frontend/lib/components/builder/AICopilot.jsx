@@ -9,22 +9,22 @@ export default function AICopilot({ tenantId, siteId }) {
   const [isOpen, setIsOpen] = useState(false);
   const [isMinimized, setIsMinimized] = useState(false);
   const [suggestions, setSuggestions] = useState([]);
-  const [loading, setLoading] = useState(false);
   const [analyzing, setAnalyzing] = useState(false);
   const [lastAnalyzed, setLastAnalyzed] = useState(null);
+  const [applyingId, setApplyingId] = useState(null);
 
-  const { layoutJSON, addContainer } = useBuilderStore();
+  const { layoutJSON, getPageLayout, currentPageId } = useBuilderStore();
 
-  // Auto-analyze when page loads or changes significantly
+  // Auto-analyze when page loads
   useEffect(() => {
     const timer = setTimeout(() => {
       if (layoutJSON && !lastAnalyzed) {
         analyzePage();
       }
-    }, 2000); // Wait 2 seconds after page load
+    }, 2000);
 
     return () => clearTimeout(timer);
-  }, [layoutJSON]);
+  }, [layoutJSON, lastAnalyzed]);
 
   async function analyzePage() {
     if (analyzing) return;
@@ -45,47 +45,70 @@ export default function AICopilot({ tenantId, siteId }) {
         console.warn('Could not fetch brand kit:', e);
       }
 
+      // Fetch site info
+      let siteInfo = null;
+      try {
+        const siteRes = await fetch(`/api/sites/${siteId}`);
+        if (siteRes.ok) {
+          const siteData = await siteRes.json();
+          siteInfo = {
+            name: siteData.site?.name || 'Your Site',
+            businessType: brandKit?.businessType || 'business',
+          };
+        }
+      } catch (e) {
+        console.warn('Could not fetch site info:', e);
+      }
+
       const res = await fetch('/api/ai/analyze-page', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ layoutJSON, brandKit }),
+        body: JSON.stringify({ 
+          layoutJSON, 
+          brandKit,
+          siteInfo 
+        }),
       });
 
-      if (!res.ok) throw new Error('Analysis failed');
+      if (!res.ok) {
+        throw new Error(`Analysis failed: ${res.statusText}`);
+      }
 
       const data = await res.json();
       
-      // Filter out suggestions with invalid component types
-      const validComponentTypes = ['Hero', 'CTA', 'Features', 'FormEmbed', 'Text', 'Heading', 'Image', 'Button', 'Gallery', 'Video', 'Map', 'Navbar', 'Footer'];
+      // Filter valid suggestions
+      const validComponentTypes = ['Hero', 'CTA', 'Features', 'FormEmbed', 'Text', 'Heading', 'Image', 'Button', 'Gallery', 'Video', 'Navbar', 'Footer'];
       const validSuggestions = (data.suggestions || []).filter(s => {
         if (s.action?.type === 'add_component') {
           return validComponentTypes.includes(s.action.componentType);
         }
-        return true; // Keep non-add_component suggestions
+        return true;
       });
       
       setSuggestions(validSuggestions);
       setLastAnalyzed(new Date());
     } catch (error) {
       console.error('Error analyzing page:', error);
+      alert('Failed to analyze page. Please try again.');
     } finally {
       setAnalyzing(false);
     }
   }
 
   async function applySuggestion(suggestion) {
+    if (applyingId) return;
+
     try {
-      setLoading(true);
+      setApplyingId(suggestion.id);
 
       const action = suggestion.action;
 
       if (action.type === 'add_component') {
-        // Generate component data based on type
         const componentData = generateComponentData(action.componentType);
+        const currentLayout = getPageLayout() || [];
 
-        // Create new container with the component
         const newContainer = {
-          id: `container-${nanoid()}`,
+          id: nanoid(),
           type: 'container',
           settings: {
             direction: 'horizontal',
@@ -95,53 +118,50 @@ export default function AICopilot({ tenantId, siteId }) {
             verticalAlign: 'stretch',
           },
           styles: {
-            backgroundColor: '#ffffff',
             paddingTop: 60,
             paddingBottom: 60,
+            paddingLeft: 0,
+            paddingRight: 0,
+            marginTop: 0,
+            marginBottom: 0,
           },
           columns: [
             {
-              id: `col-${nanoid()}`,
+              id: nanoid(),
               width: 12,
+              styles: {},
               components: [componentData],
             },
           ],
         };
 
-        // Add to top or bottom based on position
-        if (action.position === 'top') {
-          const currentContainers = layoutJSON.pages[0].containers || [];
-          useBuilderStore.setState(state => ({
-            layoutJSON: {
-              ...state.layoutJSON,
-              pages: [
-                {
-                  ...state.layoutJSON.pages[0],
-                  containers: [newContainer, ...currentContainers],
-                },
-              ],
-            },
-          }));
-        } else {
-          addContainer(newContainer);
-        }
+        const updatedLayout = action.position === 'top' 
+          ? [newContainer, ...currentLayout]
+          : [...currentLayout, newContainer];
 
-        // Remove applied suggestion
+        useBuilderStore.setState(state => ({
+          layoutJSON: {
+            ...state.layoutJSON,
+            pages: state.layoutJSON.pages.map(p => 
+              p.id === currentPageId 
+                ? { ...p, layout: updatedLayout }
+                : p
+            ),
+          },
+        }));
+
         setSuggestions(prev => prev.filter(s => s.id !== suggestion.id));
-
-        // Show success message
-        alert(`✨ ${suggestion.title} applied successfully!`);
       }
     } catch (error) {
       console.error('Error applying suggestion:', error);
-      alert('Failed to apply suggestion');
+      alert('Failed to apply suggestion. Please try again.');
     } finally {
-      setLoading(false);
+      setApplyingId(null);
     }
   }
 
   function generateComponentData(componentType) {
-    const id = `${componentType.toLowerCase()}-${nanoid()}`;
+    const id = nanoid();
 
     const templates = {
       Hero: {
@@ -201,7 +221,6 @@ export default function AICopilot({ tenantId, siteId }) {
           ],
         },
         styles: {
-          backgroundColor: '#ffffff',
           paddingTop: 60,
           paddingBottom: 60,
         },
@@ -215,7 +234,6 @@ export default function AICopilot({ tenantId, siteId }) {
           description: 'Fill out the form below and we\'ll get back to you soon',
         },
         styles: {
-          backgroundColor: '#f9fafb',
           paddingTop: 60,
           paddingBottom: 60,
         },
@@ -299,7 +317,6 @@ export default function AICopilot({ tenantId, siteId }) {
       },
     };
 
-    // Return template or fallback to Text
     return templates[componentType] || templates.Text;
   }
 
@@ -348,7 +365,6 @@ export default function AICopilot({ tenantId, siteId }) {
         isMinimized ? 'w-80' : 'w-96'
       }`}
     >
-      {/* Header */}
       <div className="flex items-center justify-between p-4 border-b border-gray-100 bg-gradient-to-r from-purple-50 to-pink-50">
         <div className="flex items-center gap-2">
           <div className="p-2 bg-gradient-to-r from-purple-600 to-pink-600 rounded-lg">
@@ -383,7 +399,6 @@ export default function AICopilot({ tenantId, siteId }) {
         </div>
       </div>
 
-      {/* Content */}
       {!isMinimized && (
         <div className="max-h-[500px] overflow-y-auto">
           {analyzing ? (
@@ -429,10 +444,10 @@ export default function AICopilot({ tenantId, siteId }) {
                       </p>
                       <button
                         onClick={() => applySuggestion(suggestion)}
-                        disabled={loading}
+                        disabled={applyingId !== null}
                         className="w-full px-3 py-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-lg hover:from-purple-700 hover:to-pink-700 transition-all text-xs font-bold uppercase tracking-wider disabled:opacity-50 disabled:cursor-not-allowed"
                       >
-                        {loading ? (
+                        {applyingId === suggestion.id ? (
                           <span className="flex items-center justify-center gap-2">
                             <Loader2 className="w-3 h-3 animate-spin" />
                             Applying...
@@ -450,7 +465,6 @@ export default function AICopilot({ tenantId, siteId }) {
         </div>
       )}
 
-      {/* Footer */}
       {!isMinimized && !analyzing && suggestions.length > 0 && (
         <div className="p-3 border-t border-gray-100 bg-gray-50">
           <button

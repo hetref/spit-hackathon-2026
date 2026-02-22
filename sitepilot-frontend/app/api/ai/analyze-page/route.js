@@ -7,14 +7,15 @@ const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
 export async function POST(request) {
   try {
-    const { layoutJSON, brandKit } = await request.json();
+    const { layoutJSON, brandKit, siteInfo } = await request.json();
 
     if (!layoutJSON || !layoutJSON.pages || layoutJSON.pages.length === 0) {
       return NextResponse.json({ error: 'Invalid layout data' }, { status: 400 });
     }
 
     const page = layoutJSON.pages[0];
-    const containers = page.containers || [];
+    // Support both 'containers' and 'layout' keys
+    const containers = page.layout || page.containers || [];
 
     // Analyze page structure
     const analysis = analyzePageStructure(containers);
@@ -29,7 +30,7 @@ export async function POST(request) {
       },
     });
 
-    const prompt = buildAnalysisPrompt(analysis, brandKit);
+    const prompt = buildAnalysisPrompt(analysis, brandKit, siteInfo);
 
     const result = await model.generateContent(prompt);
     const response = await result.response;
@@ -128,14 +129,27 @@ function analyzePageStructure(containers) {
   return analysis;
 }
 
-function buildAnalysisPrompt(analysis, brandKit) {
-  const brandMood = brandKit?.mood || 'modern';
+function buildAnalysisPrompt(analysis, brandKit, siteInfo) {
+  const brandMood = brandKit?.mood || 'professional';
+  const primaryColor = brandKit?.colors?.primary || '#3b82f6';
+  const businessType = siteInfo?.businessType || 'business';
+  const siteName = siteInfo?.name || 'this website';
   const hasHero = analysis.hasHero ? 'Yes' : 'No';
   const hasCTA = analysis.hasCTA ? 'Yes' : 'No';
   const hasTestimonials = analysis.hasTestimonials ? 'Yes' : 'No';
   const hasContactForm = analysis.hasContactForm ? 'Yes' : 'No';
 
-  return `You are an expert web design consultant analyzing a landing page. Provide actionable suggestions to improve conversion and user experience.
+  const componentBreakdown = Object.entries(analysis.componentTypes).length > 0
+    ? Object.entries(analysis.componentTypes).map(([type, count]) => `- ${type}: ${count}`).join('\n')
+    : '- No components yet';
+
+  return `You are an expert web design consultant analyzing a landing page for "${siteName}", a ${businessType} website. Provide actionable suggestions to improve conversion and user experience.
+
+BRAND CONTEXT:
+- Business Type: ${businessType}
+- Brand Mood: ${brandMood}
+- Primary Color: ${primaryColor}
+- Site Name: ${siteName}
 
 PAGE ANALYSIS:
 - Total Components: ${analysis.componentCount}
@@ -144,10 +158,9 @@ PAGE ANALYSIS:
 - Has Call-to-Action: ${hasCTA}
 - Has Features Section: ${hasTestimonials}
 - Has Contact Form: ${hasContactForm}
-- Brand Mood: ${brandMood}
 
 Component Breakdown:
-${Object.entries(analysis.componentTypes).map(([type, count]) => `- ${type}: ${count}`).join('\n')}
+${componentBreakdown}
 
 AVAILABLE COMPONENTS (ONLY USE THESE):
 - Hero: Main banner with title, subtitle, CTA button
