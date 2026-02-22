@@ -15,6 +15,7 @@ import { useAutosave } from "@/lib/hooks/useAutosave";
 import { useSession } from "@/lib/auth-client";
 import { getCursorColor } from "@/liveblocks.config";
 import { Loader2 } from "lucide-react";
+import useUIStore from "@/lib/stores/uiStore";
 
 export default function PageBuilderPage() {
   const params = useParams();
@@ -23,8 +24,16 @@ export default function PageBuilderPage() {
 
   const { initializeFromAPI } = useBuilderStore();
   const { initialize: initializeHistory } = useHistoryStore();
+  const { setLeftSidebarOpen, setRightSidebarOpen } = useUIStore();
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState(null);
+
+  useEffect(() => {
+    if (window.innerWidth < 768) {
+      setLeftSidebarOpen(false);
+      setRightSidebarOpen(false);
+    }
+  }, [setLeftSidebarOpen, setRightSidebarOpen]);
 
   // ── Autosave: watches Zustand layoutJSON changes, debounced 5 s ──────────
   const { saving, lastSaved, error: saveError } = useAutosave({ siteId, pageId });

@@ -114,7 +114,7 @@ function PresetIcon({ widths }) {
 export default function LeftSidebar() {
   const { addContainer, getLayoutJSON } = useBuilderStore();
   const { pushState } = useHistoryStore();
-  const { activeLeftTab, setActiveLeftTab } = useUIStore();
+  const { activeLeftTab, setActiveLeftTab, leftSidebarOpen } = useUIStore();
 
   const [expandedCategories, setExpandedCategories] = useState(
     Object.keys(elementLibrary),
@@ -161,7 +161,12 @@ export default function LeftSidebar() {
   }, [searchQuery]);
 
   return (
-    <div className="w-72 bg-white/80 backdrop-blur-md border-r border-gray-100 overflow-hidden builder-sidebar flex flex-col z-10 shadow-sm shrink-0">
+    <div className={clsx(
+      "w-72 bg-white/80 backdrop-blur-md border-r border-gray-100 overflow-hidden builder-sidebar flex flex-col z-20 shadow-sm shrink-0",
+      "absolute md:relative h-full transition-transform duration-300 left-0 bg-white",
+      leftSidebarOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0",
+      !leftSidebarOpen && "max-md:hidden"
+    )}>
       {/* ── Tab Switcher ──────────────────────────────────────── */}
       <div className="flex border-b border-gray-100">
         <button

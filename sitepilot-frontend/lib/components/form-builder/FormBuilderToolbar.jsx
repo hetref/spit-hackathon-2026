@@ -4,11 +4,13 @@
 
 'use client';
 
-import { ArrowLeft, Save, Eye, Settings } from 'lucide-react';
+import { ArrowLeft, Save, Eye, Settings, Menu, Settings2 } from 'lucide-react';
 import { useRouter, useParams } from 'next/navigation';
 import useFormBuilderStore from '@/lib/stores/formBuilderStore';
+import useUIStore from '@/lib/stores/uiStore';
 
 export default function FormBuilderToolbar({ onSave, saving, lastSaved }) {
+  const { toggleLeftSidebar, toggleRightSidebar } = useUIStore();
   const router = useRouter();
   const params = useParams();
   const { formData, isDirty } = useFormBuilderStore();
@@ -27,7 +29,14 @@ export default function FormBuilderToolbar({ onSave, saving, lastSaved }) {
   return (
     <div className="h-20 bg-white/80 backdrop-blur-md border-b border-gray-100 flex items-center justify-between px-6 sm:px-10 z-20">
       {/* Left Section */}
-      <div className="flex items-center gap-6">
+      <div className="flex items-center gap-2 sm:gap-6">
+        <button
+          onClick={toggleLeftSidebar}
+          className="md:hidden p-2 text-gray-500 hover:text-[#0b1411] hover:bg-gray-100 rounded-xl transition-colors"
+          title="Toggle Left Sidebar"
+        >
+          <Menu size={18} />
+        </button>
         <button
           onClick={() => router.push(`/${params.tenantId}/sites/${params.siteId}/forms`)}
           className="p-3 bg-white border border-gray-200 text-gray-400 hover:text-[#0b1411] hover:border-[#0b1411]/20 rounded-2xl transition-all shadow-sm hover:shadow-md focus:outline-none"
@@ -80,9 +89,17 @@ export default function FormBuilderToolbar({ onSave, saving, lastSaved }) {
           className="flex items-center gap-2 h-10 px-6 font-black uppercase tracking-widest text-xs bg-[#d3ff4a] text-[#0b1411] rounded-full hover:bg-[#c0eb3f] disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-sm hover:shadow-md hover:scale-105 active:scale-95 duration-200"
         >
           <Save size={14} />
-          <span>
+          <span className="hidden sm:inline">
             {saving ? 'Saving...' : 'Save Form'}
           </span>
+        </button>
+
+        <button
+          onClick={toggleRightSidebar}
+          className="md:hidden flex items-center justify-center p-2 text-gray-400 hover:text-[#0b1411] hover:bg-gray-100 rounded-xl transition-colors min-w-[36px]"
+          title="Toggle Right Sidebar"
+        >
+          <Settings2 size={18} />
         </button>
       </div>
     </div>

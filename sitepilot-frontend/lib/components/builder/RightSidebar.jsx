@@ -8,9 +8,12 @@
  */
 
 import React, { useState, useMemo, useEffect } from "react";
+import { createPortal } from "react-dom";
+import { useParams } from "next/navigation";
 import useBuilderStore from "@/lib/stores/builderStore";
 import useHistoryStore from "@/lib/stores/historyStore";
-import { Trash2, Copy, Plus, Minus, Settings2, Paintbrush, Lock, Wand2, Loader2, ChevronDown } from "lucide-react";
+import useUIStore from "@/lib/stores/uiStore";
+import { Trash2, Copy, Plus, Minus, Settings2, Paintbrush, Lock, X, Image as ImageIcon, Wand2, Loader2, ChevronDown } from "lucide-react";
 import { clsx } from "clsx";
 import FormSelector from "./FormSelector";
 import { useOthers } from "@/lib/liveblocks-client";
@@ -87,6 +90,7 @@ export default function RightSidebar() {
   }, [globalSettings, brandKit]);
   
   const { pushState } = useHistoryStore();
+  const { rightSidebarOpen } = useUIStore();
   const [activeTab, setActiveTab] = useState("properties");
 
   // ── Check if the selected node is locked by another user ──────────────
@@ -127,7 +131,11 @@ export default function RightSidebar() {
 
   if (!selectedNodeId || !selectedNode) {
     return (
-      <div className="w-80 bg-[#fcfdfc] border-l border-gray-100 flex flex-col h-full min-h-0 builder-sidebar z-10 shrink-0">
+      <div className={clsx(
+        "w-80 bg-[#fcfdfc] border-l border-gray-100 flex flex-col h-full min-h-0 builder-sidebar z-20 shrink-0 absolute right-0 md:relative",
+        rightSidebarOpen ? "translate-x-0" : "translate-x-full md:translate-x-0",
+        !rightSidebarOpen && "max-md:hidden"
+      )}>
         <div data-lenis-prevent className="flex-1 min-h-0 overflow-y-auto p-8 flex flex-col items-center justify-center text-center">
           <div className="w-12 h-12 bg-white rounded-2xl shadow-sm border border-gray-100 flex items-center justify-center mb-4">
             <Settings2 size={20} className="text-[#8bc4b1] opacity-50" />
@@ -144,7 +152,11 @@ export default function RightSidebar() {
   // ── If the selected node is locked by another user ─────────────────────
   if (selectedNodeLock) {
     return (
-      <div className="w-80 bg-[#fcfdfc] border-l border-gray-100 flex flex-col h-full min-h-0 builder-sidebar z-10 shrink-0">
+      <div className={clsx(
+        "w-80 bg-[#fcfdfc] border-l border-gray-100 flex flex-col h-full min-h-0 builder-sidebar z-20 shrink-0 absolute right-0 md:relative",
+        rightSidebarOpen ? "translate-x-0" : "translate-x-full md:translate-x-0",
+        !rightSidebarOpen && "max-md:hidden"
+      )}>
         <div data-lenis-prevent className="flex-1 min-h-0 overflow-y-auto p-8 flex flex-col items-center justify-center text-center">
           <div
             className="w-12 h-12 rounded-2xl flex items-center justify-center mb-4 border"
@@ -210,7 +222,11 @@ export default function RightSidebar() {
   };
 
   return (
-    <div className="w-80 bg-white/80 backdrop-blur-md border-l border-gray-100 flex flex-col h-full min-h-0 builder-sidebar z-10 shadow-sm shrink-0">
+    <div className={clsx(
+      "w-80 bg-white/80 backdrop-blur-md border-l border-gray-100 flex flex-col h-full min-h-0 builder-sidebar z-20 shadow-sm shrink-0 absolute right-0 md:relative bg-white",
+      rightSidebarOpen ? "translate-x-0" : "translate-x-full md:translate-x-0",
+      !rightSidebarOpen && "max-md:hidden"
+    )}>
       {/* Header */}
       <div className="p-6 border-b border-gray-100">
         <div className="flex items-center justify-between mb-4">
@@ -489,8 +505,8 @@ function PropertiesEditor({ component, onUpdate, siteId }) {
             value={props.ctaLink || ""}
             onChange={(value) => handleChange("ctaLink", value)}
           />
-          <InputField
-            label="Background Image URL"
+          <MediaField
+            label="Background Image"
             value={props.backgroundImage || ""}
             onChange={(value) => handleChange("backgroundImage", value)}
           />
@@ -526,8 +542,8 @@ function PropertiesEditor({ component, onUpdate, siteId }) {
       {/* Image Component */}
       {component.type === "Image" && (
         <>
-          <InputField
-            label="Image URL"
+          <MediaField
+            label="Image File"
             value={props.src || ""}
             onChange={(value) => handleChange("src", value)}
           />
@@ -572,7 +588,7 @@ function PropertiesEditor({ component, onUpdate, siteId }) {
               handleChange("borderRadius", parseInt(value) || 0)
             }
           />
-          <InputField
+          <LinkField
             label="Link URL (optional)"
             value={props.linkUrl || ""}
             onChange={(value) => handleChange("linkUrl", value)}
@@ -590,10 +606,19 @@ function PropertiesEditor({ component, onUpdate, siteId }) {
             aiRewrite={true}
             componentType={componentType}
           />
-          <InputField
+          <LinkField
             label="Link"
             value={props.link || ""}
             onChange={(value) => handleChange("link", value)}
+          />
+          <SelectField
+            label="Open In"
+            value={props.openInNewTab ? "new" : "same"}
+            options={[
+              { value: "same", label: "Same Tab" },
+              { value: "new", label: "New Tab" },
+            ]}
+            onChange={(value) => handleChange("openInNewTab", value === "new")}
           />
           <SelectField
             label="Variant"
@@ -668,20 +693,20 @@ function PropertiesEditor({ component, onUpdate, siteId }) {
             value={props.text || ""}
             onChange={(value) => handleChange("text", value)}
           />
-          <InputField
+          <LinkField
             label="URL"
             value={props.href || ""}
             onChange={(value) => handleChange("href", value)}
           />
-          <div className="flex items-center gap-2">
-            <input
-              type="checkbox"
-              checked={props.openInNewTab || false}
-              onChange={(e) => handleChange("openInNewTab", e.target.checked)}
-              className="rounded"
-            />
-            <label className="text-sm text-gray-700">Open in new tab</label>
-          </div>
+          <SelectField
+            label="Open In"
+            value={props.openInNewTab ? "new" : "same"}
+            options={[
+              { value: "same", label: "Same Tab" },
+              { value: "new", label: "New Tab" },
+            ]}
+            onChange={(value) => handleChange("openInNewTab", value === "new")}
+          />
         </>
       )}
 
@@ -698,28 +723,28 @@ function PropertiesEditor({ component, onUpdate, siteId }) {
             value={props.description || ""}
             onChange={(value) => handleChange("description", value)}
           />
-          <InputField
+          <LinkField
             label="URL"
             value={props.href || ""}
             onChange={(value) => handleChange("href", value)}
           />
-          <div className="flex items-center gap-2">
-            <input
-              type="checkbox"
-              checked={props.openInNewTab || false}
-              onChange={(e) => handleChange("openInNewTab", e.target.checked)}
-              className="rounded"
-            />
-            <label className="text-sm text-gray-700">Open in new tab</label>
-          </div>
+          <SelectField
+            label="Open In"
+            value={props.openInNewTab ? "new" : "same"}
+            options={[
+              { value: "same", label: "Same Tab" },
+              { value: "new", label: "New Tab" },
+            ]}
+            onChange={(value) => handleChange("openInNewTab", value === "new")}
+          />
         </>
       )}
 
       {/* ImageBox Component */}
       {component.type === "ImageBox" && (
         <>
-          <InputField
-            label="Image URL"
+          <MediaField
+            label="Image File"
             value={props.src || ""}
             onChange={(value) => handleChange("src", value)}
           />
@@ -744,8 +769,8 @@ function PropertiesEditor({ component, onUpdate, siteId }) {
       {/* Video Component */}
       {component.type === "Video" && (
         <>
-          <InputField
-            label="Video URL"
+          <MediaField
+            label="Video File"
             value={props.url || ""}
             onChange={(value) => handleChange("url", value)}
           />
@@ -1602,30 +1627,28 @@ function NavLinksEditor({ links, onChange }) {
       <label className="block text-sm font-medium text-gray-700 mb-2">
         Links
       </label>
-      <div className="space-y-2">
+      <div className="space-y-3">
         {links.map((link, index) => (
-          <div key={index} className="flex gap-2 items-center">
-            <input
-              type="text"
-              value={link.label || ""}
-              onChange={(e) => handleLinkChange(index, "label", e.target.value)}
-              className="flex-1 px-2 py-1 border border-gray-300 rounded text-sm"
-              placeholder="Label"
-            />
-            <input
-              type="text"
-              value={link.href || ""}
-              onChange={(e) => handleLinkChange(index, "href", e.target.value)}
-              className="w-24 px-2 py-1 border border-gray-300 rounded text-sm"
-              placeholder="URL"
-            />
+          <div key={index} className="p-3 bg-gray-50 border border-gray-200 rounded-md relative group">
             <button
               onClick={() => handleRemoveLink(index)}
-              className="p-1 text-red-400 hover:text-red-600 hover:bg-red-50 rounded"
+              className="absolute top-2 right-2 p-1 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded opacity-0 group-hover:opacity-100 transition-opacity"
               title="Remove link"
             >
-              ✕
+              <Trash2 className="w-4 h-4" />
             </button>
+            <div className="space-y-3 mr-6">
+              <InputField
+                label="Label"
+                value={link.label || ""}
+                onChange={(value) => handleLinkChange(index, "label", value)}
+              />
+              <LinkField
+                label="URL"
+                value={link.href || ""}
+                onChange={(value) => handleLinkChange(index, "href", value)}
+              />
+            </div>
           </div>
         ))}
       </div>
@@ -1642,6 +1665,204 @@ function NavLinksEditor({ links, onChange }) {
 // ============================================================================
 // FORM FIELDS
 // ============================================================================
+
+function MediaLibraryModal({ isOpen, onClose, onSelect, mediaList }) {
+  if (!isOpen) return null;
+
+  const modalContent = (
+    <div className="fixed inset-0 z-[1000] flex items-center justify-center bg-[#0b1411]/80 backdrop-blur-sm p-4 sm:p-8" onClick={onClose}>
+       <div 
+         className="bg-white rounded-[2.5rem] w-full max-w-4xl h-[80vh] flex flex-col shadow-2xl overflow-hidden relative"
+         onClick={e => e.stopPropagation()}
+       >
+          <div className="p-6 border-b border-gray-100 flex items-center justify-between bg-white relative z-10">
+            <div>
+               <h2 className="text-xl font-black text-[#1d2321] uppercase tracking-tighter">Media Library</h2>
+               <p className="text-xs text-gray-400 font-bold uppercase tracking-widest mt-1">Select an asset to insert</p>
+            </div>
+            <button onClick={onClose} className="p-3 text-gray-400 hover:text-[#0b1411] hover:bg-[#f2f4f2] rounded-2xl transition-all shadow-sm">
+               <X size={20} />
+            </button>
+          </div>
+          <div className="flex-1 overflow-y-auto p-8 bg-[#fcfdfc]">
+             {mediaList.length === 0 ? (
+                <div className="py-20 text-center flex flex-col items-center justify-center h-full">
+                   <div className="h-24 w-24 rounded-[2.5rem] bg-gray-50 border border-gray-100 flex items-center justify-center mb-8 shadow-inner">
+                     <ImageIcon size={40} className="text-gray-300" />
+                   </div>
+                   <h3 className="text-2xl font-black text-[#0b1411] uppercase tracking-tight mb-2">No Media Found</h3>
+                   <p className="text-sm font-medium text-gray-500 max-w-sm">Use the Media Library from your dashboard to upload files first.</p>
+                </div>
+             ) : (
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6">
+                   {mediaList.map((item) => (
+                      <div 
+                         key={item.id}
+                         onClick={() => onSelect(item.url)}
+                         className="group relative aspect-square bg-gray-50 border border-gray-100 rounded-3xl overflow-hidden cursor-pointer shadow-sm hover:shadow-lg hover:-translate-y-1 hover:border-[#8bc4b1] hover:ring-2 hover:ring-[#8bc4b1]/30 transition-all duration-300"
+                      >
+                         <img src={item.url} alt={item.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                         <div className="absolute inset-x-0 bottom-0 p-4 bg-gradient-to-t from-black/80 via-black/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                            <p className="text-white text-[10px] font-bold tracking-wider uppercase truncate">{item.name}</p>
+                         </div>
+                      </div>
+                   ))}
+                </div>
+             )}
+          </div>
+       </div>
+    </div>
+  );
+
+  if (typeof document === 'undefined') return null;
+  return createPortal(modalContent, document.body);
+}
+
+function MediaField({ label, value, onChange }) {
+  const { tenantId } = useParams();
+  const [media, setMedia] = useState([]);
+  const [mediaType, setMediaType] = useState('url');
+  const [modalOpen, setModalOpen] = useState(false);
+
+  useEffect(() => {
+    if (tenantId) {
+      fetch(`/api/tenants/${tenantId}/media`)
+        .then(res => res.json())
+        .then(data => {
+            if (data.media) {
+               // sort by newest
+               setMedia(data.media.sort((a,b) => new Date(b.createdAt) - new Date(a.createdAt)));
+            }
+        })
+        .catch(err => console.error("Failed to fetch media for MediaField", err));
+    }
+  }, [tenantId]);
+
+  useEffect(() => {
+     if (value) {
+         if (media.some(m => m.url === value)) {
+             setMediaType('library');
+         } else {
+             setMediaType('url');
+         }
+     } else {
+         setMediaType('url');
+     }
+  }, [value, media]);
+
+  return (
+    <div className="space-y-4 p-4 bg-[#f2f4f2]/50 border border-gray-100 rounded-xl relative">
+      <SelectField
+        label={label + " Source"}
+        value={mediaType}
+        onChange={(type) => {
+            setMediaType(type);
+            if (type !== 'library') {
+               onChange('');
+            }
+        }}
+        options={[
+          { label: 'Media Library', value: 'library' },
+          { label: 'Custom URL', value: 'url' }
+        ]}
+      />
+      {mediaType === 'url' ? (
+        <InputField
+             label="URL"
+             value={value || ''}
+             onChange={onChange}
+        />
+      ) : (
+        <div className="space-y-3">
+            <button
+               onClick={() => setModalOpen(true)}
+               className="w-full h-12 bg-white border border-gray-200 text-[#0b1411] text-xs font-bold uppercase tracking-widest rounded-xl hover:border-[#8bc4b1] hover:text-[#8bc4b1] transition-all shadow-sm flex items-center justify-center gap-2 hover:shadow-md active:scale-95"
+            >
+               <ImageIcon size={16} />
+               {(value && media.some(m => m.url === value)) ? "Change Media" : "Browse Library"}
+            </button>
+            {value && media.some(m => m.url === value) && (
+                <div className="mt-2 rounded-2xl overflow-hidden border border-gray-200 bg-white p-1.5 shadow-inner">
+                    <img src={value} alt="Preview" className="w-full h-auto max-h-40 object-contain rounded-xl" />
+                </div>
+            )}
+            <MediaLibraryModal 
+               isOpen={modalOpen} 
+               onClose={() => setModalOpen(false)} 
+               mediaList={media}
+               onSelect={(url) => {
+                  onChange(url);
+                  setModalOpen(false);
+               }}
+            />
+        </div>
+      )}
+    </div>
+  );
+}
+
+function LinkField({ label, value, onChange }) {
+  const { siteId } = useParams();
+  const [pages, setPages] = useState([]);
+  const [linkType, setLinkType] = useState('custom');
+
+  useEffect(() => {
+    if (siteId) {
+      fetch(`/api/sites/${siteId}/pages`)
+        .then(res => res.json())
+        .then(data => {
+            if (data.pages) setPages(data.pages);
+        });
+    }
+  }, [siteId]);
+
+  useEffect(() => {
+     if (value) {
+         if (pages.some(p => `/${p.slug}` === value || `/${p.slug.replace(/^\//,'')}/index.html` === value)) {
+             setLinkType('page');
+         } else {
+             setLinkType('custom');
+         }
+     } else {
+         setLinkType('custom');
+     }
+  }, [value, pages]);
+
+  return (
+    <div className="space-y-2">
+      <SelectField
+        label={label + " Type"}
+        value={linkType}
+        onChange={(type) => {
+            setLinkType(type);
+            if (type === 'page' && pages.length > 0) {
+               onChange(`/${pages[0].slug.replace(/^\//,'')}`);
+            } else {
+               onChange('');
+            }
+        }}
+        options={[
+          { label: 'Site Page', value: 'page' },
+          { label: 'Custom URL', value: 'custom' }
+        ]}
+      />
+      {linkType === 'custom' ? (
+        <InputField
+             label="URL"
+             value={value || ''}
+             onChange={onChange}
+        />
+      ) : (
+        <SelectField
+             label="Select Page"
+             value={value || (pages.length ? `/${pages[0].slug.replace(/^\//,'')}` : '')}
+             onChange={onChange}
+             options={pages.map(p => ({ label: p.name, value: `/${p.slug.replace(/^\//,'')}` }))}
+        />
+      )}
+    </div>
+  );
+}
 
 function InputField({
   label,

@@ -210,6 +210,7 @@ export const defaultComponentProps = {
   Button: {
     text: "Click Me",
     variant: "primary",
+    openInNewTab: false,
   },
   Label: {
     text: "Label Text",

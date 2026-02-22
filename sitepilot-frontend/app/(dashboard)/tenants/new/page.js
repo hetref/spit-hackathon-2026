@@ -37,7 +37,7 @@ export default function NewTenantPage() {
       .catch(() => setSubCheck({ canCreateBusiness: false, blockReason: 'ERROR' }))
   }, [session])
 
-  const generateSlug = (name) => {
+  const generateSlug = (name) => {  
     return name
       .toLowerCase()
       .replace(/[^a-z0-9]+/g, '-')
