@@ -245,7 +245,7 @@ function PlanGateBanner({ userSub, onShowPricing, pricingVisible }) {
           <div>
             <p className="text-[10px] font-bold tracking-[0.2em] uppercase text-[#8bc4b1] mb-1">Subscription Required</p>
             <h3 className="text-xl sm:text-2xl font-black text-white tracking-tight mb-1">
-              Subscribe to create workspaces
+              {count > 0 ? "Subscribe to create more workspaces" : "Subscribe to start creating workspaces"}
             </h3>
             <p className="text-sm text-gray-400 font-medium leading-relaxed max-w-md">
               Starter (₹199/mo) · Pro (₹399/mo) · Enterprise (₹699/mo)
@@ -485,8 +485,8 @@ function DashboardContent() {
       const existingTenantId = ownedTenants[0]?.id ?? null
 
       if (!existingTenantId) {
-        // No tenant yet — redirect to pricing page for full flow
-        router.push(`/pricing?plan=${planId}`)
+        setSubError('Please create a workspace first before subscribing.');
+        setSubscribingPlanId(null);
         return
       }
 
@@ -567,8 +567,10 @@ function DashboardContent() {
   }
   if (!session) return null
 
-  const canCreate = userSub?.canCreateBusiness ?? false
-  const needsPlan = !userSub?.hasSubscription || (userSub?.blockReason && !canCreate)
+  // Allow creating the first workspace for free, require subscription for more
+  const hasAnyWorkspace = (ownedTenants.length + sharedTenants.length) > 0;
+  const canCreate = !hasAnyWorkspace || (userSub?.canCreateBusiness ?? false);
+  const needsPlan = hasAnyWorkspace && (!userSub?.hasSubscription || (userSub?.blockReason && !canCreate));
 
   const userInitials = session.user.name
     ? session.user.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase()
@@ -695,8 +697,14 @@ function DashboardContent() {
             </div>
             <button
               onClick={handleNewWorkspace}
-              disabled={loading}
-              title={!canCreate ? (userSub?.hasSubscription ? 'Upgrade to add more workspaces' : 'Subscribe to create a workspace') : ''}
+              disabled={loading || (!canCreate)}
+              title={
+                loading ? 'Loading...' :
+                  canCreate ? '' :
+                    (hasAnyWorkspace
+                      ? (userSub?.hasSubscription ? 'Upgrade to add more workspaces' : 'Subscribe to create a workspace')
+                      : '')
+              }
               className={`w-full sm:w-auto h-14 px-8 rounded-full font-bold flex items-center justify-center gap-2 transition-all active:scale-95 duration-200
                 ${canCreate
                   ? 'bg-[#d3ff4a] text-[#0b1411] hover:bg-[#c0eb3f] hover:scale-105 shadow-[0_0_20px_rgba(211,255,74,0.3)]'
@@ -706,7 +714,7 @@ function DashboardContent() {
             >
               {canCreate
                 ? <><Plus className="h-5 w-5" /> New Workspace</>
-                : <><Lock className="h-4 w-4" /> {userSub?.hasSubscription ? 'Upgrade to Add More' : 'Subscribe to Create'}</>
+                : <><Lock className="h-4 w-4" /> {hasAnyWorkspace ? (userSub?.hasSubscription ? 'Upgrade to Add More' : 'Subscribe to Create') : 'New Workspace'}</>
               }
             </button>
           </div>

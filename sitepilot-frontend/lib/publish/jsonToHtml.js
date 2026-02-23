@@ -944,24 +944,6 @@ export async function convertPageToHtml(
     '<div style="padding: 2rem; text-align: center; background-color: #fee; border: 2px dashed #f00; border-radius: 0.5rem;"><p style="color: #c00;">Form not found or not published</p></div>'
   );
 
-  // Normalize internal relative links to absolute URLs matching the S3 structure
-  // This ensures links like /about-us resolve to the correct subdomain and path
-  if (opts.siteSlug) {
-    const domain = `https://${opts.siteSlug}.sitepilot.devally.in`;
-    bodyContent = bodyContent.replace(/href="(\/[^"]*)"/g, (match, p1) => {
-      let cleanPath = p1.replace(/^\/+/, "");
-
-      // If it's already got an extension, don't append /index.html
-      if (!cleanPath) {
-        return `href="${domain}/index.html"`;
-      }
-      if (!cleanPath.includes(".")) {
-        cleanPath = `${cleanPath}/index.html`;
-      }
-      return `href="${domain}/${cleanPath}"`;
-    });
-  }
-
   const css = generateCSS(theme || {}) + additionalCSS;
   const js = generateJS() + additionalJS;
 

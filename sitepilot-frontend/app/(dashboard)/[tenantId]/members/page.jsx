@@ -22,6 +22,7 @@ export default function MembersPage() {
   const { data: session, isPending } = useSession()
   const [tenant, setTenant] = useState(null)
   const [userRole, setUserRole] = useState(null)
+  const [isTrueOwner, setIsTrueOwner] = useState(false)
   const [members, setMembers] = useState([])
   const [invitations, setInvitations] = useState([])
   const [loading, setLoading] = useState(true)
@@ -57,6 +58,7 @@ export default function MembersPage() {
         const data = await response.json()
         setTenant(data.tenant)
         setUserRole(data.userRole)
+        setIsTrueOwner(data.isTrueOwner)
       }
     } catch (err) {
       console.error('Error fetching tenant:', err)
@@ -188,7 +190,7 @@ export default function MembersPage() {
               </div>
             </div>
 
-            {hasPermission(userRole, 'members:invite') && !showAddMember && (
+            {isTrueOwner && !showAddMember && (
               <button
                 onClick={() => setShowAddMember(true)}
                 className="w-full sm:w-auto bg-[#d3ff4a] text-[#0b1411] h-14 px-8 rounded-full font-bold flex items-center justify-center hover:bg-[#c0eb3f] transition-all active:scale-95 shadow-[0_0_20px_rgba(211,255,74,0.3)] hover:scale-105 duration-200"
@@ -310,7 +312,7 @@ export default function MembersPage() {
                       {ROLE_LABELS[member.role] || member.role}
                     </span>
 
-                    {hasPermission(userRole, 'members:remove') && member.userId !== tenant?.ownerId && member.userId !== session?.user?.id && (
+                    {isTrueOwner && member.userId !== session?.user?.id && (
                       <button
                         onClick={() => handleRemoveMember(member.userId)}
                         className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-xl transition-colors"
@@ -327,7 +329,7 @@ export default function MembersPage() {
         </div>
 
         {/* Pending Invitations Section */}
-        {hasPermission(userRole, 'members:invite') && invitations.length > 0 && (
+        {isTrueOwner && invitations.length > 0 && (
           <div>
             <h2 className="text-sm font-black text-gray-400 tracking-[0.15em] uppercase mb-6 mt-16">Pending Invitations</h2>
             <div className="bg-white border border-gray-100 rounded-[2rem] shadow-sm overflow-hidden relative">

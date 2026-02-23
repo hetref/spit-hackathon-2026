@@ -84,17 +84,13 @@ export async function GET() {
         // Build a guard for the effective state
         const guard = new PlanGuard(bestSubscription, bestTenant);
 
-        // canCreateBusiness: must have subscription AND under limit
-        const canCreateBusiness = bestSubscription !== null &&
-            guard.isActive &&
-            guard.canCreateBusiness(businessCount);
+        // canCreateBusiness: check if they are under their business limit and their sub is functionally active
+        const canCreateBusiness = guard.isActive && guard.canCreateBusiness(businessCount);
 
         // Reason why they can't create a business (for UI messaging)
         let blockReason = null;
-        if (!bestSubscription) {
-            blockReason = 'NO_SUBSCRIPTION';
-        } else if (!guard.isActive) {
-            blockReason = bestSubscription.status; // PAST_DUE, CANCELLED, PAUSED
+        if (!guard.isActive) {
+            blockReason = bestSubscription?.status ?? 'INACTIVE'; // PAST_DUE, CANCELLED, PAUSED
         } else if (!canCreateBusiness) {
             blockReason = 'BUSINESS_LIMIT_EXCEEDED';
         }

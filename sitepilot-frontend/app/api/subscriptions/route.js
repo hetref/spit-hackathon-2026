@@ -162,6 +162,11 @@ export async function POST(request) {
         });
 
         // ── Step 3: Upsert internal Subscription row ───────────────────────────
+        // Only set TRIAL if we literally trust them to trial first without paying.
+        // Otherwise, it sits as PENDING until the Razorpay webhook confirms payment.
+        const currentStatus = tenant.subscription?.status;
+        const targetStatus = (currentStatus === 'ACTIVE' || currentStatus === 'TRIAL') ? currentStatus : 'PAUSED';
+
         const subscription = await prisma.subscription.upsert({
             where: { tenantId },
             create: {
@@ -171,7 +176,7 @@ export async function POST(request) {
                 razorpaySubscriptionId: rzSubscription.id,
                 razorpayPlanId: planConfig.razorpayPlanId,
                 planType,
-                status: 'TRIAL',       // Will become ACTIVE on webhook
+                status: 'PAUSED',       // Requires webhook to flip to ACTIVE
                 billingCycle,
             },
             update: {
@@ -180,12 +185,15 @@ export async function POST(request) {
                 razorpaySubscriptionId: rzSubscription.id,
                 razorpayPlanId: planConfig.razorpayPlanId,
                 planType,
-                status: 'TRIAL',
+                status: targetStatus,
                 billingCycle,
                 cancelAtPeriodEnd: false,
                 cancelledAt: null,
             },
         });
+
+        // Determine base URL dynamically
+        const appUrl = (process.env.NEXT_PUBLIC_APP_URL || new URL(request.url).origin).replace(/\/$/, '');
 
         // Build checkout options for the frontend
         const checkoutOptions = buildCheckoutOptions({
@@ -194,7 +202,7 @@ export async function POST(request) {
             description: `${planConfig.displayName} Plan – ${billingCycle}`,
             prefillEmail: session.user.email,
             prefillName: session.user.name ?? '',
-            callbackUrl: `${process.env.NEXT_PUBLIC_APP_URL}/api/subscriptions/callback`,
+            callbackUrl: `${appUrl}/api/subscriptions/callback`,
         });
 
         return NextResponse.json({

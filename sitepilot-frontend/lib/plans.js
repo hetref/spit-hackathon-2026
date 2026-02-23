@@ -39,7 +39,7 @@ export const PLANS = {
         razorpayPlanId: null,
 
         limits: {
-            businesses: 0,              // FREE: no business creation — must subscribe
+            businesses: 1,              // FREE: 1 workspace allowed for free
             sites: 1,                   // Max sites per business
             pagesPerSite: 1,            // Max pages per site
             deploymentsPerMonth: 3,     // Max deployments per month

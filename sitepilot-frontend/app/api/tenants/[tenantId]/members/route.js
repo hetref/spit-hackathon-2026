@@ -71,19 +71,13 @@ export async function POST(request, { params }) {
     const { tenantId } = await params
     const { email, role = 'EDITOR' } = await request.json()
 
-    // Check if user is owner or has permission
-    const requestingUser = await prisma.tenantUser.findUnique({
-      where: {
-        userId_tenantId: {
-          userId: session.user.id,
-          tenantId
-        }
-      }
+    const tenant = await prisma.tenant.findUnique({
+      where: { id: tenantId }
     })
 
-    if (!requestingUser || requestingUser.role !== 'OWNER') {
+    if (!tenant || tenant.ownerId !== session.user.id) {
       return NextResponse.json(
-        { error: 'Only owners can add members' },
+        { error: 'Only the real workspace owner can add members' },
         { status: 403 }
       )
     }
@@ -167,27 +161,17 @@ export async function DELETE(request, { params }) {
       )
     }
 
-    // Check if requesting user is owner
-    const requestingUser = await prisma.tenantUser.findUnique({
-      where: {
-        userId_tenantId: {
-          userId: session.user.id,
-          tenantId
-        }
-      }
-    })
-
-    if (!requestingUser || requestingUser.role !== 'OWNER') {
-      return NextResponse.json(
-        { error: 'Only owners can remove members' },
-        { status: 403 }
-      )
-    }
-
-    // Check if member to remove is the owner
+    // Check if requesting user is the real owner
     const tenant = await prisma.tenant.findUnique({
       where: { id: tenantId }
     })
+
+    if (!tenant || tenant.ownerId !== session.user.id) {
+      return NextResponse.json(
+        { error: 'Only the real workspace owner can remove members' },
+        { status: 403 }
+      )
+    }
 
     if (tenant.ownerId === memberUserId) {
       return NextResponse.json(

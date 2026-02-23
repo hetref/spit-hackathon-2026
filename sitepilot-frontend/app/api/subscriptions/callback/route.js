@@ -9,7 +9,6 @@
  */
 
 import { NextResponse } from 'next/server';
-import { redirect } from 'next/navigation';
 
 export const runtime = 'nodejs';
 
@@ -18,15 +17,17 @@ export async function GET(request) {
     const rzSubId = searchParams.get('razorpay_subscription_id');
     const rzPaymentId = searchParams.get('razorpay_payment_id');
 
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? '';
+    const redirectUrl = new URL(request.url);
 
     if (!rzSubId || !rzPaymentId) {
-        // Payment not completed — redirect back to pricing
-        return NextResponse.redirect(`${appUrl}/pricing?status=cancelled`);
+        // Payment not completed — redirect back to dashboard
+        redirectUrl.pathname = '/dashboard';
+        redirectUrl.search = '?status=cancelled';
+        return NextResponse.redirect(redirectUrl);
     }
 
-    // Redirect to dashboard billing section — subscription will be activated by webhook
-    return NextResponse.redirect(
-        `${appUrl}/dashboard?subscriptionActivated=true&paymentId=${rzPaymentId}`
-    );
+    // Redirect to dashboard — subscription will be activated by webhook
+    redirectUrl.pathname = '/dashboard';
+    redirectUrl.search = `?subscriptionActivated=true&paymentId=${rzPaymentId}`;
+    return NextResponse.redirect(redirectUrl);
 }

@@ -64,7 +64,7 @@ export async function GET(request, { params }) {
       }
     }
 
-    return NextResponse.json({ tenant: tenantData, userRole: tenantUser.role })
+    return NextResponse.json({ tenant: tenantData, userRole: tenantUser.role, isTrueOwner: tenant.ownerId === session.user.id })
   } catch (error) {
     console.error('Error fetching tenant:', error)
     return NextResponse.json(

@@ -16,32 +16,20 @@ export async function POST(request, { params }) {
 
     const { tenantId } = await params
     const { email, role = 'EDITOR' } = await request.json()
-
-    // Check if user is owner or has permission
-    const requestingUser = await prisma.tenantUser.findUnique({
-      where: {
-        userId_tenantId: {
-          userId: session.user.id,
-          tenantId
-        }
-      }
-    })
-
-    if (!requestingUser || requestingUser.role !== 'OWNER') {
-      return NextResponse.json(
-        { error: 'Only owners can invite members' },
-        { status: 403 }
-      )
-    }
-
-    // Get tenant details
     const tenant = await prisma.tenant.findUnique({
       where: { id: tenantId },
-      select: { name: true }
+      select: { name: true, ownerId: true }
     })
 
     if (!tenant) {
       return NextResponse.json({ error: 'Tenant not found' }, { status: 404 })
+    }
+
+    if (tenant.ownerId !== session.user.id) {
+      return NextResponse.json(
+        { error: 'Only the real workspace owner can invite members' },
+        { status: 403 }
+      )
     }
 
     // Check if user is already a member
@@ -111,7 +99,7 @@ export async function POST(request, { params }) {
       declineUrl,
     })
 
-    return NextResponse.json({ 
+    return NextResponse.json({
       message: emailSent ? 'Invitation sent successfully' : 'Invitation created (email not configured)',
       invitationUrl: !emailSent ? acceptUrl : undefined,
       invitation: {
@@ -142,18 +130,13 @@ export async function GET(request, { params }) {
 
     const { tenantId } = await params
 
-    // Check if user has access to this tenant
-    const tenantUser = await prisma.tenantUser.findUnique({
-      where: {
-        userId_tenantId: {
-          userId: session.user.id,
-          tenantId
-        }
-      }
+    const tenant = await prisma.tenant.findUnique({
+      where: { id: tenantId },
+      select: { ownerId: true }
     })
 
-    if (!tenantUser || tenantUser.role !== 'OWNER') {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    if (!tenant || tenant.ownerId !== session.user.id) {
+      return NextResponse.json({ error: 'Forbidden. Only real workspace owners can view invitations' }, { status: 403 })
     }
 
     const invitations = await prisma.invitation.findMany({
